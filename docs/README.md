@@ -16,7 +16,7 @@ e contratos de API) fica em [`specs/`](../specs/), não aqui.
 
 | # | Entregável | Situação | Onde |
 |---|---|---|---|
-| 1 | Documento da demanda + evidência na SAGA | ⬜ Pendente | `entregas/` |
+| 1 | Documento da demanda + evidência na SAGA | ✅ Pronto | [`entregas/PROPOSTA_INICIAL_DEMANDA.pdf`](entregas/PROPOSTA_INICIAL_DEMANDA.pdf) |
 | 2 | ERS — Especificação de Requisitos de Software | ✅ Pronto | [`CLTech - ERS.docx`](../CLTech%20-%20ERS.docx) |
 | 3 | Lista priorizada de RF, RNF e RN | ✅ Pronto | ERS, seção 2.4 |
 | 4 | Fluxos, subfluxos, alternativas e exceções dos RF | ✅ Pronto | ERS, seção 2.1 |
