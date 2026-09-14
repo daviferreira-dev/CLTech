@@ -21,17 +21,17 @@ e contratos de API) fica em [`specs/`](../specs/), não aqui.
 | 3 | Lista priorizada de RF, RNF e RN | ✅ Pronto | ERS, seção 2.4 |
 | 4 | Fluxos, subfluxos, alternativas e exceções dos RF | ✅ Pronto | ERS, seção 2.1 |
 | 5 | Cenários de verificação de todos os RNF | ⬜ Pendente | `entregas/` |
-| 6 | Diagrama de casos de uso | 🟡 Fonte pronta, falta exportar | [`diagramas/01-casos-de-uso.puml`](diagramas/01-casos-de-uso.puml) |
-| 7 | Diagrama de classes | 🟡 Fonte pronta, falta exportar | [`diagramas/02-classes.mmd`](diagramas/02-classes.mmd) |
-| 8 | Diagrama Entidade-Relacionamento (DER) | 🟡 Fonte pronta, falta exportar | [`diagramas/03-der.mmd`](diagramas/03-der.mmd) |
-| 9 | Dois diagramas de sequência dos processos principais | ✅ Pronto | `diagramas/` |
-| 9b | Dois diagramas de atividade (ERS seção 5.4) | 🟡 Fonte pronta, falta exportar | [`diagramas/04`](diagramas/04-atividade-candidatura.puml) · [`05`](diagramas/05-atividade-correcao.puml) |
+| 6 | Diagrama de casos de uso | ✅ Pronto | [`diagramas/Diagrama_Casos_de_Uso.drawio.png`](diagramas/Diagrama_Casos_de_Uso.drawio.png) |
+| 7 | Diagrama de classes | ✅ Pronto | [`diagramas/Diagrama_Classes.drawio.png`](diagramas/Diagrama_Classes.drawio.png) |
+| 8 | Diagrama Entidade-Relacionamento (DER) | ✅ Pronto | [`diagramas/Diagrama_DER.drawio.png`](diagramas/Diagrama_DER.drawio.png) |
+| 9 | Dois diagramas de sequência dos processos principais | 🟡 Fonte pronta, falta exportar PNG | [`diagramas/Diagrama_Sequencia1.drawio`](diagramas/Diagrama_Sequencia1.drawio) · [`Diagrama_Sequencia_2.drawio`](diagramas/Diagrama_Sequencia_2.drawio) |
+| 9b | Dois diagramas de atividade (ERS seção 5.4) | 🟡 Fonte pronta, falta exportar | [`Atividade_1_Candidatura.puml`](diagramas/Atividade_1_Candidatura.puml) · [`Atividade_2_Correcao.puml`](diagramas/Atividade_2_Correcao.puml) |
 | 10 | Protótipo das 3 principais interfaces e navegação | ⬜ Pendente | `prototipo/` |
 | 11 | Matriz de integração das unidades curriculares | ⬜ Pendente | `entregas/` |
 | 12 | Repositório com README e estrutura inicial | ✅ Pronto | [README](../README.md) |
 
 > **Como renderizar e exportar os diagramas, e os textos prontos para colar nas seções 5.1 e
-> 5.2 do ERS**: ver [`diagramas/GUIA.md`](diagramas/GUIA.md).
+> 5.2 do ERS**: ver [`diagramas/LEIA-ME.md`](diagramas/LEIA-ME.md).
 
 ## Fontes para os itens pendentes
 
