@@ -1,0 +1,161 @@
+@startuml atividade-correcao
+' CLTech - Diagrama de Atividade: Teste de Codigo e Correcao Automatica [RF05 + RF06]
+' Fonte: ERS secao 2.1 RF05 (A1, A2, E1) e RF06 (A1, E1); RNF06; RN006
+' Renderizar em: https://www.plantuml.com/plantuml ou extensao PlantUML do VS Code
+
+title Teste de Codigo e Correcao Automatica — RF05 + RF06
+
+skinparam backgroundColor White
+skinparam shadowing false
+skinparam ActivityBackgroundColor #F7F9FC
+skinparam ActivityBorderColor #3B6EA5
+skinparam ActivityDiamondBackgroundColor #FFF8E7
+skinparam ActivityDiamondBorderColor #C2903A
+
+|#FFFFFF|Sistema|
+start
+:Candidatura chega a etapa CODE_TEST;
+:Notifica o candidato que\no teste esta disponivel;
+:Cria CodeDraft com startedAt;
+
+|#F3F6FA|Candidato|
+:Abre o editor de codigo embutido;
+note right: Principio V — tudo no navegador,\nsem instalar nada
+
+|Sistema|
+:Exibe enunciado e stack esperada;
+note right: testCases com hidden=true\nNUNCA saem do servidor
+
+repeat
+  |Candidato|
+  :Escreve o codigo;
+  |Sistema|
+  :Autosave em CodeDraft;
+  note right: RF05-A1 depende disso:\nsem rascunho nao ha "ultimo estado salvo"
+
+  |Candidato|
+  if (Quer executar para testar?) then (sim)
+    |Sistema|
+    if (testRunCount < maxTestRuns?) then (nao)
+      :Bloqueia novas execucoes\ne informa o teto atingido;
+      note right: D5 — teto por candidato;\nsem ele a VM cai sob uso normal
+    else (sim)
+      |Sandbox|
+      :Executa contra casos visiveis;
+      |Sistema|
+      :Incrementa testRunCount;
+      |Candidato|
+      :Ve o resultado ou o erro\nde compilacao;
+      note right: RF05-A2
+    endif
+  else (nao)
+  endif
+repeat while (Submeteu ou o tempo acabou?) is (ainda nao) not (sim)
+
+|Sistema|
+if (O tempo esgotou?) then (sim)
+  :Encerra a tentativa e promove\no ultimo CodeDraft a submissao;
+  :submittedBy = TIME_EXPIRED;
+  note right: RF05-A1
+else (nao)
+  :submittedBy = CANDIDATE;
+endif
+
+:Tenta inserir CodeSubmission\n(indice unico applicationId + challengeId);
+note right
+  RN006 — tentativa unica.
+  Garantida por constraint do banco.
+end note
+
+if (Ja existe submissao?) then (sim)
+  :Bloqueia o reenvio;
+  note right: RF05-E1
+  stop
+else (nao)
+endif
+
+:executionStatus = QUEUED;
+:Enfileira para correcao assincrona;
+note right: RNF03 — relatorio pronto\nem ate 5 minutos
+
+|#FDF4F4|Sandbox|
+:Provisiona container efemero\nsem rede e sem disco do host;
+note right
+  RNF06 / Principio IV
+  Limite rigido de CPU, memoria
+  e 10 segundos por execucao.
+  Roda em VM dedicada, nao na Vercel (R10).
+end note
+
+:Executa contra TODOS os casos de teste;
+
+if (Tentou acessar rede/disco\nou estourou o limite?) then (sim)
+  |Sistema|
+  :executionStatus = SECURITY_VIOLATION\nou TIMEOUT;
+  :Reprova a submissao por seguranca;
+  :Registra em auditoria;
+  note right
+    RF06-A1
+    Resultado FINAL: nao ha retentativa.
+    Dar segunda chance a quem estourou
+    o limite burlaria a RN006.
+  end note
+  |Sandbox|
+  :Descarta o container;
+  |Sistema|
+  :Gera relatorio de reprovacao;
+  detach
+else (nao)
+endif
+
+if (O sandbox falhou por motivo tecnico?) then (sim)
+  |Sistema|
+  if (retryCount < 1?) then (sim)
+    :Incrementa retryCount\ne reprocessa;
+    note right: RF06-E1 — uma unica retentativa
+    detach
+  else (nao)
+    :executionStatus = ERROR;
+    :Notifica a equipe tecnica;
+    stop
+  endif
+else (nao)
+endif
+
+|Sandbox|
+:Devolve casos aprovados\ne tempo de execucao;
+:Descarta o container;
+
+|Sistema|
+:Calcula o percentual de casos aprovados;
+:Insere Evaluation (type = CODE_TEST)\ncom score e justificativa;
+note right
+  RN003 / Principio II
+  INSERT, nunca UPDATE.
+  Correcao so por nova linha com version + 1.
+  Trigger BEFORE UPDATE bloqueia alteracao
+  ate por acesso direto ao banco.
+end note
+
+:executionStatus = COMPLETED;
+:Avanca a candidatura para\na proxima etapa do pipeline;
+:Fecha ApplicationStageHistory (exitedAt)\ne abre a linha da etapa seguinte;
+
+fork
+  :Envia feedback automatico por e-mail;
+  note right
+    RN005 — Sprint 3, via Resend (R11).
+    Leva status e nome; nunca score
+    detalhado nem curriculo.
+  end note
+  |Candidato|
+  :Recebe o feedback;
+fork again
+  |Sistema|
+  :Disponibiliza o relatorio\nao recrutador;
+  note right: RF08
+end fork
+
+stop
+
+@enduml

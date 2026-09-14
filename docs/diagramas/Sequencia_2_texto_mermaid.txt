@@ -1,0 +1,60 @@
+%% CLTech - RF02 + RF03 - Completar Perfil e Candidatar-se
+%% Cole em: draw.io > Arrange > Insert > Advanced > Mermaid
+sequenceDiagram
+    actor Candidato
+    participant SIS as Sistema
+    participant SSO as Provedor SSO
+    participant BD as Banco de Dados
+
+    Candidato->>SIS: acessarPerfil()
+    SIS-->>Candidato: exibirPerfil()
+    Candidato->>SIS: enviarCurriculo(arquivo)
+    SIS->>SIS: extrairDadosCurriculo()
+    SIS->>BD: salvarDadosPerfil(dadosExtraidos)
+    BD-->>SIS: sucesso
+    SIS-->>Candidato: exibirCamposPreenchidos(dados)
+    opt Candidato edita um campo
+        Candidato->>SIS: editarCampo(campo, valor)
+        SIS->>BD: atualizarCampoPerfil(campo, valor)
+        BD-->>SIS: sucesso
+        SIS-->>Candidato: confirmaAtualizacao()
+    end
+    loop Para cada rede LinkedIn e GitHub
+        Candidato->>SIS: clicarConectar(rede)
+        SIS->>SSO: iniciarAutenticacaoSSO(rede)
+        SSO-->>Candidato: solicitarLogin()
+        Candidato->>SSO: autorizarAcesso(credenciais)
+        alt Coleta bem sucedida
+            SSO-->>SIS: tokenAcesso e dadosPerfil
+            SIS->>BD: salvarConexao(rede, CONECTADA)
+            BD-->>SIS: sucesso
+            SIS-->>Candidato: exibirRedeConectada(rede)
+        else Perfil privado ou provedor indisponivel (RF02-E1)
+            SSO-->>SIS: falha na coleta
+            SIS->>BD: salvarConexao(rede, INDISPONIVEL)
+            SIS-->>Candidato: exibirIndisponivel(rede)
+        end
+    end
+    Candidato->>SIS: informarLinkLattes(url)
+    SIS->>BD: salvarLinkLattes(url)
+    BD-->>SIS: sucesso
+    Candidato->>SIS: enviarFoto(imagem)
+    SIS->>BD: salvarFoto(imagem)
+    BD-->>SIS: sucesso
+    SIS-->>Candidato: exibirFotoAtualizada()
+    Candidato->>SIS: acessarTelaVagas()
+    SIS->>SIS: calcularCompatibilidadePerfilVagas()
+    SIS->>BD: buscarVagasOrdenadasPorCompatibilidade(candidato_id)
+    BD-->>SIS: listaVagasOrdenada
+    SIS-->>Candidato: exibirVagas(ordenadasPorCompatibilidade)
+    Candidato->>SIS: clicarVaga(vaga_id)
+    SIS-->>Candidato: exibirDetalhesVaga()
+    Candidato->>SIS: clicarAplicar()
+    alt Ainda nao inscrito nesta vaga
+        SIS->>BD: registrarCandidatura(candidato_id, vaga_id)
+        BD-->>SIS: sucesso
+        SIS-->>Candidato: exibirConfirmacaoCandidatura()
+    else Ja inscrito (UK candidato+vaga)
+        BD-->>SIS: violacao de chave unica
+        SIS-->>Candidato: exibirStatusAtual()
+    end

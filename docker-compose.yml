@@ -1,0 +1,23 @@
+# Postgres local para desenvolvimento e testes de integração.
+# Em produção o banco é gerenciado (Neon) — ver specs/001-portal-candidatura/research.md R9.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cltech-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cltech
+      POSTGRES_PASSWORD: cltech
+      POSTGRES_DB: cltech
+    ports:
+      - "5432:5432"
+    volumes:
+      - cltech-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cltech -d cltech"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  cltech-pgdata:

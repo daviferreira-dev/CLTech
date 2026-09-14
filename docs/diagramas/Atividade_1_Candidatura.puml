@@ -1,0 +1,101 @@
+@startuml atividade-candidatura
+' CLTech - Diagrama de Atividade: Candidatura a uma Vaga [RF03]
+' Fonte: ERS secao 2.1 RF03 (fluxo principal, A1, A2) e spec.md User Story 3
+' Renderizar em: https://www.plantuml.com/plantuml ou extensao PlantUML do VS Code
+
+title Candidatura a uma Vaga — RF03
+
+skinparam backgroundColor White
+skinparam shadowing false
+skinparam ActivityBackgroundColor #F7F9FC
+skinparam ActivityBorderColor #3B6EA5
+skinparam ActivityDiamondBackgroundColor #FFF8E7
+skinparam ActivityDiamondBorderColor #C2903A
+
+|#F3F6FA|Candidato|
+start
+:Acessa a listagem de vagas;
+note right: FR-018 — listagem publica,\nnao exige login (ver D8)
+
+|#FFFFFF|Sistema|
+:Consulta vagas com status PUBLISHED;
+:Exibe titulo, empresa, localizacao,\nmodalidade e tecnologias;
+
+|Candidato|
+:Aplica filtros\n(modalidade, senioridade, tecnologia);
+
+|Sistema|
+:Recalcula a lista;
+if (Ha vagas correspondentes?) then (nao)
+  :Informa "nenhuma vaga corresponde"\ne sugere ampliar a busca;
+  note right: RF03-A1 / FR-019
+  |Candidato|
+  :Ajusta os filtros;
+  detach
+else (sim)
+endif
+
+|Candidato|
+:Abre "Ver Detalhes" da vaga;
+
+|Sistema|
+:Exibe descricao, requisitos\ne etapas do processo seletivo;
+note right: FR-020
+
+|Candidato|
+:Confirma a candidatura;
+
+|Sistema|
+if (Esta autenticado?) then (nao)
+  |Candidato|
+  :E levado ao login ou cadastro;
+  note right: FR-023
+  :Conclui a autenticacao;
+  |Sistema|
+  :Retorna a vaga de origem;
+else (sim)
+endif
+
+if (Possui curriculo vigente?) then (nao)
+  :Orienta a completar o perfil\nantes de concluir;
+  note right: FR-024 / RESUME_REQUIRED (422)
+  |Candidato|
+  :Anexa o curriculo em "Meu Perfil";
+  detach
+else (sim)
+endif
+
+|Sistema|
+:Tenta inserir a candidatura\n(indice unico candidateId + jobId);
+note right
+  FR-022 / SC-003
+  A unicidade e garantida pela constraint
+  do banco, nao por SELECT previo.
+  E isso que torna o envio simultaneo seguro.
+end note
+
+if (A insercao violou a constraint?) then (sim)
+  :Recusa e exibe o status atual\ndo processo do candidato;
+  note right: RF03-A2 / ALREADY_APPLIED (409)
+  stop
+else (nao)
+endif
+
+:Vincula o curriculo vigente a candidatura;
+:Define a etapa inicial do pipeline da vaga;
+:Registra ApplicationStageHistory\n(enteredAt);
+:Grava matchScoreStatus = NOT_CALCULATED;
+note right: FR-026 — o score e da Sprint 2
+
+fork
+  :Dispara a triagem automatica;
+  note right: RN001 — Sprint 2
+fork again
+  |Candidato|
+  :Visualiza a inscricao\nem "Minhas Candidaturas";
+  note right: FR-025
+end fork
+
+stop
+
+@enduml

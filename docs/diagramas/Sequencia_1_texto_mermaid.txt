@@ -1,0 +1,44 @@
+%% CLTech - RF04 - Criar Vaga e Configurar Pipeline
+%% Cole em: draw.io > Arrange > Insert > Advanced > Mermaid
+sequenceDiagram
+    actor RH
+    participant TI as Tela Inicial
+    participant TC as Tela de Criacao
+    participant SIS as Sistema
+    participant BD as Banco de Dados
+    participant LS as Armaz Local
+
+    RH->>TI: Acessa lista de vagas
+    RH->>TI: Clica Criar vaga
+    TI->>TC: Abre tela de criacao
+    RH->>TC: Preenche titulo e descricao
+    RH->>TC: Clica Proxima fase
+    TC->>SIS: Solicita opcoes de fase
+    SIS-->>TC: Retorna fases disponiveis
+    loop Para cada fase, exceto Proposta Final
+        RH->>TC: Seleciona a fase
+        RH->>TC: Preenche titulo, descricao e participantes
+        TC->>SIS: Armazena dados da fase
+    end
+    RH->>TC: Preenche Proposta Final
+    RH->>TC: Clica Finalizar
+    TC->>SIS: Solicita revisao
+    SIS-->>RH: Exibe revisao de todas as fases
+    alt Confirma envio
+        RH->>TC: Clica Enviar
+        TC->>SIS: Envia dados da vaga
+        SIS->>BD: Persiste vaga e fases
+        BD-->>SIS: Confirma gravacao
+        SIS-->>RH: Exibe sucesso
+    else Campos obrigatorios vazios
+        RH->>TC: Clica Enviar
+        TC->>SIS: Valida campos obrigatorios
+        SIS-->>RH: Bloqueia publicacao e destaca campos pendentes (RN002)
+    else Cancela criacao
+        RH->>TC: Clica Cancelar criacao
+        TC->>SIS: Descarta itens, nao salva
+    else Pausa criacao
+        RH->>TC: Clica Pausar
+        TC->>LS: Salva rascunho localmente
+        Note over LS: Ao reabrir, recupera rascunho salvo
+    end

@@ -1,0 +1,283 @@
+%% CLTech - Diagrama de Classes
+%% Fonte: specs/001-portal-candidatura/data-model.md
+%% Renderiza direto no GitHub e em https://mermaid.live
+
+classDiagram
+    direction LR
+
+    class User {
+        +UUID id
+        +String email
+        +DateTime emailVerified
+        +String name
+        +String passwordHash
+        +Role role
+        +DateTime createdAt
+        +DateTime updatedAt
+        +autenticar(senha) Session
+        +definirPapel(Role) void
+    }
+
+    class Candidate {
+        +UUID id
+        +UUID userId
+        +String phone
+        +String city
+        +String state
+        +atualizarPerfil(dados) void
+        +curriculoVigente() Resume
+    }
+
+    class ExternalAccount {
+        +UUID id
+        +UUID candidateId
+        +Provider provider
+        +String externalUsername
+        +String url
+        +SyncStatus status
+        +String unavailableReason
+        +DateTime lastSyncedAt
+        +conectar() void
+        +desconectar() void
+        +tentarNovamente() void
+    }
+
+    class GithubProfile {
+        +UUID id
+        +UUID candidateId
+        +int publicRepoCount
+        +Json languages
+        +int activityLast90Days
+        +int followers
+        +DateTime collectedAt
+    }
+
+    class Resume {
+        +UUID id
+        +UUID candidateId
+        +String storageKey
+        +String originalFilename
+        +String mimeType
+        +int sizeBytes
+        +boolean isCurrent
+        +DateTime uploadedAt
+        +ParseStatus parseStatus
+        +validar() boolean
+        +urlAssinada() String
+    }
+
+    class Job {
+        +UUID id
+        +String title
+        +String description
+        +String company
+        +String location
+        +WorkMode workMode
+        +Seniority seniority
+        +String[] technologies
+        +String minimumRequirements
+        +JobStatus status
+        +UUID createdById
+        +DateTime publishedAt
+        +publicar() void
+        +encerrar() void
+    }
+
+    class ProcessStage {
+        +UUID id
+        +UUID jobId
+        +StageType type
+        +int order
+        +Json config
+    }
+
+    class Application {
+        +UUID id
+        +UUID candidateId
+        +UUID jobId
+        +UUID resumeId
+        +UUID currentStageId
+        +AppStatus status
+        +int matchScore
+        +MatchStatus matchScoreStatus
+        +DateTime appliedAt
+        +DateTime updatedAt
+        +avancarEtapa(stage, user) void
+        +reprovar(user) void
+    }
+
+    class ApplicationStageHistory {
+        +UUID id
+        +UUID applicationId
+        +UUID stageId
+        +DateTime enteredAt
+        +DateTime exitedAt
+        +UUID decidedByUserId
+    }
+
+    class JobMatch {
+        +UUID id
+        +UUID candidateId
+        +UUID jobId
+        +int score
+        +Json justification
+        +DateTime computedAt
+        +DateTime staleSince
+        +recalcular() void
+    }
+
+    class Evaluation {
+        +UUID id
+        +UUID applicationId
+        +EvalType type
+        +int score
+        +Json justification
+        +int version
+        +DateTime createdAt
+        +versaoAtual(app, tipo) Evaluation
+    }
+
+    class Challenge {
+        +UUID id
+        +String title
+        +String statement
+        +String[] languages
+        +Difficulty difficulty
+        +Json testCases
+        +int timeLimitSeconds
+    }
+
+    class CodeDraft {
+        +UUID id
+        +UUID applicationId
+        +UUID challengeId
+        +String language
+        +String sourceCode
+        +int testRunCount
+        +DateTime startedAt
+        +DateTime updatedAt
+        +salvarRascunho(codigo) void
+        +executarTeste() Resultado
+    }
+
+    class CodeSubmission {
+        +UUID id
+        +UUID applicationId
+        +UUID challengeId
+        +String language
+        +String sourceCode
+        +DateTime submittedAt
+        +ExecStatus executionStatus
+        +int retryCount
+        +SubmittedBy submittedBy
+        +UUID evaluationId
+        +submeter() void
+    }
+
+    %% ---------- Relacionamentos ----------
+    User "1" -- "0..1" Candidate : possui
+    Candidate "1" -- "0..*" ExternalAccount : vincula
+    Candidate "1" -- "0..1" GithubProfile : coleta
+    Candidate "1" -- "0..*" Resume : anexa
+    Candidate "1" -- "0..*" Application : realiza
+    Candidate "1" -- "0..*" JobMatch : compatibilidade
+
+    Job "1" -- "1..*" ProcessStage : define
+    Job "1" -- "0..*" Application : recebe
+    Job "1" -- "0..*" JobMatch : compatibilidade
+    User "1" -- "0..*" Job : publica
+
+    Application "1" -- "1" Resume : congela
+    Application "1" -- "1" ProcessStage : etapa atual
+    Application "1" -- "0..*" ApplicationStageHistory : historico
+    Application "1" -- "0..*" Evaluation : avaliacoes
+    Application "1" -- "0..*" CodeSubmission : submissoes
+    Application "1" -- "0..*" CodeDraft : rascunhos
+    ProcessStage "1" -- "0..*" ApplicationStageHistory : registra
+
+    Challenge "1" -- "0..*" CodeSubmission : responde
+    Challenge "1" -- "0..*" CodeDraft : rascunha
+    CodeSubmission "1" -- "0..1" Evaluation : gera
+
+    %% ---------- Enumeracoes ----------
+    class Role {
+        <<enumeration>>
+        CANDIDATE
+        RECRUITER
+        ADMIN
+    }
+    class Provider {
+        <<enumeration>>
+        GITHUB
+        LINKEDIN
+        LATTES
+    }
+    class SyncStatus {
+        <<enumeration>>
+        PENDING
+        CONNECTED
+        UNAVAILABLE
+        DISCONNECTED
+    }
+    class WorkMode {
+        <<enumeration>>
+        REMOTE
+        HYBRID
+        ONSITE
+    }
+    class Seniority {
+        <<enumeration>>
+        INTERN
+        JUNIOR
+        MID
+        SENIOR
+    }
+    class JobStatus {
+        <<enumeration>>
+        DRAFT
+        PUBLISHED
+        CLOSED
+    }
+    class StageType {
+        <<enumeration>>
+        RESUME_ANALYSIS
+        CODE_TEST
+        GITHUB_ANALYSIS
+        HR_INTERVIEW
+        TECH_INTERVIEW
+        FINAL_OFFER
+    }
+    class AppStatus {
+        <<enumeration>>
+        IN_PROGRESS
+        APPROVED
+        REJECTED
+        WITHDRAWN
+    }
+    class MatchStatus {
+        <<enumeration>>
+        NOT_CALCULATED
+        PENDING
+        CALCULATED
+        FAILED
+    }
+    class ExecStatus {
+        <<enumeration>>
+        QUEUED
+        RUNNING
+        COMPLETED
+        TIMEOUT
+        SECURITY_VIOLATION
+        ERROR
+    }
+
+    User ..> Role
+    ExternalAccount ..> Provider
+    ExternalAccount ..> SyncStatus
+    Job ..> WorkMode
+    Job ..> Seniority
+    Job ..> JobStatus
+    ProcessStage ..> StageType
+    Application ..> AppStatus
+    Application ..> MatchStatus
+    CodeSubmission ..> ExecStatus
