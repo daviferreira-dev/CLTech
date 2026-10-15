@@ -267,6 +267,44 @@ LinkedIn e perca a sprint descobrindo que a API não devolve o dado.
 
 ---
 
+<a id="d10"></a>
+
+## D10 🟢 Sessão JWT, não em banco — limitação do Auth.js com Credentials
+
+**O que o `research.md` (R2) tinha decidido**: sessão em banco (`strategy: "database"`),
+não JWT, para permitir revogação imediata e auditoria de acesso (Princípio I).
+
+**Por que não é possível**: verificado em teste manual contra o fluxo real do Auth.js
+(`/api/auth/csrf` + `/api/auth/callback/credentials`, o mesmo caminho que o `signIn()` do
+cliente usa) — com o provedor **Credentials**, o Auth.js v5 emite o cookie de sessão mas
+**nunca grava a linha correspondente na tabela `Session`**. Resultado: `auth()` /
+`GET /api/auth/session` retornam `null` para todo usuário que entra por e-mail/senha,
+mesmo com `session.strategy = "database"` configurado e o `PrismaAdapter` ativo. Não é um
+bug deste projeto — é uma limitação conhecida da biblioteca: o adapter só cria sessão de
+banco no caminho OAuth, onde há um `account` para vincular.
+
+A estratégia de sessão é global (`NextAuthConfig.session`), não por provedor — não dá para
+usar banco só para GitHub/LinkedIn e JWT só para Credentials sem reescrever o fluxo de
+autorização por conta própria.
+
+**O que foi feito**: `session.strategy = "jwt"` para todos os provedores
+(`src/server/auth/config.ts`). O papel (`role`) é carregado no token no callback `jwt` e
+propagado para a sessão no callback `session`, em vez de vir do `user` resolvido pelo
+adapter a cada leitura.
+
+**Custo da mudança**: revogar uma sessão comprometida deixa de ser "apagar uma linha no
+banco" e passa a depender de expiração do token ou de rotação do `AUTH_SECRET` (invalida
+todas as sessões de uma vez). Para o protótipo acadêmico, com dezenas de usuários e sem
+exigência formal de revogação individual na spec (FR-005 pede apenas "permitir encerrá-la
+explicitamente", que o `signOut()` cobre limpando o cookie), o custo é aceitável.
+
+**Ação necessária**: nenhuma no ERS (não é um requisito do ERS, é uma decisão técnica do
+`plan.md`). Se uma sprint futura exigir revogação central de sessão (ex.: "bloquear
+usuário imediatamente"), a solução é manter uma deny-list de `User.id` verificada no
+callback `jwt`/`session`, não reverter para `strategy: "database"`.
+
+---
+
 ## Resumo das ações sobre o ERS
 
 Para a próxima revisão do documento (v1.1):

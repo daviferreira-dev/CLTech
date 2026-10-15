@@ -38,7 +38,12 @@ custa reescrever os route handlers. Mitigado mantendo a lógica de negócio em
 ## R2. Autenticação e OAuth
 
 **Decisão**: Auth.js (NextAuth v5) com três provedores — Credentials (e-mail + senha),
-GitHub e LinkedIn — e sessão em banco (`database` strategy), não JWT.
+GitHub e LinkedIn.
+
+> **Revisado na implementação** — ver [D10](./ers-divergences.md#d10): a sessão em banco
+> descrita abaixo não funciona com o provedor Credentials (limitação do Auth.js, não deste
+> código). A estratégia usada de fato é `jwt`. O racional de auditoria/revogação abaixo
+> descreve a intenção original; D10 documenta o que mudou e por quê.
 
 **Rationale**:
 - Cobre FR-001 a FR-006 sem escrever fluxo OAuth à mão.
