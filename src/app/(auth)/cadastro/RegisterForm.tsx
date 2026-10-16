@@ -33,7 +33,7 @@ export function RegisterForm() {
   }
 
   return (
-    <div className="mx-auto max-w-sm space-y-6 py-16">
+    <div className="mx-auto max-w-sm space-y-6 px-4 py-16">
       <h1 className="text-2xl font-semibold">Criar conta</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">

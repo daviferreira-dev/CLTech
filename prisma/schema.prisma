@@ -171,6 +171,7 @@ model Resume {
   isCurrent        Boolean           @default(true)
   uploadedAt       DateTime          @default(now())
   parseStatus      ResumeParseStatus @default(NOT_PARSED)
+  extractedText    String? // cifrado AES-256-GCM, mesmo padrão do arquivo (R4/R13 — Sprint 2)
 
   candidate    Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   applications Application[]

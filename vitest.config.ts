@@ -32,6 +32,9 @@ export default defineConfig({
     setupFiles: ["tests/integration/setup.ts"],
     hookTimeout: 30000,
     testTimeout: 15000,
+    // Testes de integração compartilham um único banco (sem instância efêmera por run) e o
+    // beforeEach dá TRUNCATE global — arquivos precisam rodar em série, não em paralelo.
+    fileParallelism: false,
   },
   resolve: {
     alias: {

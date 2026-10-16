@@ -4,8 +4,10 @@
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
 import { uploadPrivateObject } from "@/server/storage";
-import { encrypt } from "@/server/crypto";
+import { encrypt, encryptOrNull } from "@/server/crypto";
 import { MAX_RESUME_SIZE_BYTES, ALLOWED_RESUME_MIME_TYPES } from "@/lib/validation/profile";
+import { extractText } from "@/server/matching/text-extract";
+import { recomputeJobMatchesForCandidate } from "@/server/matching/recompute";
 
 const PDF_MAGIC = Buffer.from("%PDF");
 const DOCX_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04]); // PK\x03\x04 (zip, base do .docx)
@@ -45,6 +47,11 @@ export async function uploadResume(
   const encryptedContent = Buffer.from(encrypt(file.buffer.toString("base64")), "utf8");
   const { storageKey } = await uploadPrivateObject(candidate.id, file.name, encryptedContent, "application/octet-stream");
 
+  // RN001/FR-032: extrai o texto antes de qualquer exibição a recrutador. Nunca bloqueia o
+  // upload — PDF ilegível (ex.: escaneado como imagem) só reduz o sinal do score (R13).
+  const extractedText = await extractText(file.buffer, realMimeType);
+  const parseStatus = extractedText ? "PARSED" : "FAILED";
+
   const resume = await prisma.$transaction(async (tx) => {
     // FR-015: preserva a versão anterior, só move a flag isCurrent.
     await tx.resume.updateMany({ where: { candidateId: candidate.id, isCurrent: true }, data: { isCurrent: false } });
@@ -57,9 +64,15 @@ export async function uploadResume(
         mimeType: realMimeType,
         sizeBytes: file.buffer.byteLength,
         isCurrent: true,
+        extractedText: encryptOrNull(extractedText),
+        parseStatus,
       },
     });
   });
+
+  // Gatilho 1 (FR-034): recalcula o match com todas as vagas publicadas. Fire-and-forget —
+  // não bloqueia a resposta do upload; falha aqui não derruba a candidatura nem o upload.
+  recomputeJobMatchesForCandidate(candidate.id).catch(() => {});
 
   return {
     id: resume.id,

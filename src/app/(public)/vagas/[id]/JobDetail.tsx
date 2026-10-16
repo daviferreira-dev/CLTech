@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+type MatchScore =
+  | { status: "CALCULATED"; value: number; matched?: string[]; missing?: string[] }
+  | { status: "NEEDS_RESUME" };
+
 interface JobDetailView {
   id: string;
   title: string;
@@ -13,6 +17,7 @@ interface JobDetailView {
   minimumRequirements: string;
   technologies: string[];
   stages: Array<{ type: string; order: number }>;
+  matchScore?: MatchScore;
 }
 
 export function JobDetail({ jobId }: { jobId: string }) {
@@ -68,6 +73,25 @@ export function JobDetail({ jobId }: { jobId: string }) {
       <p>{job.description}</p>
       <p className="text-sm text-slate-500">Requisitos mínimos: {job.minimumRequirements}</p>
       <p className="text-sm text-slate-500">Tecnologias: {job.technologies.join(", ")}</p>
+
+      {job.matchScore?.status === "CALCULATED" && (
+        <div className="rounded border border-slate-200 p-4">
+          <p className="text-sm font-medium">Sua compatibilidade: {job.matchScore.value}%</p>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-medium uppercase text-slate-500">Encontradas no seu perfil</p>
+              <p className="text-sm text-slate-600">{job.matchScore.matched?.join(", ") || "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase text-slate-500">Ainda faltando</p>
+              <p className="text-sm text-slate-600">{job.matchScore.missing?.join(", ") || "—"}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {job.matchScore?.status === "NEEDS_RESUME" && (
+        <p className="text-sm text-slate-500">Complete seu perfil para ver sua compatibilidade com esta vaga.</p>
+      )}
 
       <div>
         <h2 className="font-medium">Etapas do processo</h2>

@@ -71,6 +71,9 @@ export const authConfig: NextAuthConfig = {
   // D10: "jwt", não "database" — ver nota acima. O adapter continua ativo para
   // as tabelas Account/User (necessário para FR-003, vínculo por e-mail).
   session: { strategy: "jwt" },
+  // Deploy self-hosted (não Vercel) — Auth.js só confia automaticamente no Host
+  // em dev ou na Vercel; em `next start` puro rejeita com UntrustedHost sem isto.
+  trustHost: true,
   providers,
   pages: {
     signIn: "/entrar",

@@ -9,6 +9,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    public readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "ApiError";
@@ -17,7 +18,7 @@ export class ApiError extends Error {
 
 export function errorResponse(error: ApiError): NextResponse {
   return NextResponse.json(
-    { error: { code: error.code, message: error.message } },
+    { error: { code: error.code, message: error.message, ...error.details } },
     { status: error.status },
   );
 }

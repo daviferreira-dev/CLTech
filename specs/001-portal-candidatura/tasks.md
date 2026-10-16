@@ -110,8 +110,8 @@ Cada tarefa cita o arquivo alvo e o requisito que a origina.
 
 **Objetivo**: tela "Minhas Candidaturas" (reusa T045/T045-API).
 
-- [ ] T050 [US4] [P] Tela `src/app/(candidate)/candidaturas/page.tsx` — lista vaga, data, etapa atual; estado vazio orienta a explorar vagas
-- [ ] T051 [US4] [P] Teste E2E Playwright — duas candidaturas aparecem com status correto — `tests/e2e/my-applications.spec.ts`
+- [x] T050 [US4] [P] Tela `src/app/(candidate)/candidaturas/page.tsx` — lista vaga, data, etapa atual; estado vazio orienta a explorar vagas
+- [x] T051 [US4] [P] Teste E2E Playwright — duas candidaturas aparecem com status correto — `tests/e2e/my-applications.spec.ts`
 
 **Checkpoint**: US4 pode ser cortada sem quebrar US1–US3 (confirmado — não há dependência reversa).
 
@@ -119,11 +119,11 @@ Cada tarefa cita o arquivo alvo e o requisito que a origina.
 
 ## Fase 7 — Polimento e portões obrigatórios da constituição
 
-- [ ] T052 [P] Responsividade 360px–1280px nas 8 telas — ajuste Tailwind, sem rolagem horizontal (FR-030, SC-006)
+- [x] T052 [P] Responsividade 360px–1280px nas 8 telas — ajuste Tailwind, sem rolagem horizontal (FR-030, SC-006)
 - [x] T053 [P] Teste de integração obrigatório — tentativa de `UPDATE` em `Evaluation` falha pela trigger — `tests/integration/evaluation-immutable.test.ts` (Princípio II, FR-028) — pode rodar assim que T008 existir, independe das user stories
-- [ ] T054 [P] Checklist de segredos — conferir que nada em `.env.local` está versionado, `git status` limpo
-- [ ] T055 Revisar `README.md` "Como rodar" contra o setup real após T001–T016 (atualizar se algo divergiu)
-- [ ] T056 Rodar `quickstart.md` do zero como alguém de fora da equipe (Definition of Done)
+- [x] T054 [P] Checklist de segredos — conferir que nada em `.env.local` está versionado, `git status` limpo
+- [x] T055 Revisar `README.md` "Como rodar" contra o setup real após T001–T016 (atualizar se algo divergiu)
+- [x] T056 Rodar `quickstart.md` do zero como alguém de fora da equipe (Definition of Done) — achou e corrigiu: ESLint sem ignorar `.next/`, `trustHost` ausente no Auth.js (quebra `next start` fora da Vercel), bucket de currículos nunca criado no Supabase Storage, Playwright em paralelo esgotando o pool de conexões do Postgres, `__dirname` em specs ESM, locator `getByRole("Entrar")` ambíguo após botão do GitHub
 
 ---
 

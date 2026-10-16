@@ -1,7 +1,9 @@
 // RF03 / FR-020: detalhe de vaga. 404 exceto para quem já tem candidatura nela
 // (edge case "vaga despublicada com candidatos inscritos").
+// FR-033/FR-035/FR-036: compatibilidade com justificativa, só para o próprio candidato.
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
+import type { MatchScoreView } from "@/server/jobs/list";
 
 export interface JobDetail {
   id: string;
@@ -15,6 +17,7 @@ export interface JobDetail {
   minimumRequirements: string;
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
   stages: Array<{ type: string; order: number }>;
+  matchScore?: MatchScoreView & { matched?: string[]; missing?: string[] };
 }
 
 export async function getJobDetail(jobId: string, requesterUserId: string | null): Promise<JobDetail> {
@@ -36,6 +39,8 @@ export async function getJobDetail(jobId: string, requesterUserId: string | null
     if (!hasOwnApplication) throw Errors.notFound("Vaga");
   }
 
+  const matchScore = requesterUserId ? await getMatchScoreForRequester(job.id, requesterUserId) : undefined;
+
   return {
     id: job.id,
     title: job.title,
@@ -48,5 +53,34 @@ export async function getJobDetail(jobId: string, requesterUserId: string | null
     minimumRequirements: job.minimumRequirements,
     status: job.status,
     stages: job.stages,
+    ...(matchScore ? { matchScore } : {}),
+  };
+}
+
+async function getMatchScoreForRequester(
+  jobId: string,
+  requesterUserId: string,
+): Promise<JobDetail["matchScore"] | undefined> {
+  const candidate = await prisma.candidate.findUnique({ where: { userId: requesterUserId }, select: { id: true } });
+  if (!candidate) return undefined; // recrutador/admin — FR-035 não exibe match pra ninguém além do próprio candidato
+
+  const hasCurrentResume = await prisma.resume.findFirst({
+    where: { candidateId: candidate.id, isCurrent: true },
+    select: { id: true },
+  });
+  if (!hasCurrentResume) return { status: "NEEDS_RESUME" };
+
+  const match = await prisma.jobMatch.findUnique({
+    where: { candidateId_jobId: { candidateId: candidate.id, jobId } },
+    select: { score: true, justification: true },
+  });
+  if (!match) return undefined;
+
+  const justification = match.justification as { matched?: string[]; missing?: string[] } | null;
+  return {
+    status: "CALCULATED",
+    value: match.score,
+    matched: justification?.matched ?? [],
+    missing: justification?.missing ?? [],
   };
 }

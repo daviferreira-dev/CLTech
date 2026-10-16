@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+type MatchScore = { status: "CALCULATED"; value: number } | { status: "NEEDS_RESUME" };
+
 interface JobListItem {
   id: string;
   title: string;
@@ -11,6 +13,19 @@ interface JobListItem {
   workMode: "REMOTE" | "HYBRID" | "ONSITE";
   seniority: "INTERN" | "JUNIOR" | "MID" | "SENIOR";
   technologies: string[];
+  matchScore?: MatchScore;
+}
+
+function MatchBadge({ matchScore }: { matchScore?: MatchScore }) {
+  if (!matchScore) return null;
+  if (matchScore.status === "NEEDS_RESUME") {
+    return <p className="mt-2 text-sm text-slate-500">Complete seu perfil para ver seu match.</p>;
+  }
+  return (
+    <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs font-medium text-white">
+      {matchScore.value}% match
+    </span>
+  );
 }
 
 const WORK_MODE_LABEL: Record<string, string> = { REMOTE: "Remoto", HYBRID: "Híbrido", ONSITE: "Presencial" };
@@ -70,13 +85,17 @@ export function JobsList() {
       <ul className="space-y-4">
         {items?.map((job) => (
           <li key={job.id} className="rounded border border-slate-200 p-4">
-            <Link href={`/vagas/${job.id}`} className="text-lg font-semibold hover:underline">
-              {job.title}
-            </Link>
+            <div className="flex items-start justify-between gap-3">
+              <Link href={`/vagas/${job.id}`} className="text-lg font-semibold hover:underline">
+                {job.title}
+              </Link>
+              {job.matchScore?.status === "CALCULATED" && <MatchBadge matchScore={job.matchScore} />}
+            </div>
             <p className="text-sm text-slate-600">
               {job.company} · {job.location} · {WORK_MODE_LABEL[job.workMode]} · {SENIORITY_LABEL[job.seniority]}
             </p>
             <p className="mt-1 text-sm text-slate-500">{job.technologies.join(", ")}</p>
+            {job.matchScore?.status === "NEEDS_RESUME" && <MatchBadge matchScore={job.matchScore} />}
           </li>
         ))}
       </ul>

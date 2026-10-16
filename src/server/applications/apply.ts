@@ -9,12 +9,14 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
+import { getCandidateSignals } from "@/server/matching/recompute";
+import { computeScore } from "@/server/matching/score";
 
 export interface ApplyResult {
   applicationId: string;
   currentStage: { type: string; order: number };
   appliedAt: Date;
-  matchScoreStatus: "NOT_CALCULATED";
+  matchScoreStatus: "CALCULATED" | "NOT_CALCULATED";
 }
 
 export async function applyToJob(userId: string, jobId: string): Promise<ApplyResult> {
@@ -33,7 +35,7 @@ export async function applyToJob(userId: string, jobId: string): Promise<ApplyRe
 
   const job = await prisma.job.findUnique({
     where: { id: jobId },
-    include: { stages: { orderBy: { order: "asc" }, take: 1 } },
+    include: { stages: { orderBy: { order: "asc" } } },
   });
   if (!job) throw Errors.notFound("Vaga");
   if (job.status !== "PUBLISHED") {
@@ -44,6 +46,18 @@ export async function applyToJob(userId: string, jobId: string): Promise<ApplyRe
     throw Errors.businessRule("JOB_NOT_OPEN", "Esta vaga ainda não tem um processo seletivo configurado.");
   }
 
+  // RN001/Princípio III: nenhuma candidatura existe sem avaliação automática já registrada
+  // junto — calculada antes do INSERT, nunca depois (R14). Mesmo sem nenhum sinal (ex.:
+  // currículo ilegível e sem GitHub), a Evaluation existe com score 0 — Princípio III exige
+  // a avaliação em si, não que ela tenha encontrado algo.
+  const signals = await getCandidateSignals(candidate.id);
+  const resumeMatch = computeScore(job.technologies, signals) ?? { score: 0, matched: [], missing: job.technologies };
+  const hasGithubStage = job.stages.some((stage) => stage.type === "GITHUB_ANALYSIS");
+  const githubOnly =
+    hasGithubStage && signals.githubLanguages
+      ? computeScore(job.technologies, { resumeText: null, githubLanguages: signals.githubLanguages })
+      : null;
+
   try {
     const application = await prisma.$transaction(async (tx) => {
       const created = await tx.application.create({
@@ -52,12 +66,33 @@ export async function applyToJob(userId: string, jobId: string): Promise<ApplyRe
           jobId: job.id,
           resumeId: currentResume.id,
           currentStageId: firstStage.id,
+          matchScore: resumeMatch.score,
+          matchScoreStatus: "CALCULATED",
         },
       });
 
       await tx.applicationStageHistory.create({
         data: { applicationId: created.id, stageId: firstStage.id },
       });
+
+      await tx.evaluation.create({
+        data: {
+          applicationId: created.id,
+          type: "RESUME_MATCH",
+          score: resumeMatch.score,
+          justification: { matched: resumeMatch.matched, missing: resumeMatch.missing },
+        },
+      });
+      if (githubOnly) {
+        await tx.evaluation.create({
+          data: {
+            applicationId: created.id,
+            type: "GITHUB_ANALYSIS",
+            score: githubOnly.score,
+            justification: { matched: githubOnly.matched, missing: githubOnly.missing },
+          },
+        });
+      }
 
       return created;
     });
@@ -66,7 +101,7 @@ export async function applyToJob(userId: string, jobId: string): Promise<ApplyRe
       applicationId: application.id,
       currentStage: { type: firstStage.type, order: firstStage.order },
       appliedAt: application.appliedAt,
-      matchScoreStatus: "NOT_CALCULATED",
+      matchScoreStatus: "CALCULATED",
     };
   } catch (err) {
     // FR-022 / SC-003: violação do índice único (candidateId, jobId) é o ÚNICO

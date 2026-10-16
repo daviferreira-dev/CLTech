@@ -1,0 +1,527 @@
+Curso Superior de Análise e Desenvolvimento de Sistemas
+Especificação dos Requisitos do Software
+e Análise do Projeto
+CLTech
+Versão 1.0
+Equipe:
+01 – Cassiano Luiz Brandes Soares
+02 – Davi Ferreira da Cunha
+03 – Guilherme Emanuel Gonçalves
+04 – João Vitor Charleaux
+05 – Pedro Henrique Dias Brito
+06 – Vinícius Rodrigues Vilaça
+Prof. Wesley Fioreze
+Faculdade de Tecnologia SENAI Taubaté, 2026
+Histórico das Revisões
+Data
+Versão
+Descrição
+Autor
+24/08/2026
+1.0
+Criação inicial do documento de Projeto de Software, com foco na sprint 1.
+Vinícius Vilaça
+Sumário
+TOC \h \u \z \t "Heading 1,1,Heading 2,2,Heading 3,3,Heading 4,4,Heading 5,5,Heading 6,6,"Versão 1.01
+1 Introdução4
+1.1 Objetivos deste documento4
+1.2 Escopo do produto4
+1.2.1 Nome do produto e de seus componentes principais4
+1.2.2 Descrição do produto4
+1.2.3 Missão do produto5
+1.2.4 Tabela de viabilidade5
+1.2.5 Justificativa6
+1.3 Definições e siglas7
+1.4 Técnica(s) utilizada(s) para levantamento de requisitos7
+2. Requisitos Específicos7
+2.1 Requisitos Funcionais (RF)7
+2.2 Requisitos Não Funcionais (RNF)12
+2.3 Regras de Negócio (RN)16
+2.4 Priorização dos Requisitos (MVP / Desejável / Fora de Escopo)17
+3. Cronograma do Projeto18
+3.1 Planejamento de Sprints18
+4. Protótipo do produto20
+5. Diagramas UML21
+5.1 Diagrama de Casos de Uso21
+5.2 Diagrama de Classes22
+5.3 Diagrama de Sequência24
+5.3.1 Diagrama de Sequência [RF 04] – Criar Vaga e Configurar Pipeline de Seleção.24
+5.3.2 Diagrama de Sequência [RF 02, RF 03] – Completar Perfil e Candidatar-se a Vaga24
+5.4 Diagrama de Entidade e Relacionamento (DER)26
+6. Casos de Testes27
+7. Apêndices27
+Introdução
+A 3aq Tecnologia enfrenta um gargalo crítico em seu processo de expansão: o recrutamento técnico é manual, demorado e descentralizado. A necessidade de analisar currículos individualmente e alocar desenvolvedores seniores para corrigir testes de código atrasa as contratações e reduz a produtividade da equipe. Este projeto documenta a criação de uma plataforma web integrada que utiliza Inteligência Artificial para automatizar a triagem e correção de testes, centralizando os dados e garantindo avaliações justas e objetivas.
+Objetivos deste documento
+Este documento visa formalizar e detalhar de forma técnica e inequívoca todos os requisitos funcionais, não funcionais e restrições de projeto do CLTech, uma Plataforma de Seleção Automatizada e Inteligente de Talentos. O objetivo principal é estabelecer um contato entre a equipe de recrutamento do RH e os candidatos às vagas, garantindo que as necessidades de negócio sejam traduzidas fielmente em funcionalidades de software, minimizando ambiguidades e riscos durante o ciclo de vida de desenvolvimento (SDLC).
+Público-Alvo: Stakeholders do projeto, analistas de sistemas, desenvolvedores de software, equipe de QA (Quality Assurance) e gestores de projeto.
+Escopo do produto
+O projeto CLTech consiste no desenvolvimento de um site de recrutamento voltado para a facilitação do acesso às vagas da empresa e automação do ciclo de seleção técnica. O sistema abrangerá desde a camada de persistência de dados até interfaces de interação com o usuário final, integrando tecnologias de Inteligência Artificial para realizar a triagem inteligente e automações via API (GitHub).
+Nome do produto e de seus componentes principais
+CLTech: Núcleo do sistema web (Site de Recrutamento).
+Módulo de triagem: IA de Triagem de Currículos (responsável por ler, interpretar e classificar os perfis dos candidatos automaticamente).
+Módulo de avaliação e feedback: IA de Avaliação de Código (responsável por compilar, testar e gerar feedback sobre os testes feitos com os currículos submetidos).
+Descrição do produto
+O CLTech será utilizado por candidatos às vagas de desenvolvimento e pela equipe de RH/Tech Leads da 3aq. O candidato acessa o site de recrutamento, visualiza as vagas disponíveis e realiza sua inscrição de forma simplificada. Nos bastidores, os componentes de IA entram em ação imediatamente: avaliam o currículo, integram-se ao GitHub do candidato e aplicam/corrigem um teste prático de programação. O sistema fornece um feedback imediato ao candidato, enquanto entrega à 3aq um ranking padronizado dos melhores talentos.
+1.2.3 Missão do produto
+Facilitar o acesso de talentos às vagas da empresa através de um site de recrutamento intuitivo, e prover à 3aq uma solução digital baseada em IA para automatizar a triagem técnica, diminuindo em pelo menos 50% o tempo gasto no processo.
+1.2.4 Tabela de viabilidade
+Item
+Descrição
+Valor Unitário
+Hospedagem
+Aplicação em Vercel Pro, R$ 110,00 mensais
+R$ 1.320,00
+Banco de dados
+Supabase Pro, com armazenamento de currículos e backup diário, R$ 140,00 mensaisl
+R$ 1.680,00
+Sandbox
+VM de 2 vCPU e 4 GB em São Paulo para execução isolada de código, R$ 70,00 mensais
+R$ 840,00
+E-mail
+Envio transacional via Resend, tier gratuito.
+R$ 0,00
+Monitoramento
+Sentry para registro de erros, tier gratuito.
+R$ 0,00
+Domínio
+Registro anual .com.br
+R$ 40,00
+Implantação
+Provisionamento de ambiente, configuração do sandbox, migração de dados, testes de aceitação, manual e treinamento
+R$ 3.480,00
+Desenvolvimento
+Mão de obra da equipe do projeto, cedida como contrapartida acadêmica
+R$ 0,00
+Customização
+Identidade visual, pipelines de seleção, critérios de triagem e desafios de código da 3aq
+R$ 1.500,00
+Manutenção
+Suporte, correções e atualizações, valor mensal a partir do segundo ano
+R$ 300,00
+Valor total estimado do primeiro ano: R$ 8.860,00
+Valor recorrente a partir do segundo ano: R$ 7.480,00 anuais
+1.2.5 Justificativa
+A projeção de operação em produção não integra o limite orçamental do protótipo e serve como referência para decisão futura da 3aq. O primeiro ano totaliza R$ 8.860,00, dos quais R$ 4.980,00 correspondem a custos únicos de implantação e customização. A partir do segundo ano, o custo recorrente é de R$ 7.480,00 anuais, equivalentes a R$ 623,00 mensais. Plataformas comerciais de recrutamento com funcionalidade equivalente operam na faixa de R$ 1.500,00 a R$ 5.000,00 mensais. O retorno projetado, com redução de pelo menos 50% no tempo de contratação e liberação de desenvolvedores seniores da correção manual de testes, supera o custo recorrente.
+O produto tem potencial de escalabilidade e pode ser comercializado como SaaS. Os custos crescem de forma previsível: armazenamento adicional a R$ 1,20 por GB mensal e máquinas de sandbox adicionais a R$ 70,00 mensais cada, conforme o volume de submissões simultâneas.
+Definições e siglas
+Número
+Sigla
+Definição
+1
+ERS
+Especificação de Requisitos de Software.
+2
+RF / RNF
+Requisito Funcional / Requisito Não Funcional.
+3
+RN
+Regra de Negócio: Normas e diretrizes que regem a lógica do domínio.
+4
+CRUD
+Create, Read, Update, Delete (Operações básicas de banco de dados).
+5
+API
+Application Programming Interface.
+Técnica(s) utilizada(s) para levantamento de requisitos
+As seguintes técnicas foram utilizadas:
+Brainstorming
+Observação do processo atual
+Análise de sistemas similares
+2. Requisitos Específicos
+2.1 Requisitos Funcionais (RF)
+[RF 01] - Autenticação e Cadastro
+Descrição: O sistema deve permitir login e cadastro de usuários via e-mail/senha ou OAuth (LinkedIn, GitHub), com gerenciamento de sessão autenticada.
+Ator Principal: Candidato, Recrutador.
+Pré-condições: Nenhuma. É o ponto de entrada público do sistema.
+Fluxo Principal:
+O usuário acessa a tela inicial e escolhe entre as abas “Login” ou “Cadastro”.
+No login tradicional, o usuário informa e-mail e senha.
+O sistema valida as credenciais no banco de dados.
+O sistema gera a sessão autenticada e redireciona conforme o perfil do usuário (Candidato → Vagas Disponíveis [RF03]; Recrutador/Administrador → Painel de Recrutamento [RF07]).
+Fluxos Alternativos / Subfluxos:
+A1 - Login via OAuth: O usuário opta por “Login via LinkedIn” ou “Login via GitHub”; o sistema redireciona ao provedor, recebe o token OAuth e cria ou associa a conta automaticamente.
+A2 - Credenciais Inválidas: Se e-mail ou senha estiverem incorretos, o sistema exibe mensagem de erro e não libera o acesso.
+A3 - Cadastro Inicial: Usuário sem conta seleciona a aba “Cadastro”, preencher nome, e-mail e senha, e confirma; o sistema cria a conta com perfil Candidato por padrão.
+[RF 02] - Gestão de Perfil do Candidato
+Descrição: O candidato deve poder visualizar e editar seus dados básicos, conectar contas externas (LinkedIn, GitHub e Lattes) e anexar seu currículo.
+Ator Principal: Candidato.
+Pré-condições: Usuário autenticado com perfil Candidato [RF01].
+Fluxo Principal:
+O candidato acessa a tela “Meu Perfil”.
+O sistema exibe os dados básicos (nome, e-mail, telefone, cidade/estado) pré-preenchidos, se existentes.
+O candidato edita os campos desejados.
+O candidato conecta ou desconecta contas externas (LinkedIn, GitHub, Lattes) através de botões dedicados.
+O candidato faz upload do currículo (PDF ou DOCX, até 5MB) por arrastar-e-soltar ou seleção de arquivo.
+O candidato confirma em “Salvar Alterações”; o sistema persiste os dados de forma criptografada.
+Fluxos Alternativos / Subfluxos:
+A1 - Conexão com GitHub: Ao conectar a conta, o sistema dispara automaticamente a coleta de linguagens, repositórios públicos e frequência de atividade do candidato.
+A2 - Perfil de GitHub Privado ou Inexistente: Se a API retornar erro 404 ou perfil privado, o sistema marca o campo “Dados de GitHub” como “Indisponível” e prossegue sem bloquear o candidato.
+A3 - Arquivo de Currículo Inválido: Se o arquivo exceder 5MB ou não estiver em PDF/DOCX, o sistema rejeita o upload e exibe mensagem de erro.
+E1 - Falha na API Externa (GitHub/LinkedIn): Se a API não responder, o sistema marca a conexão como “Indisponível” e permite nova tentativa posteriormente.
+[RF 03] - Busca e Candidatura a Vagas
+Descrição: O candidato deve poder buscar, filtrar e se candidatar a vagas disponíveis, visualizando o percentual de compatibilidade (match) calculado pela IA.
+Ator Principal: Candidato.
+Pré-condições: Candidato autenticado [RF01] com perfil preenchido [RF02].
+Fluxo Principal:
+O candidato acessa a aba “Vagas”.
+O sistema exibe a lista de vagas publicadas, com título, empresa, localização, modalidade e tecnologias.
+O candidato aplica filtros (ex.: Remoto, Sênior).
+O sistema calcula e exibe o percentual de match entre o perfil do candidato e os requisitos de cada vaga.
+O candidato seleciona “Ver Detalhes” em uma vaga e confirma a candidatura.
+O sistema registra a inscrição e inicia o pipeline de seleção configurado para aquela vaga [RF04].
+Fluxos Alternativos / Subfluxos:
+A1 - Nenhum Resultado com os Filtros: O sistema exibe mensagem informando que não há vagas com os critérios aplicados e sugere ampliar a busca.
+A2 - Candidatura Duplicada: Se o candidato já estiver inscrito na vaga, o sistema impede nova candidatura e exibe o status atual do processo.
+[RF 04] - Configuração do Pipeline de Seleção da Vaga
+Descrição: O recrutador deve poder criar uma vaga e montar visualmente o pipeline de seleção, adicionando e ordenando blocos de processo (Análise de Currículo, Teste de Código, Análise de GitHub, Entrevista RH, Entrevista Técnica, Proposta Final).
+Ator Principal: Recrutador (RH / Tech Lead).
+Pré-condições: Usuário autenticado com perfil “Recrutador/Administrador” [RF01].
+Fluxo Principal:
+O recrutador acessa o “Construtor de Vagas” e seleciona “Criar Nova Vaga”.
+O recrutador preenche o nome da vaga e uma breve descrição.
+O recrutador arrasta os blocos de processo disponíveis para montar o pipeline da vaga.
+O recrutador configura os parâmetros de cada bloco (ex.: nível de dificuldade do teste, linguagens exigidas).
+O recrutador clica em “Publicar Vaga”.
+O sistema valida os campos obrigatórios e disponibiliza a vaga publicamente, calibrando a IA com os requisitos definidos.
+Fluxos Alternativos / Subfluxos:
+A1 - Campos Obrigatórios Vazios: Se o nome da vaga ou ao menos um bloco de processo não estiverem definidos, o sistema bloqueia a publicação e destaca os campos pendentes (vínculo com RN002).
+A2 - Edição de Vaga já Publicada: Se o recrutador editar o pipeline de uma vaga com candidatos já em andamento, o sistema alerta sobre o impacto antes de confirmar e reprocessa o score dos candidatos já inscritos.
+A3 - Reordenação de Blocos: O recrutador pode reordenar os blocos por arrastar-e-soltar; o sistema recalcula a ordem do pipeline.
+[RF 05] - Aplicação de Teste de Código
+Descrição: O candidato deve realizar, dentro do pipeline da vaga, um teste técnico de programação em editor embutido, quando esse bloco estiver presente no processo seletivo.
+Ator Principal: Candidato.
+Pré-condições: Candidato inscrito na vaga [RF03] e pipeline da vaga contendo o bloco “LeetCode / Teste de Código” [RF04].
+Fluxo Principal:
+O sistema notifica o candidato de que o teste técnico está disponível.
+O candidato acessa o editor de código embutido.
+O sistema exibe o enunciado do problema e a stack esperada (ex.: React, JS).
+O candidato escreve e executa o código no ambiente de teste.
+O candidato submete a solução final.
+O sistema registra a submissão e a encaminha para correção automática [RF06].
+Fluxos Alternativos / Subfluxos:
+A1 - Tempo Esgotado: Se o candidato não submeter dentro do prazo definido, o sistema encerra automaticamente a tentativa e envia o último estado salvo para correção.
+A2 - Execução com Erro: Se o código não compilar ou executar, o sistema exibe o erro ao candidato antes da submissão final, permitindo correção.
+E1 - Submissão Única: Após confirmar o envio, o sistema bloqueia novas tentativas para aquele teste (vínculo com RN006).
+[RF 06] - Correção Automática e Geração de Relatório de Desempenho
+Descrição: O sistema deve corrigir automaticamente a submissão de código, comparando com os casos de teste esperados, calcular o score técnico e gerar o relatório de desempenho.
+Ator Principal: Sistema (Automático).
+Pré-condições: Candidato ter submetido o teste de código [RF05].
+Fluxo Principal:
+O sistema executa o código submetido em ambiente isolado (sandbox).
+O sistema roda o conjunto de casos de teste esperados para o problema.
+O sistema calcula o percentual de casos aprovados e o tempo de execução.
+O sistema gera o relatório de desempenho com pontuação técnica e observações automáticas.
+O sistema atualiza o pipeline do candidato para a próxima etapa configurada (ex.: Entrevista RH).
+Fluxos Alternativos / Subfluxos:
+A1 - Código Malicioso ou Fora dos Limites: Se o código tentar acessar rede/sistema de arquivos fora do sandbox ou exceder o tempo limite, o sistema interrompe a execução e marca a submissão como reprovada por violação de segurança (vínculo com RNF06).
+E1 - Falha no Ambiente de Execução: Se o sandbox falhar por motivo técnico (não atribuível ao candidato), o sistema reprocessa automaticamente a submissão até uma vez antes de notificar a equipe técnica.
+[RF 07] - Painel de Recrutamento (Dashboard Multi-vaga)
+Descrição: O recrutador deve visualizar uma visão consolidada de todas as vagas ativas, com quantidade de candidatos por etapa do pipeline e métricas de contratação.
+Ator Principal: Recrutador.
+Pré-condições: Recrutador autenticado [RF01]; ao menos uma vaga publicada [RF04].
+Fluxo Principal:
+O recrutador acessa o Painel de Recrutamento.
+O sistema exibe as vagas ativas, com contagem de candidatos e entrevistas por vaga.
+O sistema exibe a visão consolidada do pipeline (Triagem, Teste, Entrevista, Proposta) somando todas as vagas.
+O sistema exibe as métricas principais (ex.: tempo médio de contratação, comparação com o mês anterior).
+O sistema exibe insights automáticos gerados pela IA sobre o desempenho do funil de contratação.
+Fluxos Alternativos / Subfluxos:
+A1 - Nenhuma Vaga Ativa: O sistema exibe estado vazio orientando o recrutador a criar a primeira vaga.
+A2 - Filtragem por Vaga Específica: O recrutador pode alternar de “Todas as Vagas” para uma vaga específica; o sistema recalcula os números exibidos.
+[RF 08] - Análise Detalhada do Candidato
+Descrição: O recrutador deve poder abrir o perfil de um candidato específico dentro de uma vaga para visualizar o relatório completo (score, currículo, dados de GitHub e resultado do teste de código).
+Ator Principal: Recrutador.
+Pré-condições: Recrutador estar no Painel de Recrutamento [RF07] ou na visão de uma vaga; candidato ter ao menos uma etapa do pipeline processada.
+Fluxo Principal:
+O recrutador seleciona um candidato específico dentro do pipeline de uma vaga.
+O sistema exibe o perfil detalhado do candidato: dados básicos, score final, contas conectadas (LinkedIn/GitHub/Lattes), currículo e resultado do teste de código, quando aplicável.
+O sistema exibe a justificativa da IA para o score (skills encontradas vs. exigidas).
+O recrutador registra a decisão (avançar ou reprovar) para a próxima etapa do pipeline.
+O sistema persiste o status atualizado do candidato (vínculo com RN003 — a decisão é do recrutador, o score em si é imutável).
+Fluxos Alternativos / Subfluxos:
+A1 - Candidato sem Dados de GitHub: Se a integração com o GitHub não estiver conectada [RF02-E1], o sistema exibe aviso e apresenta apenas a análise disponível.
+A2 - Teste de Código ainda não Realizado: Se a vaga possui o bloco de teste mas o candidato ainda não o completou, o sistema exibe “Aguardando conclusão do teste” na etapa correspondente.
+E1 - Relatório Não Gerado: Se a IA ainda não processou algum componente da análise, o sistema exibe “Análise em processamento”.
+[RF 09] - Busca e Histórico de Candidatos
+Descrição: O recrutador deve poder buscar candidatos que já se candidataram anteriormente na plataforma, em qualquer vaga, visualizando o histórico consolidado de candidaturas, para evitar retrabalho de análise e eliminar a dispersão de informações em e-mails e pastas soltas.
+Ator Principal: Recrutador.
+Pré-condições: Recrutador autenticado [RF01]; existir ao menos um candidato com candidatura registrada.
+Fluxo Principal:
+O recrutador acessa a aba “Candidatos”.
+O recrutador busca por nome, e-mail ou tecnologia.
+O sistema exibe os candidatos correspondentes, com o histórico de todas as vagas às quais já se candidataram e o status de cada processo.
+O recrutador seleciona um candidato para ver o histórico consolidado (candidaturas anteriores, scores obtidos e decisões tomadas).
+O recrutador pode reaproveitar um candidato de processo anterior, convidando-o para uma nova vaga.
+Fluxos Alternativos / Subfluxos:
+A1 - Nenhum Resultado: O sistema informa que não há candidatos correspondentes à busca realizada.
+A2 - Candidato com Múltiplas Candidaturas: O sistema agrupa as candidaturas por candidato único (identificado por e-mail), mesmo que ele tenha se inscrito em vagas diferentes ao longo do tempo, evitando duplicidade de perfis (vínculo com RN007).
+2.2 Requisitos Não Funcionais (RNF)
+Estipulam as qualidades e restrições técnicas do sistema.
+[RNF 01] – Segurança: O sistema deve utilizar protocolo HTTPS e criptografia AES-256 para dados sensíveis em repouso.
+[RNF 02] – Disponibilidade: O sistema deve manter disponibilidade mínima de 95% em horário comercial (08h-20h, dias úteis), considerando o ambiente de hospedagem em nuvem definido na tabela de viabilidade. Janelas de manutenção programada devem ser comunicadas com 24h de antecedência e não devem ultrapassar 2 horas.
+[RNF 03] – Tempo de Resposta: As operações de consulta (listagem de vagas, painel de recrutamento) devem responder em até 3 segundos sob carga normal (até 50 usuários simultâneos). A correção automática do teste de código [RF06] deve gerar o relatório de desempenho em até 5 minutos após a submissão.
+[RNF 04] – Interface Amigável: O design deve ser responsivo. Adicionalmente, o sistema deve se adaptar a resoluções de desktop (≥ 1280px) e mobile (≥ 360px), seguindo boas práticas de usabilidade (WCAG nível A como referência mínima) e mantendo o tempo de carregamento inicial da página abaixo de 2 segundos.
+[RNF 05] – Conformidade com a LGPD: Todo dado pessoal de candidatos (nome, e-mail, currículo, links de LinkedIn/GitHub/Lattes) deve ser armazenado com criptografia em repouso e trafegado exclusivamente via HTTPS. O sistema deve garantir que dados sensíveis só sejam acessíveis a usuários autenticados com nível de permissão “Recrutador” ou “Administrador” (vínculo direto com RN004).
+[RNF 06] – Isolamento e Segurança de Execução de Código: O ambiente de execução do teste de código submetido pelos candidatos [RF05] deve rodar em sandbox isolado, sem acesso à rede ou ao sistema de arquivos do host, com tempo máximo de execução de 10 segundos por submissão, mitigando riscos de código malicioso ou mal-intencionado.
+Cenários de Verificação para Requisitos Não Funcionais (RNF)
+CT-RNF01 – Verificação de Segurança
+Objetivo: Garantir o uso de protocolos seguros e criptografia de dados no sistema CLTech.
+Pré-condições: Sistema implantado e banco de dados configurado.
+Passos de Execução:
+Acessar o sistema web e verificar se a conexão utiliza o protocolo HTTPS.
+Inserir dados sensíveis no sistema e inspecionar o banco de dados para confirmar se os dados estão armazenados utilizando criptografia AES-256 em repouso.
+Resultado Esperado: A comunicação deve ocorrer exclusivamente via HTTPS e todos os dados sensíveis devem estar criptografados no banco de dados com AES-256.
+CT-RNF02 – Verificação de Disponibilidade
+Objetivo: Validar o tempo de atividade do sistema e o cumprimento das regras de manutenção.
+Pré-condições: Ferramenta de monitoramento de uptime configurada no servidor cloud.
+Passos de Execução:
+Monitorar e extrair o relatório de disponibilidade do sistema durante o horário comercial (08h às 20h, em dias úteis).
+Programar uma janela de manutenção simulada, enviar o comunicado aos usuários e cronometrar a duração da indisponibilidade.
+Resultado Esperado: O sistema deve manter uma disponibilidade mínima de 95% no horário comercial. A manutenção deve ser comunicada com 24 horas de antecedência e não pode ultrapassar o limite de 2 horas de duração.
+CT-RNF03 – Verificação de Tempo de Resposta
+Objetivo: Validar a performance de consultas da interface e o tempo de geração do relatório de correção de código.
+Pré-condições: Ferramenta de teste de carga configurada e um candidato com teste de código pronto para submissão.
+Passos de Execução:
+Simular uma carga de até 50 usuários simultâneos realizando operações de consulta, como a listagem de vagas e o acesso ao painel de recrutamento.
+Realizar a submissão de um teste de código e cronometrar o tempo decorrido até a geração do relatório de desempenho automático.
+Resultado Esperado: As operações de consulta devem responder em no máximo 3 segundos sob carga normal. O relatório do teste de código deve ser gerado e disponibilizado em até 5 minutos após a submissão.
+CT-RNF04 – Verificação de Interface Amigável (Usabilidade e Performance Frontend)
+Objetivo: Garantir a responsividade, a acessibilidade e a velocidade de carregamento da interface.
+Pré-condições: Navegadores web para desktop e dispositivos móveis configurados com ferramentas de auditoria (ex: Lighthouse).
+Passos de Execução:
+Acessar o site utilizando resoluções de desktop (≥ 1280px) e resoluções mobile (≥ 360px).
+Executar uma auditoria de acessibilidade para validar o cumprimento das diretrizes WCAG nível A.
+Medir o tempo de carregamento inicial da página inicial do sistema.
+Resultado Esperado: A interface deve se adaptar corretamente a ambas as resoluções (desktop e mobile), atender aos critérios mínimos da WCAG nível A e apresentar um tempo de carregamento inicial inferior a 2 segundos.
+CT-RNF05 – Verificação de Conformidade com a LGPD
+Objetivo: Assegurar que os dados pessoais e sensíveis dos candidatos estejam protegidos e com acesso restrito aos perfis autorizados.
+Pré-condições: Existência de candidatos cadastrados com dados pessoais (nome, e-mail, currículo, links sociais) e usuários de testes com diferentes perfis de acesso.
+Passos de Execução:
+Verificar através de ferramentas de rede se o tráfego de dados pessoais ocorre exclusivamente via HTTPS.
+Validar no banco de dados se as informações pessoais estão armazenadas com criptografia em repouso.
+Tentar acessar os relatórios detalhados e dados sensíveis utilizando uma conta de usuário sem os níveis de permissão "Recrutador" ou "Administrador".
+Resultado Esperado: Os dados devem trafegar apenas por conexões seguras e estar encriptados no banco. O sistema deve bloquear o acesso aos dados sensíveis para qualquer usuário que não possua perfil de Recrutador ou Administrador autenticado.
+CT-RNF06 – Verificação de Isolamento e Segurança de Execução de Código
+Objetivo: Testar a resiliência do sandbox contra códigos maliciosos e limites de processamento.
+Pré-condições: Ambiente de avaliação técnica (teste de código) configurado na plataforma.
+Passos de Execução:
+Submeter uma solução de código contendo comandos que tentem acessar a rede externa ou o sistema de arquivos do host.
+Submeter uma solução contendo um laço de repetição infinito (loop infinito) e cronometrar o tempo de execução.
+Resultado Esperado: O sandbox isolado deve bloquear qualquer tentativa de acesso à rede ou ao sistema de arquivos do host. A execução do código deve ser forçosamente interrompida pelo sistema ao atingir o tempo máximo de 10 segundos, marcando a submissão com erro ou reprovação.
+2.3 Regras de Negócio (RN)
+RN001 - Automação da Triagem: Todo currículo submetido no site da CLTech deve obrigatoriamente passar pela leitura da IA antes de ser listado no painel do recrutador. O RH não terá acesso à lista "bruta" de candidatos sem o processamento prévio.
+RN002 - Parametrização Obrigatória da IA: Para que uma vaga seja publicada e fique visível para os candidatos, o recrutador deve obrigatoriamente preencher o campo de stack tecnológica e os requisitos mínimos. Esses dados são a base matemática para o Componente A (IA) conseguir calcular o score de compatibilidade.
+RN003 - Imutabilidade do Score de IA: Para garantir que a escolha do candidato seja justa e baseada apenas na técnica, o score de compatibilidade gerado pela Inteligência Artificial é estritamente de leitura (imutável). O recrutador pode decidir aprovar ou reprovar o candidato para a próxima fase, mas é tecnicamente bloqueado de alterar a nota gerada pelo motor.
+RN004 - Controle de Privacidade e Acesso (LGPD): Em conformidade com as diretrizes de proteção de dados, os relatórios detalhados, o perfil do GitHub e o currículo original dos candidatos só poderão ser visualizados por usuários autenticados no sistema que possuam o nível de permissão "Recrutador" ou "Administrador".
+RN005 - Feedback Obrigatório: Todo candidato que concluir o fluxo de triagem e/ou avaliação técnica do site receberá, obrigatoriamente, um feedback automático via e-mail informando o status de sua compatibilidade com a vaga, independentemente de aprovação ou reprovação.
+RN006 - Tentativa Única de Submissão do Teste de Código: Após a submissão da solução do teste técnico de código [RF05], o candidato não pode reenviar ou alterar sua resposta para aquele teste, garantindo a integridade e a comparabilidade da avaliação entre candidatos.
+RN007 - Unicidade de Cadastro de Candidato: Um mesmo candidato, identificado por e-mail, deve possuir um único perfil na plataforma mesmo que se candidate a múltiplas vagas ao longo do tempo, garantindo histórico centralizado e evitando duplicidade de dados (vínculo com RF09).
+2.4 Priorização dos Requisitos (MVP / Desejável / Fora de Escopo)
+Classificação de cada requisito funcional, não funcional e regra de negócio, com base nas restrições obrigatórias da demanda (LGPD, arquitetura web, integração com GitHub, orçamento e stack tecnológica) e no fluxo principal do MVP descrito na proposta inicial.
+ID
+Nome
+Classificação
+Justificativa
+RF01
+Autenticação e Cadastro
+MVP
+Ponto de entrada obrigatório de todo o sistema.
+RF02
+Gestão de Perfil do Candidato
+MVP
+Base de dados (perfil, GitHub, currículo) que alimenta toda a triagem.
+RF03
+Busca e Candidatura a Vagas
+MVP
+Gatilho do fluxo principal descrito na demanda.
+RF04
+Configuração do Pipeline de Seleção da Vaga
+MVP
+Sem vaga publicada não há contexto para a IA calcular o score.
+RF05
+Aplicação de Teste de Código
+MVP
+Núcleo da demanda: teste de programação auto corrigido.
+RF06
+Correção Automática e Geração de Relatório
+MVP
+Núcleo da demanda: elimina a correção manual pelos seniores.
+RF07
+Painel de Recrutamento (Dashboard Multi-vaga)
+MVP
+É como o RH visualiza os candidatos já processados.
+RF08
+Análise Detalhada do Candidato
+MVP
+É o relatório final que a demanda pede explicitamente.
+RF09
+Busca e Histórico de Candidatos
+Desejável
+Resolve uma dor real (dados espalhados), mas fica fora do fluxo principal inscrição→triagem→teste→relatório.
+RNF01
+Segurança
+MVP
+Criptografia/HTTPS é restrição obrigatória (LGPD) da demanda.
+RNF02
+Disponibilidade
+Desejável
+Relevante em produção, mas não bloqueia a demonstração do protótipo.
+RNF03
+Tempo de Resposta
+Desejável
+Boa prática de engenharia, não é restrição formal da SAGA.
+RNF04
+Interface Amigável
+MVP
+Protótipo de alta fidelidade e usabilidade fazem parte da entrega avaliada.
+RNF05
+Conformidade com a LGPD
+MVP
+Restrição obrigatória explícita da demanda.
+RNF06
+Isolamento e Segurança de Execução de Código
+MVP
+Pré-requisito de segurança para rodar código de terceiros (RF05/RF06).
+RN001
+Automação da Triagem
+MVP
+Garante avaliação padronizada, exigida pela demanda.
+RN002
+Parametrização Obrigatória da IA
+MVP
+Sem ela a IA não tem base para calcular o score.
+RN003
+Imutabilidade do Score de IA
+MVP
+Garante critério técnico objetivo e igual para todos.
+RN004
+Controle de Privacidade e Acesso (LGPD)
+MVP
+Restrição obrigatória explícita da demanda.
+RN005
+Feedback Obrigatório
+Desejável
+Melhora a experiência do candidato, mas não é o núcleo técnico avaliado.
+RN006
+Tentativa Única de Submissão do Teste de Código
+MVP
+Garante a integridade da avaliação técnica (RF05).
+RN007
+Unicidade de Cadastro de Candidato
+Desejável
+Vinculada ao RF09, também desejável.
+—
+Instalação local pelo candidato
+Fora de Escopo
+Restrição explícita da demanda: acesso deve ser 100% via navegador.
+3. Cronograma do Projeto
+O desenvolvimento da plataforma CLTech está estruturado em uma fase inicial de planejamento (agosto) e três Sprints de desenvolvimento executadas entre setembro e novembro. O planejamento detalhado abaixo divide as tarefas em semanas, respeitando as datas de entrega oficiais estabelecidas para cada ciclo.
+3.1 Planejamento de Sprints
+Período
+Fase / Sprint
+Foco da Semana
+Entregáveis e Metas
+Semana 1 (03/Ago - 09/Ago)
+Discussão
+Ideação e Definição de Problema
+Discussões iniciais sobre as dores da 3aq Tecnologia e definição do escopo do site CLTech.
+Semana 2 (10/Ago - 16/Ago)
+Discussão
+Levantamento de Requisitos
+Mapeamento de Requisitos Funcionais, Não Funcionais e Regras de Negócio.
+Semana 3 (17/Ago - 23/Ago)
+Discussão
+Viabilidade e Arquitetura
+Definição da stack tecnológica (React, Node, Python) e análise do limite orçamental.
+Semana 4 (24/Ago - 30/Ago)
+Discussão
+Documentação ERS
+Fechamento e aprovação do documento ERS. Preparação para o início do desenvolvimento.
+Semana 5 (31/Ago - 06/Set)
+Sprint 1
+UI/UX e Banco de Dados
+Criação dos protótipos de alta fidelidade e modelagem do banco relacional.
+Semana 6 (07/Set - 13/Set)
+Sprint 1
+Desenvolvimento Base
+Codificação do fluxo de inscrição de candidatos, autenticação e portal público de vagas.
+Semana 7 (14/Set - 20/Set)
+Sprint 1 e 2
+Entrega da Sprint 1 (14/Set)
+(14/Set): CRUD de Inscrição e ambiente web funcional entregues. Início da integração com API do GitHub.
+Semana 8 (21/Set - 27/Set)
+Sprint 2
+Fundação da aplicação
+Setup do projeto, schema do banco a partir do DER com criptografia (LGPD), autenticação e cadastro [RF01]
+Semana 9 (28/Set - 04/Out)
+Sprint 2
+Perfil e integração externa
+Perfil do candidato, upload de currículo e integração com a API do GitHub [RF02]
+Semana 10 (05/Out - 11/Out)
+Sprint 2
+Vagas e candidatura
+Portal de vagas, fluxo de candidatura e configuração de pipeline [RF03, RF04]
+Semana 11 (12/Out - 18/Out)
+Sprint 2
+IA de Triagem
+Testes do fluxo completo: Inscrição -> Extração de Dados -> Geração de Score -> Exibição no Painel.
+Semana 12 (19/Out - 25/Out)
+Sprint 2
+Painel do Recrutador
+Ranking de candidatos e análise detalhada [RF07, RF08], integrados ao motor de triagem
+Semana 13 (26/Out - 01/Nov)
+Sprint 2 e 3
+Entrega da Sprint 2 (26/Out)
+Fluxo ponta a ponta funcional, validações, tratamento de erros, testes iniciais e documentação da API. Início do motor de avaliação técnica.
+Semana 14 (02/Nov - 08/Nov)
+Sprint 3
+Avaliação Técnica
+Editor de código embutido [RF05] e sandbox isolado de execução [RNF06]
+Semana 15 (09/Nov - 15/Nov)
+Sprint 3
+Correção e Feedback
+Correção automática, relatório de desempenho [RF06] e feedback por e-mail [RN005]
+Semana 16 (16/Nov - 22/Nov)
+Sprint 3
+Testes e LGPD
+Execução dos casos de teste, auditoria de criptografia e ajustes de performance
+Semana 17 (23/Nov - 30/Nov)
+Sprint 3
+Entrega da Sprint 3
+Deploy final, matriz de rastreabilidade, manual de execução e apresentação em 30/Nov
+4. Protótipo do produto
+Nesta seção, apresentam-se as interfaces de alta fidelidade que guiarão o desenvolvimento do Front-end.
+Link para o Protótipo: [Inserir Link do Figma/ou Github (SE HOUVER)]
+Principais Telas:
+Siga as telas que pedi na sprint
+Siga as telas que pedi na sprint
+Siga as telas que pedi na sprint
+5. Diagramas UML
+5.1 Diagrama de Casos de Uso
+O diagrama apresenta três atores humanos — Candidato, Recrutador e Administrador — e um ator de sistema, o Sistema (IA).
+O Administrador é modelado como generalização do Recrutador. O ERS trata os dois papéis em conjunto em todas as regras de acesso, conforme a RN004, segundo a qual ambos possuem o mesmo nível de permissão sobre dados sensíveis. A generalização evita duplicar as seis associações do Recrutador e expressa que o Administrador é um Recrutador com atribuições adicionais.
+Os casos de uso do Candidato são "Realizar Cadastro", "Realizar Login", "Gerenciar Perfil", "Buscar Vagas", "Filtrar Vagas", "Visualizar Detalhe da Vaga", "Candidatar-se à Vaga" e "Realizar Teste de Código".
+"Candidatar-se à Vaga" concentra quatro relacionamentos <<include>> obrigatórios: "Realizar Login", porque a inscrição exige usuário autenticado; "Anexar Currículo", porque não há candidatura sem currículo; "Iniciar Pipeline", que registra o candidato na primeira etapa do processo; e "Ler e Triar Currículos". Este último implementa a RN001 — todo currículo submetido passa pela leitura da IA antes de ser listado ao recrutador, não existindo candidatura sem triagem prévia.
+Os relacionamentos <<extend>> marcam comportamento opcional: "Filtrar Vagas" estende "Buscar Vagas"; "Anexar Currículo" e "Conectar Contas Externas" estendem "Gerenciar Perfil"; "Realizar Login via OAuth" estende tanto "Realizar Login" quanto "Realizar Cadastro"; "Publicar Vaga" estende "Criar Vaga"; e "Visualizar Histórico" e "Convidar para Nova Vaga" estendem "Buscar Candidatos". O fluxo principal se completa sem eles.
+O caso de uso "Anexar Currículo" participa de dois relacionamentos distintos: é extensão opcional de "Gerenciar Perfil", quando o candidato atualiza o próprio perfil, e é inclusão obrigatória de "Candidatar-se à Vaga", quando a inscrição exige currículo vigente.
+Quatro casos de uso não possuem ator humano e são executados pelo Sistema (IA): "Ler e Triar Currículos", "Calcular Percentual de Match", "Corrigir Teste e Gerar Relatório" e "Enviar Feedback ao Candidato". O último implementa a RN005, que obriga o envio de retorno automático ao candidato ao término da avaliação, independentemente de aprovação ou reprovação.
+5.2 Diagrama de Classes
+O diagrama representa o modelo de domínio da plataforma, incluindo as entidades das Sprints 2 e 3, modeladas desde a Sprint 1 para evitar migração destrutiva do banco com dados em produção.
+A generalização a partir de Usuario é a decisão central do modelo. Usuario concentra a identidade de acesso — identificador, nome, e-mail, senha e tipo — e é especializada em Candidato e Recrutador. Essa separação, somada à unicidade do e-mail, garante estruturalmente a RN007: um candidato possui um único perfil, independentemente de quantas vagas acesse ao longo do tempo. O atributo senhaHash explicita que a senha não é armazenada em texto claro, atendendo ao RNF01.
+RelatorioIA implementa a RN003. Os atributos versao e tipo indicam que a correção de um resultado não ocorre por alteração do registro existente, mas pela inserção de um novo relatório com versão incrementada, preservando o anterior. A classe não expõe operação de alteração de pontuação; a decisão de aprovar ou reprovar é registrada em Candidatura.status, nunca sobre o score.
+MotorIA é modelada como interface para desacoplar o mecanismo de avaliação do restante do sistema. Isso permite substituir a implementação sem impacto nas demais classes e evidencia que a leitura de currículos, o cálculo de compatibilidade e a avaliação de código são responsabilidades de um componente independente.
+A composição entre Vaga e FasePipeline, com multiplicidade 1..*, expressa a RN002: uma vaga não existe sem ao menos uma fase configurada, e as fases não subsistem sem a vaga. A multiplicidade 0..1 entre Candidatura e TesteCodigo representa a RN006 — tentativa única de submissão por candidatura.
+5.3 Diagrama de Sequência
+5.3.1 Diagrama de Sequência [RF 04] – Criar Vaga e Configurar Pipeline de Seleção.
+5.3.2 Diagrama de Sequência [RF 02, RF 03] – Completar Perfil e Candidatar-se a Vaga
+5.4 Diagrama de Entidade e Relacionamento (DER)
+O DER apresenta o modelo relacional sob a perspectiva do banco de dados, com chaves, tipos SQL e cardinalidades. A generalização do diagrama de classes é implementada como tabelas por especialização: Candidato e Recrutador compartilham a chave primária de Usuario, que é simultaneamente chave estrangeira, garantindo correspondência de um para um entre identidade e papel.
+Três restrições de unicidade implementam regras de negócio diretamente no banco, e não em validação de código. A chave única sobre Usuario.email implementa a RN007, assegurando um único perfil por candidato. A chave única composta sobre Candidatura(id_vaga, id_candidato) impede mais de uma inscrição do mesmo candidato na mesma vaga. A chave única sobre TesteCodigo(id_candidatura) implementa a RN006, garantindo tentativa única de submissão.
+A opção por restrições no banco é deliberada. Validação em código falha sob concorrência — por exemplo, quando duas requisições de um duplo clique no botão de candidatura consultam a base, ambas constatam ausência de registro e ambas inserem, gerando duplicidade. A restrição de unicidade é verificada no momento da gravação e rejeita a segunda tentativa, independentemente da ordem de execução.
+A cardinalidade 1..N entre Vaga e FasePipeline reflete a RN002: nenhuma vaga é publicada sem ao menos uma fase definida. A tabela RelatorioIA possui os campos versao e tipo, que viabilizam a RN003 — o reprocessamento insere nova linha e não altera a pontuação já emitida. Os campos Candidato.telefone, TesteCodigo.codigo_submetido e o arquivo de currículo são armazenados com criptografia AES-256, conforme RNF01 e RNF05.
+6. Casos de Testes
+Ainda teremos aulas de testes
+CT001 – Cadastro de candidato com dados válidos
+CT002 – Publicação de vaga com campos obrigatórios preenchidos
+7. Apêndices

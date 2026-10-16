@@ -27,3 +27,9 @@ export async function requireRole(allowed: Role[]): Promise<AuthedUser> {
   if (!allowed.includes(user.role)) throw Errors.forbidden();
   return user;
 }
+
+/** Nunca lança — null sem sessão. Use em rota pública que se comporta diferente quando autenticada (FR-035). */
+export async function getOptionalSession(): Promise<AuthedUser | null> {
+  const session = await auth();
+  return (session?.user as AuthedUser | undefined) ?? null;
+}

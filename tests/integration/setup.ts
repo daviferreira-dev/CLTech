@@ -1,6 +1,5 @@
-// Postgres efêmero via Docker para os testes de integração (research.md R8).
-// Sobe com: docker compose -f docker-compose.test.yml up -d
-// DATABASE_URL de teste deve apontar para esse banco (.env.test), nunca para o de dev.
+// DATABASE_URL de teste (.env.test) — TRUNCATE total antes de cada teste garante isolamento
+// mesmo sem banco efêmero dedicado (research.md R8).
 
 import { beforeEach } from "vitest";
 import { prisma } from "@/lib/prisma";

@@ -21,7 +21,7 @@ test("login com senha errada não cria sessão (FR-004)", async ({ page }) => {
   await page.goto("/entrar");
   await page.getByLabel("E-mail").fill("inexistente@example.com");
   await page.getByLabel("Senha").fill("senhaErrada");
-  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
 
   await expect(page.getByText("E-mail ou senha incorretos.")).toBeVisible();
   await expect(page).toHaveURL(/\/entrar/);
@@ -31,7 +31,7 @@ test("recrutador do seed cai em /recrutamento, não em /vagas (FR-006)", async (
   await page.goto("/entrar");
   await page.getByLabel("E-mail").fill("recrutador@3aq.dev");
   await page.getByLabel("Senha").fill("Senha123!");
-  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
 
   await expect(page).toHaveURL(/\/recrutamento$/);
 });

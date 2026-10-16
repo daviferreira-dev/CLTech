@@ -205,18 +205,17 @@ deliberada: mantém a lógica testável sem subir servidor.
 
 ## Como rodar
 
-> **Estado atual:** o repositório está na fase de estruturação e documentação da Sprint 1.
-> A estrutura e as decisões estão fechadas; o código de aplicação é adicionado ao longo da
-> sprint. Os comandos abaixo são o alvo.
-
 ### Pré-requisitos
 
 | Ferramenta | Versão | Para quê |
 |---|---|---|
 | Node.js | 20 LTS ou superior | aplicação Next.js |
 | Python | 3.12 ou superior | serviço de IA (Sprint 2) |
-| Docker | recente | PostgreSQL local |
 | Git | recente | controle de versão |
+
+Banco e storage rodam no Supabase (gerenciado) — não precisa de Docker para
+desenvolvimento local. Peça o `DATABASE_URL` e as credenciais `STORAGE_*` de quem já
+tem acesso ao projeto Supabase, ou crie seu próprio projeto para testar isolado.
 
 ### 1. Clonar e configurar
 
@@ -231,28 +230,22 @@ cp .env.example .env      # preencher as variáveis
 
 | Variável | Descrição |
 |---|---|
-| `DATABASE_URL` | Conexão com o PostgreSQL |
+| `DATABASE_URL` | Conexão com o Postgres do Supabase (connection pooler) |
 | `AUTH_SECRET` | Assinatura das sessões |
 | `ENCRYPTION_KEY` | Chave AES-256 em base64 — gerar com `openssl rand -base64 32` |
 | `GITHUB_ID` / `GITHUB_SECRET` | OAuth e coleta de portfólio |
-| `STORAGE_*` | Bucket privado de currículos |
+| `STORAGE_*` | Bucket S3-compatível do Supabase Storage (Project Settings → Storage → S3 Connection) para currículos |
 
 Nenhum segredo é versionado. O arquivo `.env` está no `.gitignore`.
 
-### 2. Subir o banco
-
-```bash
-docker compose up -d db
-```
-
-### 3. Schema e dados de demonstração
+### 2. Schema e dados de demonstração
 
 ```bash
 pnpm prisma migrate dev     # cria o schema
 pnpm db:seed                # vagas, pipelines e usuários de demonstração
 ```
 
-### 4. Rodar a aplicação
+### 3. Rodar a aplicação
 
 ```bash
 pnpm dev                    # http://localhost:3000
@@ -260,12 +253,12 @@ pnpm dev                    # http://localhost:3000
 
 Uma aplicação só: as telas React e as rotas de API sobem juntas. Não há segundo servidor.
 
-### 5. Serviço de IA (a partir da Sprint 2)
+### 4. Serviço de IA (a partir da Sprint 2)
 
 ```bash
 cd services/ai
 python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scriptsctivate
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload  # http://localhost:8000
 ```
@@ -273,9 +266,14 @@ uvicorn app.main:app --reload  # http://localhost:8000
 ### Testes
 
 ```bash
-pnpm test          # Vitest — unidade e integração (sobe Postgres efêmero)
-pnpm test:e2e      # Playwright — fluxos P1 em 360 px e 1280 px
+cp .env.test.example .env.test   # aponta pro mesmo projeto Supabase do .env (ainda é teste)
+pnpm test          # Vitest — unidade e integração; TRUNCATE total antes de cada teste
+pnpm test:e2e      # Playwright — fluxos P1 em 360 px e 1280 px, contra `pnpm build && pnpm start`
 ```
+
+`pnpm test:e2e` sobe a aplicação em modo produção (não `pnpm dev`) e roda os testes em
+série (`workers: 1`) — um único banco compartilhado via pooler não aguenta registro
+concorrente com Argon2id sem esgotar conexões.
 
 ---
 

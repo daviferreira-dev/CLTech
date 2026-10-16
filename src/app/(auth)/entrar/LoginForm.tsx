@@ -38,7 +38,7 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
   }
 
   return (
-    <div className="mx-auto max-w-sm space-y-6 py-16">
+    <div className="mx-auto max-w-sm space-y-6 px-4 py-16">
       <h1 className="text-2xl font-semibold">Entrar</h1>
 
       <form onSubmit={handleCredentialsSubmit} className="space-y-4">

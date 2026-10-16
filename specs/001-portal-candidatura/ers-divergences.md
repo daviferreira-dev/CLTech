@@ -91,7 +91,7 @@ novo, R$ 0,00) e nomear um responsável pelo provisionamento antes de 02/Nov.
 
 <a id="d3"></a>
 
-## D3 🟠 Match na listagem de vagas não tem onde ser armazenado
+## D3 🟢 Match na listagem de vagas não tem onde ser armazenado
 
 **O ERS pede** (RF03, Fluxo Principal, passo 4): *"O sistema calcula e exibe o percentual
 de match entre o perfil do candidato e os requisitos de **cada vaga**"* — na listagem,
@@ -112,9 +112,12 @@ quando o currículo ou a vaga muda, nunca no caminho da requisição. A listagem
 **Situação na Sprint 1**: nenhum match é exibido (FR-026). A tabela nasce vazia. O
 comportamento entra na Sprint 2, junto com o motor de triagem.
 
-**Decisão pendente até o início da Sprint 2 (21/Set)**: o que exibir para um candidato sem
-currículo, e se o match aparece para visitante não autenticado (não aparece — não há perfil
-com que comparar).
+**Decisão resolvida na Sprint 2** (ver [data-model/spec do Sprint 2](../002-painel-de-recrutamento/spec.md)):
+visitante não autenticado nunca vê match (não há perfil com que comparar — a listagem
+pública simplesmente omite a coluna). Candidato autenticado sem currículo vigente vê
+"Complete seu perfil para calcular o match" em vez de um número — não existe score 0% ou
+"indisponível" ambíguo, porque não houve tentativa de cálculo, e sim ausência de
+pré-requisito.
 
 ---
 
@@ -305,6 +308,46 @@ callback `jwt`/`session`, não reverter para `strategy: "database"`.
 
 ---
 
+<a id="d11"></a>
+
+## D11 🟢 Motor de triagem roda inline no Next.js, não como serviço Python separado
+
+**O que `services/ai/README.md` tinha decidido** (desde a Sprint 1): um serviço
+**Python + FastAPI** dedicado para a triagem de currículos — extração de texto,
+identificação de competências, comparação com `Job.technologies`, chamado pelo backend via
+`AI_SERVICE_URL`. A pasta `services/ai/` existia desde a Sprint 1 justamente para fixar essa
+fronteira.
+
+**Por que foi revisto**: o algoritmo é o mesmo nos dois casos — NLP determinístico, sem LLM,
+exigido pela RN003 (score reproduzível/imutável) e pelos Princípios I e II (nenhum dado de
+candidato sai da infraestrutura). O serviço Python separado não entrega score melhor nem
+mais "IA de verdade" — só mais fidelidade a um diagrama. O custo é real: um segundo runtime
+para rodar em dev (venv + uvicorn ao lado do Next.js), um segundo alvo de deploy em produção
+(Vercel não roda daemon Python, mesmo problema da VM de sandbox do [D2](#d2), só que
+adiantado dez meses), e uma chamada de rede a mais entre dois serviços — tudo isso sem
+ganho de funcionalidade, a dez dias da entrega da Sprint 2 (26/Out/2026).
+
+**O que foi decidido** (confirmado com a equipe em 16/10/2026, com comparação visual das
+duas opções): a lógica de score vive em `src/server/matching/` (TypeScript), chamada
+diretamente pelas rotas que precisam dela (candidatura, listagem de vagas, painel do
+recrutador). `JobMatch` e `Evaluation` não sabem nem se importam quem calculou o score —
+migrar essa lógica para um serviço Python de verdade mais tarde é um refactor, não uma
+reescrita, se um motivo técnico real aparecer (ex.: modelo de ML pesado, time dedicado ao
+módulo).
+
+**Achado lateral, registrado para a Sprint 3**: nem a triagem nem a correção do teste de
+código (RF06) exigem um LLM pela letra do ERS — RF06 pede "comparar com os casos de teste
+esperados", que é execução determinística de testes (pass/fail), não um modelo avaliando
+estilo de código. A equipe confirmou essa leitura: a correção deve julgar pelo resultado
+(saída dos testes), nunca pela forma como cada candidato escreveu o código.
+
+**Ação necessária**: nenhuma no ERS — não é um requisito do ERS, é uma decisão técnica do
+`plan.md`/`services/ai/README.md`. Reavaliar apenas se surgir necessidade real de IA
+generativa (ex.: feedback em prosa ao candidato, hoje fora de escopo) ou razão de
+organização de equipe para isolar o módulo em outro runtime.
+
+---
+
 ## Resumo das ações sobre o ERS
 
 Para a próxima revisão do documento (v1.1):
@@ -319,3 +362,4 @@ Para a próxima revisão do documento (v1.1):
 | D6 | 1.2.4 Tabela de viabilidade | Acrescentar provedor de e-mail (R$ 0,00) | antes de 09/Nov |
 | D8 | RF03 pré-condições | Listagem de vagas é pública | próxima revisão |
 | D9 | RF02 | LinkedIn e Lattes são link, não coleta | próxima revisão |
+| D11 | services/ai/README.md | Motor de triagem roda inline no Next.js, não em serviço Python separado | próxima revisão |

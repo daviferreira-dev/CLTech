@@ -1,6 +1,9 @@
 // Fluxo 2 do quickstart.md — User Story 2.
 import { test, expect } from "@playwright/test";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function uniqueEmail() {
   return `e2e-profile-${Date.now()}@example.com`;

@@ -212,14 +212,19 @@ não há execução de código de candidato ainda.
 
 ## R9. Hospedagem e custo
 
-**Decisão**: Vercel (tier Hobby) para a aplicação Next.js + Neon (tier gratuito) para
-Postgres + Supabase Storage (tier gratuito) para os currículos. Subdomínio `*.vercel.app`;
-o domínio próprio da tabela de viabilidade é opcional.
+**Decisão (revisada — ver [D11](./ers-divergences.md#d11))**: Vercel (tier Hobby) para a
+aplicação Next.js + **Supabase** (tier gratuito) para Postgres **e** para o storage dos
+currículos — um único provedor para os dois, alinhado à tabela de viabilidade do ERS.
+Subdomínio `*.vercel.app`; o domínio próprio da tabela de viabilidade é opcional.
+
+A decisão original desta seção era Neon para o Postgres; a Sprint 1 reverteu para Supabase
+(ver D11). Mantido aqui o registro de que a troca aconteceu e por quê, em vez de apagar a
+decisão anterior.
 
 | Camada | Serviço | Tier | Limite que importa |
 |---|---|---|---|
 | Aplicação | Vercel Hobby | grátis | 100 GB de banda/mês |
-| Banco | Neon | grátis | 0,5 GB; hiberna após inatividade |
+| Banco | Supabase Postgres | grátis | 0,5 GB; hiberna após inatividade |
 | Currículos | Supabase Storage | grátis | 1 GB ≈ 200 arquivos de 5 MB |
 | Serviço de IA (Sprint 2) | Vercel Python Functions | grátis | 250 MB de bundle — cabe em NLP leve |
 | Sandbox (Sprint 3) | Oracle Cloud Always Free | grátis | ver R10 |
@@ -229,7 +234,7 @@ o domínio próprio da tabela de viabilidade é opcional.
 são mão de obra da própria equipe, não desembolso.
 
 **Contrapartida assumida**: tiers gratuitos hibernam. O primeiro acesso após inatividade
-custa de 1 s (Neon) a ~50 s (serviços que dormem por completo), o que fura o RNF03 (3 s) e
+custa de 1 s a ~50 s (serviços que dormem por completo), o que fura o RNF03 (3 s) e
 o RNF02 (95% de disponibilidade). Ambos estão classificados como **Desejável** na seção 2.4
 do ERS, então a troca é defensável para um protótipo — **mas precisa ser dita na
 apresentação, não descoberta pelo avaliador**. Mitigação barata: um ping agendado mantendo

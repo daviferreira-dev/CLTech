@@ -3,12 +3,20 @@
 Serviço **Python + FastAPI** responsável pelos dois motores de IA do produto: a triagem de
 currículos e a correção automática dos testes de código.
 
-> **Estado:** reservado. O código entra na Sprint 2 (triagem) e na Sprint 3 (correção).
-> A pasta existe desde a Sprint 1 para fixar a fronteira entre as camadas.
+> **Estado:** reservado. O código de triagem **não** entra aqui na Sprint 2 — ver
+> [D11](../../specs/001-portal-candidatura/ers-divergences.md#d11): a implementação real
+> vive em `src/server/matching/` (TypeScript, inline no Next.js). Esta pasta segue
+> reservada para a correção de código da Sprint 3, e para uma eventual migração futura da
+> triagem se houver motivo técnico (não há um hoje).
 
 ## Os dois motores
 
-### Módulo de triagem — Sprint 2 (RF02, RF03, RN001, RN002)
+### Módulo de triagem — implementado inline no Next.js (RF02, RF03, RN001, RN002)
+
+> Descrito aqui como estava planejado desde a Sprint 1. A implementação real não roda como
+> serviço Python separado — ver [D11](../../specs/001-portal-candidatura/ers-divergences.md#d11)
+> para o porquê e onde o código realmente está (`src/server/matching/`). O algoritmo abaixo
+> é o mesmo; só o lugar onde roda mudou.
 
 Lê o currículo, extrai competências e calcula o score de compatibilidade com a vaga.
 
