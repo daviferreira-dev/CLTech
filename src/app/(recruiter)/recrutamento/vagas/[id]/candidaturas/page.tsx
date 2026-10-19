@@ -11,7 +11,7 @@ export default async function CandidaturasDaVagaPage({ params }: { params: Promi
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-6 text-2xl font-semibold">Candidatos</h1>
+      <h1 className="mb-6 text-xl font-semibold sm:text-2xl">Candidatos</h1>
       <CandidatesForJobList jobId={id} />
     </div>
   );

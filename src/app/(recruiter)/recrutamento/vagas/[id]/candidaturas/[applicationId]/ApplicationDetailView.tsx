@@ -64,8 +64,8 @@ export function ApplicationDetailView({ applicationId }: { jobId: string; applic
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">{data.candidate.name}</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="break-words text-xl font-semibold sm:text-2xl">{data.candidate.name}</h1>
+        <p className="break-all text-sm text-slate-600 sm:break-words">
           {data.candidate.email} · {data.job.title}
         </p>
       </div>
@@ -74,16 +74,20 @@ export function ApplicationDetailView({ applicationId }: { jobId: string; applic
         <section className="space-y-4">
           {mainEvaluation && (
             <div>
-              <p className="text-3xl font-semibold">{mainEvaluation.score}%</p>
+              <p className="text-2xl font-semibold sm:text-3xl">{mainEvaluation.score}%</p>
               <p className="text-sm text-slate-500">compatibilidade geral</p>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className="text-xs font-medium uppercase text-slate-500">Encontradas</p>
-                  <p className="text-sm text-slate-600">{mainEvaluation.justification?.matched?.join(", ") || "—"}</p>
+                  <p className="break-words text-sm text-slate-600">
+                    {mainEvaluation.justification?.matched?.join(", ") || "—"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase text-slate-500">Faltando</p>
-                  <p className="text-sm text-slate-600">{mainEvaluation.justification?.missing?.join(", ") || "—"}</p>
+                  <p className="break-words text-sm text-slate-600">
+                    {mainEvaluation.justification?.missing?.join(", ") || "—"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -137,7 +141,7 @@ export function ApplicationDetailView({ applicationId }: { jobId: string; applic
       </div>
 
       {data.status === "IN_PROGRESS" && (
-        <div className="flex gap-3 border-t border-slate-200 pt-6">
+        <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-6">
           <button
             onClick={() => handleDecision("ADVANCE")}
             disabled={saving}

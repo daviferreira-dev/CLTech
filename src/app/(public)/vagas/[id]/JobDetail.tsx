@@ -67,13 +67,13 @@ export function JobDetail({ jobId }: { jobId: string }) {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">{job.title}</h1>
-      <p className="text-slate-600">
+      <h1 className="break-words text-xl font-semibold sm:text-2xl">{job.title}</h1>
+      <p className="break-words text-slate-600">
         {job.company} · {job.location}
       </p>
-      <p>{job.description}</p>
-      <p className="text-sm text-slate-500">Requisitos mínimos: {job.minimumRequirements}</p>
-      <p className="text-sm text-slate-500">Tecnologias: {job.technologies.join(", ")}</p>
+      <p className="break-words">{job.description}</p>
+      <p className="break-words text-sm text-slate-500">Requisitos mínimos: {job.minimumRequirements}</p>
+      <p className="break-words text-sm text-slate-500">Tecnologias: {job.technologies.join(", ")}</p>
 
       {job.matchScore?.status === "CALCULATED" && (
         <div className="rounded border border-slate-200 p-4">
@@ -81,11 +81,11 @@ export function JobDetail({ jobId }: { jobId: string }) {
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             <div>
               <p className="text-xs font-medium uppercase text-slate-500">Encontradas no seu perfil</p>
-              <p className="text-sm text-slate-600">{job.matchScore.matched?.join(", ") || "—"}</p>
+              <p className="break-words text-sm text-slate-600">{job.matchScore.matched?.join(", ") || "—"}</p>
             </div>
             <div>
               <p className="text-xs font-medium uppercase text-slate-500">Ainda faltando</p>
-              <p className="text-sm text-slate-600">{job.matchScore.missing?.join(", ") || "—"}</p>
+              <p className="break-words text-sm text-slate-600">{job.matchScore.missing?.join(", ") || "—"}</p>
             </div>
           </div>
         </div>

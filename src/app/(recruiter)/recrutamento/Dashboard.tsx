@@ -46,12 +46,12 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Painel de Recrutamento</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold sm:text-2xl">Painel de Recrutamento</h1>
         <select
           value={selectedJobId}
           onChange={(e) => setSelectedJobId(e.target.value)}
-          className="rounded border border-slate-300 px-3 py-2 text-sm"
+          className="w-full max-w-full rounded border border-slate-300 px-3 py-2 text-sm sm:w-auto"
         >
           <option value="">Todas as vagas</option>
           {data.jobs.map((job) => (
@@ -72,9 +72,9 @@ export function Dashboard() {
             </h2>
             <ul className="mt-2 space-y-1">
               {job.candidatesByStage.map((item) => (
-                <li key={item.stageType} className="flex justify-between text-sm text-slate-600">
-                  <span>{STAGE_LABEL[item.stageType] ?? item.stageType}</span>
-                  <span className="font-medium text-slate-900">{item.count}</span>
+                <li key={item.stageType} className="flex justify-between gap-2 text-sm text-slate-600">
+                  <span className="min-w-0 break-words">{STAGE_LABEL[item.stageType] ?? item.stageType}</span>
+                  <span className="shrink-0 font-medium text-slate-900">{item.count}</span>
                 </li>
               ))}
             </ul>
