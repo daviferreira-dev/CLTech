@@ -13,9 +13,14 @@ Os mesmos da Sprint 1 — Node.js 20+, pnpm, acesso ao projeto Supabase (banco +
 
 ```bash
 pnpm install                 # pega pdf-parse e mammoth, novos desta sprint
+pnpm prisma generate         # obrigatório: não há postinstall no package.json
 pnpm prisma migrate dev      # aplica a coluna Resume.extractedText
+pnpm db:seed                 # recrutador@3aq.dev + 5 vagas publicadas (Fluxos 2, 3 e 5)
 pnpm build && pnpm start     # http://localhost:3000 — ver por que não `pnpm dev` no README
 ```
+
+Pular o `prisma generate` faz o Vitest morrer com um `ERR_MODULE_NOT_FOUND` em um worker,
+sem citar o Prisma — o erro não diz qual é o passo que faltou.
 
 ## Validação manual — as cinco histórias
 
@@ -75,9 +80,21 @@ pnpm build && pnpm start     # http://localhost:3000 — ver por que não `pnpm 
 ## Testes automatizados
 
 ```bash
-pnpm test           # Vitest — inclui os testes novos de matching, publish e lock
-pnpm test:e2e       # Playwright — os cinco fluxos, 360px e 1280px
+pnpm exec playwright install chromium   # só na primeira vez
+pnpm test                               # Vitest — matching, publish e lock
+pnpm db:seed                            # obrigatório entre os dois — ver aviso abaixo
+pnpm test:e2e                           # Playwright — os cinco fluxos, 360px e 1280px
 ```
+
+**`pnpm test` apaga os dados do banco.** `tests/integration/setup.ts` dá
+`TRUNCATE ... CASCADE` em todas as tabelas de domínio antes de cada teste, e o
+`.env.test.example` aponta para o mesmo projeto Supabase do `.env`. Rodar a suíte de
+integração derruba o seed; sem rodar `pnpm db:seed` de novo, o Playwright encontra `/vagas`
+vazia e quase toda a suíte E2E falha com timeouts que não indicam a causa real.
+
+`vitest.config.ts` recusa iniciar se o `.env.test.example` não existir ou se o
+`DATABASE_URL` dele ainda estiver com os placeholders — antes esse caso caía em silêncio no
+`DATABASE_URL` do `.env` e truncava o banco de desenvolvimento sem nenhum aviso.
 
 Testes obrigatórios pela constituição nesta sprint:
 1. Nenhuma candidatura é criada sem `Evaluation(RESUME_MATCH)` junto (Princípio III).

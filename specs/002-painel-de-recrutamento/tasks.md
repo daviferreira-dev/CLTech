@@ -46,7 +46,7 @@ primário `bg-slate-900 text-white rounded px-4 py-2`, texto secundário
 - [x] T013 [US1] [P] Estilização de `src/app/(public)/vagas/[id]/JobDetail.tsx` — seção com duas listas (`text-sm`) de tecnologias encontradas vs. faltando, usando a mesma paleta `slate` do resto da tela (sem introduzir verde/vermelho)
 - [x] T014 [US1] [P] Teste de integração — recálculo dispara nos 3 gatilhos (upload de currículo, sync de GitHub, publicação de vaga) e nunca no caminho de uma leitura — `tests/integration/matching-recompute.test.ts`
 - [x] T015 [US1] [P] Teste de integração — score determinístico: mesma entrada produz mesmo resultado; pesos 60/40; fallback correto quando falta currículo ou GitHub — `tests/integration/matching-score.test.ts`
-- [ ] T016 [US1] [P] Teste E2E Playwright — Fluxo 1 do `quickstart.md` — `tests/e2e/job-match.spec.ts`
+- [x] T016 [US1] [P] Teste E2E Playwright — Fluxo 1 do `quickstart.md` — `tests/e2e/job-match.spec.ts`
 
 **Checkpoint**: Fluxo 1 do `quickstart.md` passa manualmente e nos testes automatizados.
 
@@ -71,7 +71,7 @@ primário `bg-slate-900 text-white rounded px-4 py-2`, texto secundário
 - [x] T028 [US2] [P] Estilização de T027 — estado travado com aviso `text-sm text-slate-500` explicando por que stack/pipeline não editam (FR-041); reaproveita os componentes de T025/T026 desabilitados, não duplica o layout
 - [x] T029 [US2] [P] Teste de integração obrigatório pela constituição — RN002: vaga sem tecnologias, sem requisitos mínimos ou sem etapas não publica, em nenhuma combinação — `tests/integration/job-publish.test.ts`
 - [x] T030 [US2] [P] Teste de integração obrigatório pela constituição — FR-041: vaga `PUBLISHED` recusa alterar `technologies`/`minimumRequirements`/etapas — `tests/integration/job-lock.test.ts`
-- [ ] T031 [US2] [P] Teste E2E Playwright — Fluxo 2 do `quickstart.md` — `tests/e2e/job-builder.spec.ts`
+- [x] T031 [US2] [P] Teste E2E Playwright — Fluxo 2 do `quickstart.md` — `tests/e2e/job-builder.spec.ts`
 
 **Checkpoint**: Fluxo 2 passa; vaga criada pelo recrutador aparece em `/vagas` (pública) assim que publicada.
 
@@ -86,7 +86,7 @@ primário `bg-slate-900 text-white rounded px-4 py-2`, texto secundário
 - [x] T033 [US3] `GET /api/recruiter/dashboard` — `src/app/api/recruiter/dashboard/route.ts`
 - [x] T034 [US3] [P] Tela `src/app/(recruiter)/recrutamento/page.tsx` — substitui o placeholder da Sprint 1: cards por vaga com contagem por etapa, seletor "todas"/vaga específica, métricas de funil, estado vazio orientando a criar a primeira vaga
 - [x] T035 [US3] [P] Estilização de T034 — grid de cards `rounded border border-slate-200 p-4`, métricas em destaque `text-2xl font-semibold`, contagem por etapa em `text-sm text-slate-600`, estado vazio com link sublinhado (mesmo padrão de "Minhas Candidaturas" vazia)
-- [ ] T036 [US3] [P] Teste E2E Playwright — Fluxo 3 do `quickstart.md` — `tests/e2e/dashboard.spec.ts`
+- [x] T036 [US3] [P] Teste E2E Playwright — Fluxo 3 do `quickstart.md` — `tests/e2e/dashboard.spec.ts`
 
 **Checkpoint**: Fluxo 3 passa; painel reflete dados reais do banco em até 3 s (RNF03).
 
@@ -105,7 +105,7 @@ primário `bg-slate-900 text-white rounded px-4 py-2`, texto secundário
 - [x] T042 [US4] [P] Estilização de T041 — duas colunas em ≥768px (dados básicos + score à esquerda, currículo/GitHub/teste à direita; empilhado em mobile), score em `text-3xl font-semibold`, justificativa reusando o padrão de listas de T013, botão avançar `bg-slate-900 text-white rounded px-4 py-2`, reprovar como outline `border border-slate-300 rounded px-4 py-2`
 - [x] T043 [US4] [P] Teste de integração obrigatório pela constituição — tentativa de enviar score em `/decision` é ignorada, score nunca muda (Princípio II, FR-050) — `tests/integration/evaluation-decision-immutable.test.ts`
 - [x] T044 [US4] [P] Teste de integração obrigatório pela constituição — nenhuma `Application` é criada sem `Evaluation(RESUME_MATCH)` junto, na mesma transação (Princípio III) — `tests/integration/evaluation-on-apply.test.ts`
-- [ ] T045 [US4] [P] Teste E2E Playwright — Fluxo 4 do `quickstart.md` — `tests/e2e/application-detail.spec.ts`
+- [x] T045 [US4] [P] Teste E2E Playwright — Fluxo 4 do `quickstart.md` — `tests/e2e/application-detail.spec.ts`
 
 **Checkpoint**: Fluxo 4 passa; decisão do recrutador move a candidatura de etapa de fato.
 
@@ -120,7 +120,7 @@ primário `bg-slate-900 text-white rounded px-4 py-2`, texto secundário
 - [x] T047 [US5] `GET /api/recruiter/candidates` — `src/app/api/recruiter/candidates/route.ts`
 - [x] T048 [US5] [P] Tela `src/app/(recruiter)/recrutamento/candidatos/page.tsx` — busca + lista agrupada + link manual de "convidar para nova vaga" (sem envio de e-mail real — ver D6)
 - [x] T049 [US5] [P] Estilização de T048 — campo de busca `rounded border border-slate-300 px-3 py-2 w-full`, candidato como card `rounded border border-slate-200` com candidaturas aninhadas (`border-t border-slate-100` entre itens), estado vazio igual ao padrão de `JobsList`
-- [ ] T050 [US5] [P] Teste E2E Playwright — Fluxo 5 do `quickstart.md` — `tests/e2e/candidate-search.spec.ts`
+- [x] T050 [US5] [P] Teste E2E Playwright — Fluxo 5 do `quickstart.md` — `tests/e2e/candidate-search.spec.ts`
 
 **Checkpoint**: US5 pode ser cortada sem quebrar US1-US4 (consistente com a prioridade P2 do `spec.md`).
 
@@ -128,10 +128,10 @@ primário `bg-slate-900 text-white rounded px-4 py-2`, texto secundário
 
 ## Fase 8 — Polimento e portões obrigatórios da constituição
 
-- [ ] T051 [P] Responsividade 360px–1280px nas 6 telas novas/alteradas desta sprint (lista de vagas do recrutador, criar/editar vaga, painel, detalhe do candidato, busca de candidatos) + revisão das 2 telas públicas que ganharam o indicador de match — sem rolagem horizontal (FR-054)
+- [x] T051 [P] Responsividade 360px–1280px nas 6 telas novas/alteradas desta sprint (lista de vagas do recrutador, criar/editar vaga, painel, detalhe do candidato, busca de candidatos) + revisão das 2 telas públicas que ganharam o indicador de match — sem rolagem horizontal (FR-054)
 - [x] T052 [P] Conferir que `services/ai/README.md` e `ers-divergences.md` (D11 novo, D3 resolvido) estão consistentes com o código final — já escritos durante o planejamento, esta tarefa é a checagem final pós-implementação
 - [x] T053 [P] Checklist de segredos — nenhuma variável de ambiente nova nesta sprint; `git status` limpo
-- [ ] T054 Rodar `quickstart.md` do zero como alguém de fora da equipe (Definition of Done)
+- [x] T054 Rodar `quickstart.md` do zero como alguém de fora da equipe (Definition of Done) — achou e corrigiu: `prisma generate` ausente do setup (sem `postinstall`, o Vitest morre com `ERR_MODULE_NOT_FOUND` sem citar o Prisma), `db:seed` ausente do setup e obrigatório entre `pnpm test` e `pnpm test:e2e` (a suíte de integração trunca o banco e a E2E encontra `/vagas` vazia), `playwright install chromium` não documentado, `vitest.config.ts` caindo em silêncio no `DATABASE_URL` do `.env` quando faltava config de teste — passava `TRUNCATE CASCADE` no banco de desenvolvimento sem aviso, locators ambíguos em `job-builder.spec.ts` e `job-match.spec.ts` (strict mode: rótulo de etapa colide com a `<option>` do select; `0% match` casa várias vagas), e `setStages` entrelaçando dois `PUT` concorrentes e estourando o índice único `(jobId, order)` — o pipeline era gravado pela metade
 
 ---
 
