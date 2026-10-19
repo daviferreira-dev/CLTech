@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { STAGE_LABEL } from "@/lib/processStages";
 
 type MatchScore =
   | { status: "CALCULATED"; value: number; matched?: string[]; missing?: string[] }
@@ -97,7 +98,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
         <h2 className="font-medium">Etapas do processo</h2>
         <ol className="list-decimal pl-5 text-sm text-slate-600">
           {job.stages.map((stage) => (
-            <li key={stage.order}>{stage.type}</li>
+            <li key={stage.order}>{STAGE_LABEL[stage.type] ?? stage.type}</li>
           ))}
         </ol>
       </div>
