@@ -25,11 +25,15 @@ async function uploadResume(page: Page, fixtureName: string) {
   await expect(page.getByText(new RegExp(fixtureName.replace(".", "\\.")))).toBeVisible();
 }
 
-/** O recálculo de JobMatch é fire-and-forget (contracts/api.md) — recarrega até aparecer. */
-async function waitForJobCard(page: Page, pattern: RegExp) {
+/**
+ * O recálculo de JobMatch é fire-and-forget (contracts/api.md) — recarrega até aparecer.
+ * Escopa no card da vaga: um mesmo percentual (ex. 0%) aparece em várias vagas da listagem,
+ * e um `getByText` solto violaria o strict mode do Playwright.
+ */
+async function waitForJobMatch(page: Page, jobTitle: string, pattern: RegExp) {
   await expect(async () => {
     await page.goto("/vagas");
-    await expect(page.getByText(pattern)).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: jobTitle }).getByText(pattern)).toBeVisible();
   }).toPass({ timeout: 15000, intervals: [500, 1000, 2000] });
 }
 
@@ -49,14 +53,14 @@ test("compatibilidade aparece, muda com o currículo, e some ao deslogar (FR-033
   await signUp(page, uniqueEmail());
   await uploadResume(page, "cv-react-node.docx");
 
-  await waitForJobCard(page, /67% match/);
+  await waitForJobMatch(page, REACT_JOB_TITLE, /67% match/);
 
-  await page.getByText(REACT_JOB_TITLE).click();
+  await page.getByRole("link", { name: REACT_JOB_TITLE }).click();
   await expect(page).toHaveURL(/\/vagas\/.+/);
   await expect(page.getByText("Sua compatibilidade: 67%")).toBeVisible();
   await expect(page.getByText(/Encontradas no seu perfil/)).toBeVisible();
   await expect(page.getByText(/Ainda faltando/)).toBeVisible();
 
   await uploadResume(page, "cv-python-django.docx");
-  await waitForJobCard(page, /0% match/);
+  await waitForJobMatch(page, REACT_JOB_TITLE, /0% match/);
 });
