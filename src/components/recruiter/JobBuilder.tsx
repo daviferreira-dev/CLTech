@@ -47,6 +47,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
   const [newStageType, setNewStageType] = useState<(typeof STAGE_TYPES)[number]>("RESUME_ANALYSIS");
   const [loading, setLoading] = useState(!!jobId);
   const [saving, setSaving] = useState(false);
+  const [savingStages, setSavingStages] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [missingFields, setMissingFields] = useState<string[]>([]);
 
@@ -111,14 +112,30 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     }
   }
 
+  // `PUT /stages` substitui o pipeline inteiro: dois envios sobrepostos (cliques rápidos em
+  // "Adicionar etapa") se atropelam no banco e uma etapa some sem aviso. Serializa com um
+  // flag e reconcilia o estado com a resposta do servidor em vez de confiar no otimista.
   async function handleSaveStages(nextStages: StageItem[]) {
-    if (!jobId) return;
+    if (!jobId || savingStages) return;
+    setSavingStages(true);
+    const previousStages = stages;
     setStages(nextStages);
-    await fetch(`/api/recruiter/jobs/${jobId}/stages`, {
+
+    const res = await fetch(`/api/recruiter/jobs/${jobId}/stages`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stages: nextStages }),
     });
+    setSavingStages(false);
+
+    if (res.ok) {
+      const job: JobBuilderView = await res.json();
+      setStages(job.stages);
+      return;
+    }
+    setStages(previousStages);
+    const body = await res.json().catch(() => null);
+    setMessage(body?.error?.message ?? "Não foi possível salvar as etapas.");
   }
 
   function addStage() {
@@ -301,21 +318,32 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
 
           <ol className="space-y-2">
             {stages.map((stage, index) => (
-              <li key={`${stage.type}-${index}`} className="flex items-center justify-between rounded border border-slate-200 px-4 py-3">
-                <span className="text-sm">{STAGE_LABEL[stage.type]}</span>
+              <li
+                key={`${stage.type}-${index}`}
+                className="flex items-center justify-between gap-3 rounded border border-slate-200 px-4 py-3"
+              >
+                <span className="min-w-0 break-words text-sm">{STAGE_LABEL[stage.type]}</span>
                 {!locked && (
-                  <div className="flex gap-2 text-sm">
-                    <button onClick={() => moveStage(index, -1)} disabled={index === 0} className="disabled:opacity-30">
+                  <div className="flex shrink-0 gap-2 text-sm">
+                    <button
+                      onClick={() => moveStage(index, -1)}
+                      disabled={index === 0 || savingStages}
+                      className="disabled:opacity-30"
+                    >
                       ↑
                     </button>
                     <button
                       onClick={() => moveStage(index, 1)}
-                      disabled={index === stages.length - 1}
+                      disabled={index === stages.length - 1 || savingStages}
                       className="disabled:opacity-30"
                     >
                       ↓
                     </button>
-                    <button onClick={() => removeStage(index)} className="text-red-600">
+                    <button
+                      onClick={() => removeStage(index)}
+                      disabled={savingStages}
+                      className="text-red-600 disabled:opacity-30"
+                    >
                       Remover
                     </button>
                   </div>
@@ -328,12 +356,12 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
           )}
 
           {!locked && (
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <select
                 aria-label="Tipo de etapa"
                 value={newStageType}
                 onChange={(e) => setNewStageType(e.target.value as (typeof STAGE_TYPES)[number])}
-                className="rounded border border-slate-300 px-3 py-2"
+                className="w-full max-w-full rounded border border-slate-300 px-3 py-2 sm:w-auto"
               >
                 {STAGE_TYPES.map((type) => (
                   <option key={type} value={type}>
@@ -341,7 +369,11 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                   </option>
                 ))}
               </select>
-              <button onClick={addStage} className="rounded border border-slate-300 px-4 py-2 text-sm">
+              <button
+                onClick={addStage}
+                disabled={savingStages}
+                className="shrink-0 rounded border border-slate-300 px-4 py-2 text-sm disabled:opacity-50"
+              >
                 Adicionar etapa
               </button>
             </div>

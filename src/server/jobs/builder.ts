@@ -61,17 +61,24 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
     throw Errors.conflict("JOB_LOCKED", "Vagas publicadas têm o pipeline travado.");
   }
 
-  await prisma.$transaction([
-    prisma.processStage.deleteMany({ where: { jobId } }),
-    prisma.processStage.createMany({
-      data: input.stages.map((stage, index) => ({
-        jobId,
-        type: stage.type,
-        order: index,
-        config: (stage.config ?? {}) as Prisma.InputJsonValue,
-      })),
-    }),
-  ]);
+  // Substituição completa (FR-039/042): sob Read Committed, dois PUT concorrentes
+  // entrelaçam o delete de um com o insert do outro e colidem no índice único
+  // (jobId, order). Serializable faz o banco recusar o entrelaçamento em vez de
+  // gravar um pipeline pela metade.
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.processStage.deleteMany({ where: { jobId } });
+      await tx.processStage.createMany({
+        data: input.stages.map((stage, index) => ({
+          jobId,
+          type: stage.type,
+          order: index,
+          config: (stage.config ?? {}) as Prisma.InputJsonValue,
+        })),
+      });
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
 
   return toView(jobId);
 }
