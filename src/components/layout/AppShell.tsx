@@ -30,6 +30,15 @@ export async function AppShell({ children, candidateExtraNav = [] }: { children:
       <main id="conteudo" tabIndex={-1} className="flex-1 focus:outline-none">
         {children}
       </main>
+      <footer className="border-t border-brand-100 bg-surface">
+        <div className="mx-auto flex w-full max-w-content flex-wrap items-center justify-between gap-2 px-4 py-4 text-label text-ink-600 sm:px-6">
+          <span>CLTech · 3aq Tecnologia</span>
+          {/* Spec 006, FR-307 — aviso de privacidade acessível de qualquer tela (LGPD art. 9º). */}
+          <a href="/privacidade" className={cn("underline-offset-2 hover:underline", focusRing)}>
+            Aviso de privacidade
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

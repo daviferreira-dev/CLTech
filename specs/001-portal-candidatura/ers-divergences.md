@@ -55,6 +55,25 @@ currículo, GitHub).
 sensível cifrado em coluna* de *dado de identidade protegido por controle de acesso*.
 Item obrigatório da auditoria de LGPD da Sprint 3 (cronograma, Semana 15).
 
+**Auditoria de 20/10/2026 ([spec 006](../006-lgpd/spec.md))** — inventário final por campo,
+verificado por `tests/integration/lgpd-encryption.test.ts` lendo as colunas por SQL cru:
+
+| Campo | Tratamento | Motivo |
+|---|---|---|
+| `Candidate.phone`, arquivo do currículo, `Resume.extractedText`, `CodeDraft.sourceCode`, `CodeSubmission.sourceCode` | AES-256-GCM em coluna/objeto | dado pessoal sem necessidade de busca |
+| `User.name`, `User.email` | texto claro + controle de acesso | RN007 (índice único) e RF09 (busca) |
+| `ExternalAccount.externalUsername`/`url` (GitHub, LinkedIn, Lattes) | texto claro + controle de acesso | identificador de perfil **público** por natureza; a coleta do GitHub consulta a API pelo username |
+| `Evaluation.score`/`justification` | texto claro + controle de acesso | `score` precisa ser ordenável no ranking (RF07); a trigger de imutabilidade opera sobre a linha |
+| `Account.access_token`/`refresh_token`/`id_token` | **não são mais gravados** | sem finalidade — minimização, art. 6º III (L1 da spec 006) |
+
+Texto proposto para o ERS v1.1, RNF05: *"Dados pessoais sem necessidade de busca
+(telefone, currículo, código-fonte de avaliações) MUST ser cifrados em repouso com
+AES-256. Dados de identidade usados como chave ou critério de busca (nome, e-mail,
+usuário de portfólio público) MUST ser acessíveis apenas a usuários autenticados com papel
+Recrutador ou Administrador, além do próprio titular."*
+
+**Status**: resolvido no código; pendente apenas a emenda no `.docx` do ERS.
+
 ---
 
 <a id="d2"></a>
@@ -354,7 +373,7 @@ Para a próxima revisão do documento (v1.1):
 
 | # | Seção do ERS | Ação | Prazo |
 |---|---|---|---|
-| D1 | RNF01, RNF05 | Distinguir dado sensível cifrado de dado de identidade protegido por acesso | Sprint 3 (auditoria LGPD) |
+| D1 | RNF01, RNF05 | Distinguir dado sensível cifrado de dado de identidade protegido por acesso — texto proposto em D1 | ✅ auditoria feita (spec 006); falta emendar o .docx |
 | D2 | 1.2.4 Tabela de viabilidade | Acrescentar VM de sandbox (R$ 0,00) | antes de 02/Nov |
 | D3 | RF03 passo 4 | Esclarecer que o match é pré-calculado, não em tempo real | antes de 21/Set |
 | D4 | RF07 passo 5 | Trocar "insights gerados pela IA" por métricas calculadas — **exige aval do professor** | antes de 21/Set |

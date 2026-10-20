@@ -102,6 +102,13 @@ export function RegisterForm() {
         <Button type="submit" loading={loading} className="w-full">
           {loading ? "Criando conta…" : "Criar conta"}
         </Button>
+        <p className="text-center text-label text-ink-600">
+          Ao criar a conta você declara ter lido o{" "}
+          <Link href="/privacidade" className={textLinkClasses}>
+            aviso de privacidade
+          </Link>
+          .
+        </p>
       </form>
 
       <p className="text-center text-body text-ink-600">

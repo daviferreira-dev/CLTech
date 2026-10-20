@@ -3,6 +3,7 @@ import { requirePageRole, CANDIDATE_ROLES, currentPath, safeInternalPath, type P
 import { PageContainer } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProfileForm } from "./ProfileForm";
+import { PrivacyCard } from "./PrivacyCard";
 
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
   const params = await searchParams;
@@ -23,6 +24,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         next={safeInternalPath(params.next)}
         resumeParse={currentResume ? { resumeId: currentResume.id, parseStatus: currentResume.parseStatus } : null}
       />
+      <div className="mt-6">
+        <PrivacyCard />
+      </div>
     </PageContainer>
   );
 }

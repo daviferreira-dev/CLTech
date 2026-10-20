@@ -1,5 +1,5 @@
 import { PageContainer } from "@/components/layout/AppShell";
-import { ButtonLink } from "@/components/ui";
+import { ButtonLink, Notice } from "@/components/ui";
 
 const STEPS = [
   { title: "Encontre a vaga", text: "Filtre por modalidade, senioridade e tecnologia e veja seu match com cada vaga." },
@@ -7,9 +7,15 @@ const STEPS = [
   { title: "Acompanhe", text: "Veja em que etapa está cada processo, incluindo o desafio técnico." },
 ];
 
-export default function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ conta?: string }> }) {
+  const { conta } = await searchParams;
   return (
     <PageContainer className="flex min-h-[70dvh] flex-col items-center justify-center gap-10 text-center">
+      {conta === "excluida" && (
+        <Notice tone="success" className="w-full max-w-2xl text-left">
+          Sua conta e todos os seus dados foram excluídos.
+        </Notice>
+      )}
       <div className="max-w-2xl space-y-4">
         <h1 className="text-[28px] font-bold leading-9 text-ink-900 sm:text-display">CLTech</h1>
         <p className="text-body text-ink-600 sm:text-[16px] sm:leading-6">

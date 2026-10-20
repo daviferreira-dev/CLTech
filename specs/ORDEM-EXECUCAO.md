@@ -174,3 +174,28 @@ desafio técnico → correção → entrevistas → aprovação, e busca de cand
   nome, e-mail, cidade e as linguagens do GitHub como chips.
 - Submissão automática por tempo usa `submittedBy = TIME_EXPIRED` (valor do enum), não
   `SYSTEM` como escrito na 005.
+
+---
+
+## 5. Spec 006 — Auditoria LGPD e direitos do titular (20/10/2026)
+
+Faltava dono para a frente "LGPD" do cronograma (Semana 16 do ERS, `CT-RNF05`, D1). Criada
+`specs/006-lgpd/spec.md` e executada na branch `006-lgpd`:
+
+- **P1 — auditoria**: tokens OAuth deixam de ser gravados (L1); log de erro inesperado sem a
+  mensagem, que pode carregar dado pessoal (L2); chave do bucket sem o nome do arquivo (L3);
+  HSTS e cabeçalhos de segurança (L4). Testes: `lgpd-encryption` (cifra lida por SQL cru) e
+  `lgpd-access` (matriz que varre `api/recruiter` e `api/me` em disco — rota nova sem guarda
+  quebra a suíte).
+- **P2 — direitos do titular**: "Baixar meus dados" e "Excluir minha conta" em `/perfil`
+  (`GET /api/me/data-export`, `DELETE /api/me/account`), página `/privacidade` linkada no
+  rodapé e no cadastro. Teste: `lgpd-rights`.
+- D1 do `ers-divergences.md` fechado com o inventário por campo e o texto proposto para o
+  RNF05 do ERS v1.1.
+
+**Pendências da 006**
+
+- Rodar `prisma/scripts/006-limpa-tokens-oauth.sql` uma vez no banco (contas OAuth antigas).
+- Emendar o `.docx` do ERS com o texto do D1.
+- Ainda abertos da Sprint 3: VM do Judge0, cron de expiração, e a Semana 17 (matriz de
+  rastreabilidade e manual de execução).
