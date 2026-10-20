@@ -7,7 +7,7 @@ function uniqueEmail() {
 
 test("listagem de vagas é visível sem login", async ({ page }) => {
   await page.goto("/vagas");
-  await expect(page.getByRole("heading", { name: "Vagas abertas" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Oportunidades Abertas na CLTech" })).toBeVisible();
 });
 
 test("filtrar por modalidade reduz a lista", async ({ page }) => {

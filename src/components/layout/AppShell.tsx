@@ -1,7 +1,8 @@
 import { auth } from "@/server/auth/config";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/components/ui";
-import { AppHeader, navFor, type HeaderUser, type NavItem } from "./AppHeader";
+import { AppHeader } from "./AppHeader";
+import { navFor, type HeaderUser, type NavItem } from "./nav";
 
 /**
  * Casca comum de toda tela (spec 003 US1, FR-003): link de pular conteúdo, cabeçalho com a

@@ -42,6 +42,8 @@ test("upload de PDF válido é aceito; .txt é recusado sem apagar o anterior (F
 
   const invalidTxt = path.join(__dirname, "fixtures", "cv-invalido.txt");
   await page.setInputFiles('input[type="file"]', invalidTxt);
+  // Substituir o currículo vigente exige confirmação (spec 004 FR-105).
+  await page.getByRole("button", { name: "Substituir currículo" }).click();
   await expect(page.getByText(/Envie um arquivo PDF ou DOCX/)).toBeVisible();
   // currículo anterior continua vigente
   await expect(page.getByText(/cv-valido\.pdf/)).toBeVisible();

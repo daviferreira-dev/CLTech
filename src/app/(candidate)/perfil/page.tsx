@@ -1,13 +1,28 @@
-import { requirePageRole, CANDIDATE_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
+import { prisma } from "@/lib/prisma";
+import { requirePageRole, CANDIDATE_ROLES, currentPath, safeInternalPath, type PageSearchParams } from "@/lib/guards";
+import { PageContainer } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { ProfileForm } from "./ProfileForm";
 
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
-  await requirePageRole(CANDIDATE_ROLES, currentPath("/perfil", await searchParams));
+  const params = await searchParams;
+  const user = await requirePageRole(CANDIDATE_ROLES, currentPath("/perfil", params));
+
+  // `parseStatus` existe no modelo mas não sai em GET /api/me/profile, e esta sprint não muda
+  // contrato de API (spec 003 FR-006). Lido aqui no servidor; o formulário chama
+  // router.refresh() após o upload para receber o valor do novo currículo.
+  const currentResume = await prisma.resume.findFirst({
+    where: { candidate: { userId: user.id }, isCurrent: true },
+    select: { id: true, parseStatus: true },
+  });
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 px-4 py-12">
-      <h1 className="text-2xl font-semibold">Meu Perfil</h1>
-      <ProfileForm />
-    </div>
+    <PageContainer className="max-w-4xl">
+      <PageHeader title="Meu Perfil" subtitle="Mantenha seus dados e currículo atualizados — é deles que sai o seu match com as vagas." />
+      <ProfileForm
+        next={safeInternalPath(params.next)}
+        resumeParse={currentResume ? { resumeId: currentResume.id, parseStatus: currentResume.parseStatus } : null}
+      />
+    </PageContainer>
   );
 }

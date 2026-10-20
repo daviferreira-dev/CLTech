@@ -1,7 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { apiFetch } from "@/lib/api-client";
+import { SENIORITY_LABEL, WORK_MODE_LABEL } from "@/lib/labels";
+import { cn } from "@/lib/cn";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { SidebarFilters, WithSidebar } from "@/components/layout/SidebarFilters";
+import {
+  Button,
+  Card,
+  CardListSkeleton,
+  ChipList,
+  EmptyState,
+  ErrorState,
+  Field,
+  Input,
+  MatchBadge,
+  Pagination,
+  Select,
+  focusRing,
+  type MatchState,
+} from "@/components/ui";
 
 type MatchScore = { status: "CALCULATED"; value: number } | { status: "NEEDS_RESUME" };
 
@@ -16,105 +37,209 @@ interface JobListItem {
   matchScore?: MatchScore;
 }
 
-function MatchBadge({ matchScore }: { matchScore?: MatchScore }) {
-  if (!matchScore) return null;
-  if (matchScore.status === "NEEDS_RESUME") {
-    return <p className="mt-2 text-sm text-slate-500">Complete seu perfil para ver seu match.</p>;
-  }
-  return (
-    <span className="shrink-0 whitespace-nowrap rounded-full bg-slate-900 px-2 py-0.5 text-xs font-medium text-white">
-      {matchScore.value}% match
-    </span>
-  );
+interface JobListResponse {
+  items: JobListItem[];
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
-const WORK_MODE_LABEL: Record<string, string> = { REMOTE: "Remoto", HYBRID: "Híbrido", ONSITE: "Presencial" };
-const SENIORITY_LABEL: Record<string, string> = {
-  INTERN: "Estágio",
-  JUNIOR: "Júnior",
-  MID: "Pleno",
-  SENIOR: "Sênior",
-};
+// Exatamente os parâmetros de `jobListQuerySchema` — nenhum outro (spec 004 US1.2).
+const FILTER_KEYS = ["q", "technology", "workMode", "seniority"] as const;
 
-export function JobsList() {
-  const [items, setItems] = useState<JobListItem[] | null>(null);
+type Viewer = "candidate" | "staff" | "visitor";
+
+/**
+ * FR-109: o backend devolve CALCULATED, NEEDS_RESUME ou nada. Para o candidato, "nada"
+ * significa que o JobMatch ainda não foi gerado (recalculo é fire-and-forget) — calculando.
+ */
+function matchStateFor(job: JobListItem, viewer: Viewer): MatchState | null {
+  if (viewer !== "candidate") return null;
+  return job.matchScore ?? { status: "NOT_CALCULATED" };
+}
+
+export function JobsList({ viewer }: { viewer: Viewer }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryString = searchParams.toString();
+
+  const [data, setData] = useState<JobListResponse | null>(null);
   const [failed, setFailed] = useState(false);
-  const [workMode, setWorkMode] = useState("");
-  const [seniority, setSeniority] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
+  // Campos de texto só vão para a URL ao enviar a busca; até lá, ficam no rascunho local.
+  const [qDraft, setQDraft] = useState(searchParams.get("q") ?? "");
+  const [techDraft, setTechDraft] = useState(searchParams.get("technology") ?? "");
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (workMode) params.set("workMode", workMode);
-    if (seniority) params.set("seniority", seniority);
+    setQDraft(searchParams.get("q") ?? "");
+    setTechDraft(searchParams.get("technology") ?? "");
+  }, [searchParams]);
 
-    // Uma resposta de erro não tem `items`: atribuí-la direto deixava `items` como
-    // undefined e o `items.length` abaixo derrubava a página inteira com um TypeError.
+  // A URL é a única fonte da verdade do recorte: o efeito depende só da query string, então
+  // reescrever a URL com o mesmo conteúdo não refaz a busca (sem laço — risco da spec 004).
+  useEffect(() => {
+    let cancelled = false;
+    setData(null);
     setFailed(false);
-    fetch(`/api/jobs?${params.toString()}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (Array.isArray(data?.items)) {
-          setItems(data.items);
-          return;
-        }
-        setItems([]);
-        setFailed(true);
-      })
-      .catch(() => {
-        setItems([]);
-        setFailed(true);
-      });
-  }, [workMode, seniority]);
+    apiFetch<JobListResponse>(`/api/jobs?${queryString}`).then((result) => {
+      if (cancelled) return;
+      // Uma resposta de erro não tem `items`: sem esta guarda o `.length` derrubava a página.
+      if (result.ok && Array.isArray(result.data?.items)) {
+        setData(result.data);
+        return;
+      }
+      setFailed(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [queryString, reloadKey]);
+
+  const updateQuery = useCallback(
+    (changes: Partial<Record<(typeof FILTER_KEYS)[number], string>>) => {
+      const next = new URLSearchParams(queryString);
+      for (const [key, value] of Object.entries(changes)) {
+        const trimmed = value?.trim();
+        if (trimmed) next.set(key, trimmed);
+        else next.delete(key);
+      }
+      next.delete("page"); // novo recorte começa da primeira página
+      const qs = next.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, queryString, router],
+  );
+
+  const hrefForPage = useCallback(
+    (page: number) => {
+      const next = new URLSearchParams(queryString);
+      if (page <= 1) next.delete("page");
+      else next.set("page", String(page));
+      const qs = next.toString();
+      return qs ? `${pathname}?${qs}` : pathname;
+    },
+    [pathname, queryString],
+  );
+
+  const hasFilters = FILTER_KEYS.some((key) => searchParams.get(key));
+  const clearFilters = () => router.replace(pathname, { scroll: false });
+
+  const subtitle = failed
+    ? "Encontre a vaga certa e acompanhe seu processo pela plataforma."
+    : data === null
+      ? "Carregando vagas…"
+      : `${data.total} ${data.total === 1 ? "vaga ativa" : "vagas ativas"}${hasFilters ? " com os filtros aplicados" : ""}.`;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-3">
-        <select
-          value={workMode}
-          onChange={(e) => setWorkMode(e.target.value)}
-          className="w-full max-w-full rounded border border-slate-300 px-3 py-2 sm:w-auto"
-        >
-          <option value="">Todas as modalidades</option>
-          <option value="REMOTE">Remoto</option>
-          <option value="HYBRID">Híbrido</option>
-          <option value="ONSITE">Presencial</option>
-        </select>
-        <select
-          value={seniority}
-          onChange={(e) => setSeniority(e.target.value)}
-          className="w-full max-w-full rounded border border-slate-300 px-3 py-2 sm:w-auto"
-        >
-          <option value="">Todas as senioridades</option>
-          <option value="INTERN">Estágio</option>
-          <option value="JUNIOR">Júnior</option>
-          <option value="MID">Pleno</option>
-          <option value="SENIOR">Sênior</option>
-        </select>
-      </div>
+    <>
+      <PageHeader title="Oportunidades Abertas na CLTech" subtitle={<span aria-live="polite">{subtitle}</span>} />
 
-      {items === null && <p>Carregando…</p>}
-      {failed && <p className="text-slate-500">Não foi possível carregar as vagas. Recarregue a página.</p>}
-      {!failed && items !== null && items.length === 0 && (
-        <p className="text-slate-500">Nenhuma vaga encontrada com esses filtros. Tente ampliar a busca.</p>
-      )}
+      <form
+        role="search"
+        aria-label="Buscar vagas"
+        onSubmit={(e) => {
+          e.preventDefault();
+          updateQuery({ q: qDraft, technology: techDraft });
+        }}
+        className="mb-6 grid gap-3 rounded-card border border-brand-100 bg-surface p-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] sm:items-end sm:p-6"
+      >
+        <Field id="busca-q" label="Cargo ou palavra-chave">
+          <Input type="search" value={qDraft} onChange={(e) => setQDraft(e.target.value)} placeholder="Ex.: Frontend, Dados…" />
+        </Field>
+        <Field id="busca-tecnologia" label="Tecnologia">
+          <Input value={techDraft} onChange={(e) => setTechDraft(e.target.value)} placeholder="Ex.: React" />
+        </Field>
+        <Button type="submit">Buscar</Button>
+      </form>
 
-      <ul className="space-y-4">
-        {items?.map((job) => (
-          <li key={job.id} className="rounded border border-slate-200 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <Link href={`/vagas/${job.id}`} className="min-w-0 break-words text-lg font-semibold hover:underline">
-                {job.title}
-              </Link>
-              {job.matchScore?.status === "CALCULATED" && <MatchBadge matchScore={job.matchScore} />}
-            </div>
-            <p className="text-sm text-slate-600">
-              {job.company} · {job.location} · {WORK_MODE_LABEL[job.workMode]} · {SENIORITY_LABEL[job.seniority]}
-            </p>
-            <p className="mt-1 break-words text-sm text-slate-500">{job.technologies.join(", ")}</p>
-            {job.matchScore?.status === "NEEDS_RESUME" && <MatchBadge matchScore={job.matchScore} />}
-          </li>
-        ))}
-      </ul>
-    </div>
+      <WithSidebar
+        sidebar={
+          <SidebarFilters
+            title="Refinar"
+            footer={
+              <Button variant="ghost" size="sm" onClick={clearFilters} disabled={!hasFilters}>
+                Limpar filtros
+              </Button>
+            }
+          >
+            <Field id="filtro-modalidade" label="Modalidade">
+              <Select value={searchParams.get("workMode") ?? ""} onChange={(e) => updateQuery({ workMode: e.target.value })}>
+                <option value="">Todas as modalidades</option>
+                <option value="REMOTE">Remoto</option>
+                <option value="HYBRID">Híbrido</option>
+                <option value="ONSITE">Presencial</option>
+              </Select>
+            </Field>
+            <Field id="filtro-senioridade" label="Senioridade">
+              <Select value={searchParams.get("seniority") ?? ""} onChange={(e) => updateQuery({ seniority: e.target.value })}>
+                <option value="">Todas as senioridades</option>
+                <option value="INTERN">Estágio</option>
+                <option value="JUNIOR">Júnior</option>
+                <option value="MID">Pleno</option>
+                <option value="SENIOR">Sênior</option>
+              </Select>
+            </Field>
+          </SidebarFilters>
+        }
+      >
+        {data === null && !failed && <CardListSkeleton label="Carregando vagas…" />}
+
+        {failed && (
+          <ErrorState
+            title="Não foi possível carregar as vagas."
+            description="Pode ser uma instabilidade momentânea. Seus filtros foram mantidos."
+            onRetry={() => setReloadKey((k) => k + 1)}
+          />
+        )}
+
+        {data && data.items.length === 0 && (
+          <EmptyState
+            title={hasFilters ? "Nenhuma vaga encontrada com esses filtros." : "Nenhuma vaga aberta no momento."}
+            description={hasFilters ? "Tente ampliar a busca ou remover algum filtro." : "Volte em breve — novas vagas são publicadas com frequência."}
+            action={hasFilters ? <Button variant="secondary" onClick={clearFilters}>Limpar filtros</Button> : undefined}
+          />
+        )}
+
+        {data && data.items.length > 0 && (
+          <div className="space-y-6">
+            <ul className="space-y-4">
+              {data.items.map((job) => {
+                const match = matchStateFor(job, viewer);
+                return (
+                  <Card as="li" key={job.id} className="p-4 transition-colors hover:border-ink-400 sm:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <h2 className="text-h3">
+                          <Link
+                            href={`/vagas/${job.id}`}
+                            className={cn("break-words rounded-sm text-ink-900 hover:underline", focusRing)}
+                          >
+                            {job.title}
+                          </Link>
+                        </h2>
+                        <p className="break-words text-body text-ink-600">
+                          {job.company} · {job.location} · {WORK_MODE_LABEL[job.workMode]} · {SENIORITY_LABEL[job.seniority]}
+                        </p>
+                      </div>
+                      {match && match.status !== "NEEDS_RESUME" && <MatchBadge match={match} />}
+                    </div>
+                    <div className="mt-3">
+                      <ChipList items={job.technologies} label={`Tecnologias de ${job.title}`} />
+                    </div>
+                    {match?.status === "NEEDS_RESUME" && (
+                      <div className="mt-3">
+                        <MatchBadge match={match} />
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </ul>
+            <Pagination page={data.page} pageSize={data.pageSize} total={data.total} hrefFor={hrefForPage} />
+          </div>
+        )}
+      </WithSidebar>
+    </>
   );
 }

@@ -19,9 +19,11 @@ async function signUp(page: Page, email: string) {
   await expect(page).toHaveURL(/\/vagas$/);
 }
 
-async function uploadResume(page: Page, fixtureName: string) {
+async function uploadResume(page: Page, fixtureName: string, { replacing = false } = {}) {
   await page.goto("/perfil");
   await page.setInputFiles('input[type="file"]', path.join(__dirname, "fixtures", fixtureName));
+  // Substituir o currículo vigente exige confirmação (spec 004 FR-105).
+  if (replacing) await page.getByRole("button", { name: "Substituir currículo" }).click();
   await expect(page.getByText(new RegExp(fixtureName.replace(".", "\\.")))).toBeVisible();
 }
 
@@ -61,6 +63,6 @@ test("compatibilidade aparece, muda com o currículo, e some ao deslogar (FR-033
   await expect(page.getByText(/Encontradas no seu perfil/)).toBeVisible();
   await expect(page.getByText(/Ainda faltando/)).toBeVisible();
 
-  await uploadResume(page, "cv-python-django.docx");
+  await uploadResume(page, "cv-python-django.docx", { replacing: true });
   await waitForJobMatch(page, REACT_JOB_TITLE, /0% match/);
 });

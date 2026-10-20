@@ -1,10 +1,20 @@
+import { Suspense } from "react";
+import { auth } from "@/server/auth/config";
+import { PageContainer } from "@/components/layout/AppShell";
+import { CardListSkeleton } from "@/components/ui";
 import { JobsList } from "./JobsList";
 
-export default function JobsPage() {
+export default async function JobsPage() {
+  const session = await auth();
+  // Só o próprio candidato vê match (FR-035); para ele, ausência de percentual é "calculando".
+  const viewer = session?.user?.role === "CANDIDATE" ? "candidate" : session?.user ? "staff" : "visitor";
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-12">
-      <h1 className="text-2xl font-semibold">Vagas abertas</h1>
-      <JobsList />
-    </div>
+    <PageContainer>
+      {/* useSearchParams exige fronteira de Suspense: os filtros vivem na URL (spec 004 FR-102). */}
+      <Suspense fallback={<CardListSkeleton />}>
+        <JobsList viewer={viewer} />
+      </Suspense>
+    </PageContainer>
   );
 }

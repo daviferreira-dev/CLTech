@@ -36,9 +36,12 @@ test("recrutador abre relatório do candidato, vê score/currículo e avança a 
   await candidatePage.goto("/vagas");
   const firstJobLink = candidatePage.locator('a[href^="/vagas/"]').first();
   await firstJobLink.click();
+  await expect(candidatePage).toHaveURL(/\/vagas\/.+/);
+  // Lido antes de candidatar: depois da candidatura o candidato vai para /candidaturas (spec 004 US2.5).
+  const jobUrl = candidatePage.url();
   await candidatePage.getByRole("button", { name: "Candidatar-se" }).click();
   await expect(candidatePage.getByText("Candidatura registrada com sucesso!")).toBeVisible();
-  const jobUrl = candidatePage.url();
+  await expect(candidatePage).toHaveURL(/\/candidaturas\?nova=/);
   const jobId = jobUrl.split("/vagas/")[1];
   await candidateContext.close();
 
