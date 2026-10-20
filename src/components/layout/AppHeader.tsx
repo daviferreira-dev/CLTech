@@ -1,0 +1,232 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { signOut } from "next-auth/react";
+import { cn } from "@/lib/cn";
+import { Avatar, ButtonLink, focusRing } from "@/components/ui";
+
+export type HeaderRole = "CANDIDATE" | "RECRUITER" | "ADMIN";
+
+export interface HeaderUser {
+  name: string;
+  role: HeaderRole;
+}
+
+export interface NavItem {
+  href: string;
+  label: string;
+  /** Prefixo que também marca o item como atual (ex.: /vagas/[id] dentro de "Vagas"). */
+  matchPrefix?: string;
+}
+
+// Itens de navegação por papel. "Desafios Técnicos" entra aqui quando a spec 005 entregar a
+// rota (spec 003, tabela "Elementos da referência sem lastro") — basta acrescentar o item.
+export const CANDIDATE_NAV: NavItem[] = [
+  { href: "/vagas", label: "Vagas Disponíveis", matchPrefix: "/vagas" },
+  { href: "/candidaturas", label: "Minhas Candidaturas", matchPrefix: "/candidaturas" },
+  { href: "/perfil", label: "Meu Perfil", matchPrefix: "/perfil" },
+];
+
+export const RECRUITER_NAV: NavItem[] = [
+  { href: "/recrutamento", label: "Painel" },
+  { href: "/recrutamento/vagas", label: "Minhas Vagas", matchPrefix: "/recrutamento/vagas" },
+  { href: "/recrutamento/candidatos", label: "Candidatos", matchPrefix: "/recrutamento/candidatos" },
+];
+
+const VISITOR_NAV: NavItem[] = [{ href: "/vagas", label: "Vagas Disponíveis", matchPrefix: "/vagas" }];
+
+const ROLE_LABEL: Record<HeaderRole, string> = {
+  CANDIDATE: "Candidato(a)",
+  RECRUITER: "Recrutador(a)",
+  ADMIN: "Administrador(a)",
+};
+
+function isActive(item: NavItem, pathname: string): boolean {
+  if (pathname === item.href) return true;
+  return item.matchPrefix ? pathname.startsWith(`${item.matchPrefix}/`) || pathname === item.matchPrefix : false;
+}
+
+export function navFor(user: HeaderUser | null, candidateExtra: NavItem[] = []): NavItem[] {
+  if (!user) return VISITOR_NAV;
+  return user.role === "CANDIDATE" ? [...CANDIDATE_NAV, ...candidateExtra] : RECRUITER_NAV;
+}
+
+export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem[] }) {
+  const pathname = usePathname() ?? "/";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Fecha os menus ao trocar de rota.
+  useEffect(() => {
+    setMenuOpen(false);
+    setUserMenuOpen(false);
+  }, [pathname]);
+
+  // Fecha o menu do usuário ao clicar fora ou apertar Esc.
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function onPointer(e: MouseEvent) {
+      if (!userMenuRef.current?.contains(e.target as Node)) setUserMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setUserMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [userMenuOpen]);
+
+  const homeHref = !user ? "/" : user.role === "CANDIDATE" ? "/vagas" : "/recrutamento";
+  // Busca de vagas alimenta `q` em /vagas (spec 003). Fica fora da própria /vagas, que tem a
+  // sua barra de busca, e fora do recrutamento, que não lista vagas públicas.
+  const showJobSearch = (!user || user.role === "CANDIDATE") && pathname !== "/vagas";
+
+  const navLinks = (layout: "row" | "column") =>
+    nav.map((item) => {
+      const active = isActive(item, pathname);
+      return (
+        <li key={item.href}>
+          <Link
+            href={item.href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "block rounded-field px-3 py-2 text-body font-medium transition-colors",
+              active ? "bg-brand-100/70 text-ink-900" : "text-ink-600 hover:bg-canvas hover:text-ink-900",
+              layout === "row" && active && "shadow-[inset_0_-2px_0] shadow-brand-900",
+              focusRing,
+            )}
+          >
+            {item.label}
+          </Link>
+        </li>
+      );
+    });
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-brand-100 bg-surface shadow-header">
+      <div className="mx-auto flex h-16 max-w-content items-center gap-4 px-4 sm:px-6">
+        <Link href={homeHref} className={cn("flex shrink-0 items-center gap-2 rounded-field", focusRing)}>
+          <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-field bg-brand-900 text-label font-bold text-surface">
+            CL
+          </span>
+          <span className="text-h3 font-bold text-brand-900">CLTech</span>
+        </Link>
+
+        <nav aria-label="Navegação principal" className="hidden md:block">
+          <ul className="flex items-center gap-1">{navLinks("row")}</ul>
+        </nav>
+
+        <div className="ml-auto flex items-center gap-2">
+          {showJobSearch && (
+            <form action="/vagas" method="get" role="search" className="hidden lg:block">
+              <label htmlFor="busca-header" className="sr-only">
+                Buscar vagas por cargo ou tecnologia
+              </label>
+              <input
+                id="busca-header"
+                name="q"
+                type="search"
+                placeholder="Buscar vagas…"
+                className={cn(
+                  "h-9 w-56 rounded-field border border-brand-100 bg-canvas px-3 text-body text-ink-900 placeholder:text-ink-400",
+                  focusRing,
+                  "focus-visible:ring-offset-0",
+                )}
+              />
+            </form>
+          )}
+
+          {user ? (
+            <div ref={userMenuRef} className="relative">
+              <button
+                type="button"
+                aria-expanded={userMenuOpen}
+                aria-haspopup="true"
+                aria-controls="menu-usuario"
+                onClick={() => setUserMenuOpen((open) => !open)}
+                className={cn("flex items-center gap-2 rounded-field p-1 hover:bg-canvas", focusRing)}
+              >
+                <Avatar name={user.name} size="sm" />
+                <span className="hidden min-w-0 text-left sm:block">
+                  <span className="block max-w-40 truncate text-body font-medium text-ink-900">{user.name}</span>
+                  <span className="block text-label font-normal text-ink-600">{ROLE_LABEL[user.role]}</span>
+                </span>
+                <span className="sr-only sm:hidden">Menu do usuário</span>
+              </button>
+              {userMenuOpen && (
+                <div
+                  id="menu-usuario"
+                  className="absolute right-0 mt-2 w-56 rounded-card border border-brand-100 bg-surface p-2 shadow-popover"
+                >
+                  <div className="border-b border-brand-100 px-2 pb-2 sm:hidden">
+                    <p className="truncate text-body font-medium text-ink-900">{user.name}</p>
+                    <p className="text-label font-normal text-ink-600">{ROLE_LABEL[user.role]}</p>
+                  </div>
+                  {user.role === "CANDIDATE" && (
+                    <Link
+                      href="/perfil"
+                      className={cn("block rounded-field px-2 py-2 text-body text-ink-900 hover:bg-canvas", focusRing)}
+                    >
+                      Meu Perfil
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className={cn("block w-full rounded-field px-2 py-2 text-left text-body text-ink-900 hover:bg-canvas", focusRing)}
+                  >
+                    Sair
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="hidden items-center gap-2 sm:flex">
+              <ButtonLink href="/entrar" variant="ghost" size="sm">
+                Entrar
+              </ButtonLink>
+              <ButtonLink href="/cadastro" size="sm">
+                Cadastrar
+              </ButtonLink>
+            </div>
+          )}
+
+          <button
+            type="button"
+            aria-expanded={menuOpen}
+            aria-controls="menu-principal-mobile"
+            onClick={() => setMenuOpen((open) => !open)}
+            className={cn("rounded-field p-2 text-ink-900 hover:bg-canvas md:hidden", focusRing)}
+          >
+            <span className="sr-only">{menuOpen ? "Fechar menu" : "Abrir menu"}</span>
+            <span aria-hidden="true" className="block text-h2 leading-none">
+              {menuOpen ? "×" : "☰"}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {menuOpen && (
+        <nav id="menu-principal-mobile" aria-label="Navegação principal (menu)" className="border-t border-brand-100 px-4 py-3 md:hidden">
+          <ul className="space-y-1">{navLinks("column")}</ul>
+          {!user && (
+            <div className="mt-3 flex gap-2 border-t border-brand-100 pt-3 sm:hidden">
+              <ButtonLink href="/entrar" variant="secondary" size="sm" className="flex-1">
+                Entrar
+              </ButtonLink>
+              <ButtonLink href="/cadastro" size="sm" className="flex-1">
+                Cadastrar
+              </ButtonLink>
+            </div>
+          )}
+        </nav>
+      )}
+    </header>
+  );
+}

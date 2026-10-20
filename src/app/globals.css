@@ -2,10 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Tokens da identidade visual — specs/003-identidade-visual/spec.md (FR-001).
+ * Declarados uma única vez aqui como canais RGB, para que o Tailwind consiga aplicar
+ * opacidade (`bg-brand-900/50`). Nenhum componente escreve hex literal: tudo passa pelos
+ * nomes expostos em tailwind.config.ts.
+ */
 :root {
   color-scheme: light;
+
+  --brand-900: 15 23 42; /* #0F172A */
+  --brand-700: 30 41 59; /* #1E293B */
+  --brand-100: 226 232 240; /* #E2E8F0 */
+  --accent-600: 5 150 105; /* #059669 */
+  --accent-100: 209 250 229; /* #D1FAE5 */
+  --surface: 255 255 255; /* #FFFFFF */
+  --canvas: 248 250 252; /* #F8FAFC */
+  --ink-900: 15 23 42; /* #0F172A */
+  --ink-600: 71 85 105; /* #475569 */
+  --ink-400: 148 163 184; /* #94A3B8 */
+  --danger-600: 220 38 38; /* #DC2626 */
+  --warning-500: 217 119 6; /* #D97706 */
+
+  --radius-field: 8px;
+  --radius-card: 12px;
+  --shadow-header: 0 1px 2px rgb(15 23 42 / 0.06);
+  --shadow-popover: 0 8px 24px rgb(15 23 42 / 0.12);
 }
 
 body {
   min-height: 100dvh;
+}
+
+/* NFR-005: transições curtas e desligadas para quem pede menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+dialog::backdrop {
+  background: rgb(var(--brand-900) / 0.4);
 }
