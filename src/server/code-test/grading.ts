@@ -2,6 +2,7 @@
 // ocultos. Nunca move a candidatura de etapa (FR-209 / Princípio II): só grava a Evaluation.
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { logSafeError } from "@/lib/errors";
 import { decrypt } from "@/server/crypto";
 import { getSandbox, SandboxUnavailableError } from "@/server/sandbox";
 import type { CaseOutcome } from "@/lib/codeTest";
@@ -123,7 +124,7 @@ const inFlight = new Set<Promise<void>>();
 /** Dispara a correção sem bloquear a resposta (mesmo padrão do recálculo de match). */
 export function kickGrading(submissionId: string): void {
   const task = gradeSubmission(submissionId)
-    .catch((err) => console.error(`[code-test] Erro ao corrigir ${submissionId}`, err))
+    .catch((err) => logSafeError(`code-test ${submissionId}`, err))
     .finally(() => inFlight.delete(task));
   inFlight.add(task);
 }

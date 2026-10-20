@@ -45,7 +45,7 @@ export async function uploadResume(
 
   // Conteúdo cifrado antes do upload (R4) — o bucket nunca guarda o arquivo em claro.
   const encryptedContent = Buffer.from(encrypt(file.buffer.toString("base64")), "utf8");
-  const { storageKey } = await uploadPrivateObject(candidate.id, file.name, encryptedContent, "application/octet-stream");
+  const { storageKey } = await uploadPrivateObject(candidate.id, encryptedContent, "application/octet-stream");
 
   // RN001/FR-032: extrai o texto antes de qualquer exibição a recrutador. Nunca bloqueia o
   // upload — PDF ilegível (ex.: escaneado como imagem) só reduz o sinal do score (R13).

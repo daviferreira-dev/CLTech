@@ -23,12 +23,28 @@ export function errorResponse(error: ApiError): NextResponse {
   );
 }
 
+/**
+ * Loga erro inesperado sem a mensagem (spec 006, FR-302 / L2). A mensagem de um
+ * PrismaClientValidationError reproduz os argumentos da query — e-mail, nome, telefone em
+ * claro —, e o Princípio I proíbe dado pessoal em log. Ficam nome, código e as linhas
+ * "at ..." da pilha, que bastam para localizar a falha.
+ */
+export function logSafeError(context: string, err: unknown): void {
+  if (!(err instanceof Error)) {
+    console.error(`[${context}] erro não-Error lançado (${typeof err})`);
+    return;
+  }
+  const code = (err as { code?: unknown }).code;
+  const frames = (err.stack ?? "").split("\n").filter((line) => line.trimStart().startsWith("at "));
+  console.error([`[${context}] ${err.name}${typeof code === "string" ? ` (${code})` : ""}`, ...frames].join("\n"));
+}
+
 /** Converte qualquer erro lançado numa rota em uma resposta HTTP no formato padrão. */
 export function toErrorResponse(err: unknown): NextResponse {
   if (err instanceof ApiError) {
     return errorResponse(err);
   }
-  console.error(err);
+  logSafeError("api", err);
   return NextResponse.json(
     { error: { code: "INTERNAL_ERROR", message: "Erro inesperado. Tente novamente." } },
     { status: 500 },

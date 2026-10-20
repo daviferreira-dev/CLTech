@@ -14,7 +14,7 @@
 // LINKEDIN_ID o botão simplesmente não aparece, sem quebrar o resto — R2).
 
 import NextAuth, { type NextAuthConfig } from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { createAdapter } from "@/server/auth/adapter";
 import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import LinkedIn from "next-auth/providers/linkedin";
@@ -67,7 +67,7 @@ if (process.env.LINKEDIN_ID && process.env.LINKEDIN_SECRET) {
 }
 
 export const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(prisma),
+  adapter: createAdapter(),
   // D10: "jwt", não "database" — ver nota acima. O adapter continua ativo para
   // as tabelas Account/User (necessário para FR-003, vínculo por e-mail).
   session: { strategy: "jwt" },
