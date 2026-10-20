@@ -3,6 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { STAGE_TYPES, STAGE_LABEL } from "@/lib/processStages";
+import {
+  DEFAULT_TIME_LIMIT_MINUTES,
+  DIFFICULTY_LABEL,
+  LANGUAGE_LABEL,
+  MAX_TEST_RUNS,
+  MAX_TIME_LIMIT_MINUTES,
+  MIN_TIME_LIMIT_MINUTES,
+  isCodeTestConfigComplete,
+  type CodeTestStageConfig,
+} from "@/lib/codeTest";
 import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE, type ApiResult } from "@/lib/api-client";
 import { JOB_STATUS_BADGE, JOB_STATUS_LABEL } from "@/lib/labels";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -64,7 +74,17 @@ const MISSING_LABEL: Record<string, string> = {
   technologies: "ao menos uma tecnologia",
   minimumRequirements: "os requisitos mínimos",
   stages: "ao menos uma etapa no pipeline",
+  codeTest: "o desafio, as linguagens e o tempo da etapa de teste de código",
 };
+
+interface ChallengeOption {
+  id: string;
+  title: string;
+  difficulty: string;
+  languages: string[];
+  visibleCases: Array<{ index: number }>;
+  hiddenCaseCount: number;
+}
 
 type Banner = { tone: "success" | "danger" | "warning" | "info"; title?: string; text: string } | null;
 
@@ -83,6 +103,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
   const [message, setMessage] = useState<Banner>(null);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [confirmPublish, setConfirmPublish] = useState(false);
+  const [catalog, setCatalog] = useState<ChallengeOption[] | null>(null);
 
   // Alterações de campo ainda não salvas (spec 004 US4.7). O pipeline é salvo a cada ação,
   // então só os campos do formulário contam.
@@ -140,6 +161,15 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
       document.removeEventListener("click", onClickCapture, true);
     };
   }, []);
+
+  // Catálogo de desafios só é buscado quando o pipeline tem teste de código (spec 005 US1).
+  const hasCodeTest = stages.some((stage) => stage.type === "CODE_TEST");
+  useEffect(() => {
+    if (!hasCodeTest || catalog !== null) return;
+    apiFetch<{ items: ChallengeOption[] }>("/api/recruiter/challenges").then((result) => {
+      setCatalog(result.ok && Array.isArray(result.data?.items) ? result.data.items : []);
+    });
+  }, [hasCodeTest, catalog]);
 
   const locked = status === "PUBLISHED";
 
@@ -235,6 +265,10 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
 
   function addStage() {
     handleSaveStages([...stages, { type: newStageType }]);
+  }
+
+  function updateStageConfig(index: number, config: CodeTestStageConfig) {
+    handleSaveStages(stages.map((stage, i) => (i === index ? { ...stage, config: config as Record<string, unknown> } : stage)));
   }
 
   function removeStage(index: number) {
@@ -426,50 +460,60 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                 {stages.map((stage, index) => {
                   const label = STAGE_LABEL[stage.type];
                   return (
-                    <li
-                      key={`${stage.type}-${index}`}
-                      className="flex items-center justify-between gap-3 rounded-card border border-brand-100 bg-surface px-4 py-3"
-                    >
-                      <span className="flex min-w-0 items-center gap-3">
-                        <span
-                          aria-hidden="true"
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-900 text-label text-surface"
-                        >
-                          {index + 1}
+                    <li key={`${stage.type}-${index}`} className="rounded-card border border-brand-100 bg-surface px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex min-w-0 items-center gap-3">
+                          <span
+                            aria-hidden="true"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-900 text-label text-surface"
+                          >
+                            {index + 1}
+                          </span>
+                          <span className="min-w-0 break-words text-body font-medium text-ink-900">{label}</span>
                         </span>
-                        <span className="min-w-0 break-words text-body font-medium text-ink-900">{label}</span>
-                      </span>
-                      {!locked && (
-                        <div className="flex shrink-0 gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => moveStage(index, -1)}
-                            disabled={index === 0 || savingStages}
-                            aria-label={`Mover ${label} para cima`}
-                          >
-                            ↑
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => moveStage(index, 1)}
-                            disabled={index === stages.length - 1 || savingStages}
-                            aria-label={`Mover ${label} para baixo`}
-                          >
-                            ↓
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeStage(index)}
-                            disabled={savingStages}
-                            className="text-danger-600"
-                            aria-label={`Remover ${label}`}
-                          >
-                            Remover
-                          </Button>
-                        </div>
+                        {!locked && (
+                          <div className="flex shrink-0 gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => moveStage(index, -1)}
+                              disabled={index === 0 || savingStages}
+                              aria-label={`Mover ${label} para cima`}
+                            >
+                              ↑
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => moveStage(index, 1)}
+                              disabled={index === stages.length - 1 || savingStages}
+                              aria-label={`Mover ${label} para baixo`}
+                            >
+                              ↓
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeStage(index)}
+                              disabled={savingStages}
+                              className="text-danger-600"
+                              aria-label={`Remover ${label}`}
+                            >
+                              Remover
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      {stage.type === "CODE_TEST" && (
+                        <CodeTestConfigPanel
+                          stageIndex={index}
+                          config={(stage.config ?? {}) as CodeTestStageConfig}
+                          catalog={catalog}
+                          locked={locked}
+                          saving={savingStages}
+                          highlight={missingFields.includes("codeTest")}
+                          onSave={(config) => updateStageConfig(index, config)}
+                        />
                       )}
                     </li>
                   );
@@ -540,6 +584,131 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
           if (href) router.push(href);
         }}
       />
+    </div>
+  );
+}
+
+/** Spec 005 US1: desafio, linguagens (subconjunto das do desafio) e tempo da etapa CODE_TEST. */
+function CodeTestConfigPanel({
+  stageIndex,
+  config,
+  catalog,
+  locked,
+  saving,
+  highlight,
+  onSave,
+}: {
+  stageIndex: number;
+  config: CodeTestStageConfig;
+  catalog: ChallengeOption[] | null;
+  locked: boolean;
+  saving: boolean;
+  highlight: boolean;
+  onSave: (config: CodeTestStageConfig) => void;
+}) {
+  const [challengeId, setChallengeId] = useState(config.challengeId ?? "");
+  const [languages, setLanguages] = useState<string[]>(config.languages ?? []);
+  const [minutes, setMinutes] = useState(String(config.timeLimitMinutes ?? DEFAULT_TIME_LIMIT_MINUTES));
+
+  useEffect(() => {
+    setChallengeId(config.challengeId ?? "");
+    setLanguages(config.languages ?? []);
+    setMinutes(String(config.timeLimitMinutes ?? DEFAULT_TIME_LIMIT_MINUTES));
+  }, [config.challengeId, config.languages, config.timeLimitMinutes]);
+
+  const challenge = catalog?.find((c) => c.id === challengeId) ?? null;
+  const complete = isCodeTestConfigComplete(config);
+  const minutesNumber = Number(minutes);
+  const minutesValid = Number.isInteger(minutesNumber) && minutesNumber >= MIN_TIME_LIMIT_MINUTES && minutesNumber <= MAX_TIME_LIMIT_MINUTES;
+
+  if (catalog === null) {
+    return <p className="mt-3 text-body text-ink-600">Carregando catálogo de desafios…</p>;
+  }
+
+  if (locked) {
+    const saved = catalog.find((c) => c.id === config.challengeId);
+    return (
+      <p className="mt-3 text-body text-ink-600">
+        {saved
+          ? `Desafio: ${saved.title} · ${config.timeLimitMinutes ?? DEFAULT_TIME_LIMIT_MINUTES} min · ${(config.languages ?? []).map((l) => LANGUAGE_LABEL[l] ?? l).join(", ")}`
+          : "Teste de código sem desafio configurado."}
+      </p>
+    );
+  }
+
+  if (catalog.length === 0) {
+    // US4.3: catálogo vazio vira explicação, não um seletor vazio.
+    return (
+      <Notice tone="warning" className="mt-3" title="Nenhum desafio no catálogo">
+        Peça a um administrador para cadastrar um desafio em Desafios antes de publicar esta vaga.
+      </Notice>
+    );
+  }
+
+  return (
+    <div className={`mt-3 space-y-3 rounded-card border p-3 ${highlight && !complete ? "border-danger-600/50" : "border-brand-100 bg-canvas"}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-label text-ink-600">Configuração do teste de código</p>
+        <Badge variant={complete ? "success" : "warning"}>{complete ? "Configurado" : "Falta configurar"}</Badge>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field id={`desafio-etapa-${stageIndex}`} label="Desafio">
+          <Select
+            value={challengeId}
+            onChange={(e) => {
+              const next = catalog.find((c) => c.id === e.target.value);
+              setChallengeId(e.target.value);
+              setLanguages(next ? next.languages : []);
+            }}
+          >
+            <option value="">Escolha um desafio</option>
+            {catalog.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title} ({DIFFICULTY_LABEL[c.difficulty] ?? c.difficulty})
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field
+          id={`tempo-etapa-${stageIndex}`}
+          label="Tempo limite (minutos)"
+          error={minutesValid ? undefined : `Entre ${MIN_TIME_LIMIT_MINUTES} e ${MAX_TIME_LIMIT_MINUTES} minutos.`}
+        >
+          <Input type="number" min={MIN_TIME_LIMIT_MINUTES} max={MAX_TIME_LIMIT_MINUTES} value={minutes} onChange={(e) => setMinutes(e.target.value)} />
+        </Field>
+      </div>
+      {challenge && (
+        <fieldset className="space-y-2">
+          <legend className="text-label text-ink-600">Linguagens permitidas</legend>
+          <div className="flex flex-wrap gap-3">
+            {challenge.languages.map((language) => (
+              <label key={language} className="flex items-center gap-2 text-body text-ink-900">
+                <input
+                  type="checkbox"
+                  checked={languages.includes(language)}
+                  onChange={(e) =>
+                    setLanguages((prev) => (e.target.checked ? [...prev, language] : prev.filter((l) => l !== language)))
+                  }
+                  className="h-4 w-4 accent-brand-900"
+                />
+                {LANGUAGE_LABEL[language] ?? language}
+              </label>
+            ))}
+          </div>
+          <p className="text-label font-normal text-ink-600">
+            {challenge.visibleCases.length} caso(s) visível(is) e {challenge.hiddenCaseCount} oculto(s) · até {MAX_TEST_RUNS} execuções de teste por candidato.
+          </p>
+        </fieldset>
+      )}
+      <Button
+        size="sm"
+        variant="secondary"
+        loading={saving}
+        disabled={!challengeId || languages.length === 0 || !minutesValid}
+        onClick={() => onSave({ challengeId, languages, timeLimitMinutes: minutesNumber })}
+      >
+        Salvar configuração do teste
+      </Button>
     </div>
   );
 }

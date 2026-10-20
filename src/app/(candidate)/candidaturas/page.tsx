@@ -57,6 +57,12 @@ export default async function MyApplicationsPage({ searchParams }: { searchParam
         }
       />
 
+      {params.desafio === "indisponivel" && (
+        <Notice tone="info" title="Desafio indisponível" className="mb-6">
+          O desafio técnico só abre quando a candidatura está na etapa de teste de código.
+        </Notice>
+      )}
+
       {newApplicationId && applications.some((app) => app.applicationId === newApplicationId) && (
         <Notice tone="success" title="Candidatura registrada com sucesso!" className="mb-6">
           Ela está destacada abaixo — acompanhe por aqui cada mudança de etapa.
@@ -118,6 +124,20 @@ export default async function MyApplicationsPage({ searchParams }: { searchParam
                 )}
 
                 {STATUS_MESSAGE[app.status] && <p className="text-body text-ink-900">{STATUS_MESSAGE[app.status]}</p>}
+
+                {app.status === "IN_PROGRESS" && app.currentStage.type === "CODE_TEST" && (
+                  <Notice
+                    tone="warning"
+                    title="Sua vez: teste de código"
+                    action={
+                      <ButtonLink href="/desafios" size="sm">
+                        Ir para o desafio
+                      </ButtonLink>
+                    }
+                  >
+                    Esta candidatura está na etapa de desafio técnico.
+                  </Notice>
+                )}
 
                 <Link href={`/vagas/${app.job.id}`} className={cn(textLinkClasses, "inline-block text-body")}>
                   Ver vaga

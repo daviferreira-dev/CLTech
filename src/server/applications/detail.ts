@@ -1,6 +1,7 @@
 // RF08 / FR-047 / FR-048 — relatório completo do candidato dentro de uma candidatura.
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
+import { getCodeTestReport, type CodeTestReport } from "@/server/code-test/report";
 
 export interface ApplicationDetail {
   id: string;
@@ -11,7 +12,7 @@ export interface ApplicationDetail {
   evaluations: Array<{ type: string; score: number; justification: unknown }>;
   externalAccounts: Array<{ provider: string; status: string }>;
   resume: { id: string; originalFilename: string } | null;
-  codeTest: { status: "NOT_AVAILABLE_YET" };
+  codeTest: CodeTestReport;
 }
 
 export async function getApplicationDetail(applicationId: string): Promise<ApplicationDetail> {
@@ -45,6 +46,6 @@ export async function getApplicationDetail(applicationId: string): Promise<Appli
       status: account.status,
     })),
     resume: application.resume,
-    codeTest: { status: "NOT_AVAILABLE_YET" },
+    codeTest: await getCodeTestReport(application.id),
   };
 }

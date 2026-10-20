@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { STAGE_LABEL } from "@/lib/processStages";
+import { CASE_OUTCOME_LABEL, LANGUAGE_LABEL } from "@/lib/codeTest";
+import type { CodeTestReport } from "@/server/code-test/report";
 import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
 import { APPLICATION_STATUS_BADGE, PROVIDER_LABEL, RECRUITER_APPLICATION_STATUS_LABEL } from "@/lib/labels";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -39,12 +41,16 @@ interface ApplicationDetailData {
   evaluations: EvaluationView[];
   externalAccounts: Array<{ provider: string; status: string }>;
   resume: { id: string; originalFilename: string } | null;
-  codeTest: { status: "NOT_AVAILABLE_YET" };
+  codeTest: CodeTestReport;
 }
 
 export type ReportOrigin = { kind: "job"; stage: string } | { kind: "search"; q: string };
 
-const EVALUATION_LABEL: Record<string, string> = { RESUME_MATCH: "Compatibilidade geral", GITHUB_ANALYSIS: "Análise de GitHub" };
+const EVALUATION_LABEL: Record<string, string> = {
+  RESUME_MATCH: "Compatibilidade geral",
+  GITHUB_ANALYSIS: "Análise de GitHub",
+  CODE_TEST: "Teste de código",
+};
 
 const ACCOUNT_STATUS_LABEL: Record<string, string> = {
   CONNECTED: "Conectado",
@@ -280,14 +286,10 @@ export function ApplicationDetailView({
             </CardBody>
           </Card>
 
-          <Card as="section" aria-labelledby="teste-codigo">
-            <CardHeader titleId="teste-codigo" title="Teste de código" />
-            <CardBody>
-              <p className="text-body text-ink-600">Ainda não disponível nesta versão.</p>
-            </CardBody>
-          </Card>
         </div>
       </div>
+
+      <CodeTestCard report={data.codeTest} />
 
       <Card as="section" aria-labelledby="decisao">
         <CardHeader
@@ -348,5 +350,104 @@ export function ApplicationDetailView({
         onConfirm={() => handleDecision("REJECT")}
       />
     </div>
+  );
+}
+
+function formatDuration(seconds: number | null): string {
+  if (seconds === null) return "—";
+  const m = Math.floor(seconds / 60);
+  const h = Math.floor(m / 60);
+  return h > 0 ? `${h}h ${m % 60}min` : `${m}min ${seconds % 60}s`;
+}
+
+/** Spec 005 US3.6: nota, casos, linguagem, tempo gasto e código submetido. */
+function CodeTestCard({ report }: { report: CodeTestReport }) {
+  const [showCode, setShowCode] = useState(false);
+
+  let body: React.ReactNode;
+  switch (report.status) {
+    case "NOT_APPLICABLE":
+      body = <p className="text-body text-ink-600">Esta vaga não tem etapa de teste de código.</p>;
+      break;
+    case "NOT_STARTED":
+      body = (
+        <p className="text-body text-ink-600">
+          {report.challengeTitle ? `Desafio "${report.challengeTitle}" ainda não iniciado pelo candidato.` : "Etapa sem desafio configurado."}
+        </p>
+      );
+      break;
+    case "IN_PROGRESS":
+      body = (
+        <p className="text-body text-ink-600">
+          Candidato resolvendo &quot;{report.challengeTitle}&quot;. Prazo: {new Date(report.deadline).toLocaleString("pt-BR")}.
+        </p>
+      );
+      break;
+    case "GRADING":
+      body = <Notice tone="info">Submissão recebida em {new Date(report.submittedAt).toLocaleString("pt-BR")}. Correção em andamento.</Notice>;
+      break;
+    case "FAILED":
+      // NFR-202: falha persistente do sandbox fica visível ao recrutador, sem quebrar a tela.
+      body = (
+        <Notice tone="warning" title="Correção automática falhou">
+          O ambiente de execução falhou duas vezes nesta submissão e a equipe técnica foi notificada. O código está guardado e
+          será corrigido quando o ambiente voltar.
+        </Notice>
+      );
+      break;
+    case "COMPLETED":
+      body = (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-end gap-6">
+            <div>
+              <p className="text-display text-ink-900">{report.score}%</p>
+              <p className="text-body text-ink-600">
+                {report.passed} de {report.total} casos aprovados
+              </p>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-body">
+              <dt className="text-ink-600">Linguagem</dt>
+              <dd className="text-ink-900">{LANGUAGE_LABEL[report.language] ?? report.language}</dd>
+              <dt className="text-ink-600">Tempo gasto</dt>
+              <dd className="text-ink-900">{formatDuration(report.timeSpentSeconds)}</dd>
+              <dt className="text-ink-600">Envio</dt>
+              <dd className="text-ink-900">{report.submittedBy === "TIME_EXPIRED" ? "Automático (tempo esgotado)" : "Pelo candidato"}</dd>
+            </dl>
+          </div>
+          <ul className="flex flex-wrap gap-2" aria-label="Resultado por caso">
+            {report.cases.map((c) => (
+              <li key={c.index}>
+                <Badge variant={c.outcome === "PASSED" ? "success" : "danger"}>
+                  Caso {c.index + 1}
+                  {c.hidden ? " (oculto)" : ""}: {CASE_OUTCOME_LABEL[c.outcome] ?? c.outcome}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+          <div>
+            <Button variant="secondary" size="sm" onClick={() => setShowCode((v) => !v)} aria-expanded={showCode}>
+              {showCode ? "Ocultar código" : "Ver código submetido"}
+            </Button>
+            {showCode && (
+              <pre className="mt-3 max-h-96 overflow-auto rounded-field bg-brand-900 p-3 font-mono text-label font-normal text-surface">
+                {report.sourceCode}
+              </pre>
+            )}
+          </div>
+          <p className="text-label font-normal text-ink-600">A nota é informativa: avançar ou reprovar continua sendo decisão sua.</p>
+        </div>
+      );
+      break;
+  }
+
+  return (
+    <Card as="section" aria-labelledby="teste-codigo">
+      <CardHeader
+        titleId="teste-codigo"
+        title="Teste de código"
+        description={"challengeTitle" in report && report.challengeTitle && report.status !== "NOT_STARTED" ? report.challengeTitle : undefined}
+      />
+      <CardBody>{body}</CardBody>
+    </Card>
   );
 }

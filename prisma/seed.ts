@@ -86,6 +86,39 @@ const JOBS: JobSeed[] = [
   },
 ];
 
+// Spec 005 US4: catálogo inicial. Cada desafio lê da entrada padrão e escreve na saída
+// padrão; casos `hidden` nunca saem do servidor.
+const CHALLENGES = [
+  {
+    title: "Soma de inteiros",
+    statement:
+      "Leia uma linha com inteiros separados por espaço e imprima a soma deles.\n\nEntrada: uma linha, por exemplo `1 2 3`.\nSaída: um único inteiro, por exemplo `6`.",
+    languages: ["python", "javascript", "typescript", "java", "cpp", "go"],
+    difficulty: "EASY" as const,
+    timeLimitSeconds: 5,
+    testCases: [
+      { input: "1 2 3\n", expectedOutput: "6", hidden: false },
+      { input: "10 -4\n", expectedOutput: "6", hidden: false },
+      { input: "0\n", expectedOutput: "0", hidden: true },
+      { input: "1000000 2000000 3000000\n", expectedOutput: "6000000", hidden: true },
+    ],
+  },
+  {
+    title: "Palíndromo",
+    statement:
+      "Leia uma palavra e imprima `SIM` se ela for um palíndromo (ignorando maiúsculas/minúsculas) ou `NAO` caso contrário.",
+    languages: ["python", "javascript", "typescript", "java"],
+    difficulty: "MID" as const,
+    timeLimitSeconds: 5,
+    testCases: [
+      { input: "arara\n", expectedOutput: "SIM", hidden: false },
+      { input: "react\n", expectedOutput: "NAO", hidden: false },
+      { input: "Ana\n", expectedOutput: "SIM", hidden: true },
+      { input: "ab\n", expectedOutput: "NAO", hidden: true },
+    ],
+  },
+];
+
 async function main() {
   const passwordHash = await hashedPassword();
 
@@ -142,6 +175,30 @@ async function main() {
   }
 
   console.log(`Seed: ${JOBS.length} vagas publicadas.`);
+
+  const challengeIds: string[] = [];
+  for (const challengeSeed of CHALLENGES) {
+    const existing = await prisma.challenge.findFirst({ where: { title: challengeSeed.title } });
+    const challenge = existing ?? (await prisma.challenge.create({ data: challengeSeed }));
+    challengeIds.push(challenge.id);
+  }
+  console.log(`Seed: ${CHALLENGES.length} desafios no catálogo.`);
+
+  // As vagas de demonstração já nascem publicadas com CODE_TEST no pipeline: sem desafio
+  // configurado, o candidato que chega à etapa ficaria travado (spec 005).
+  const firstChallenge = await prisma.challenge.findUniqueOrThrow({ where: { id: challengeIds[0] } });
+  const unconfiguredStages = await prisma.processStage.findMany({
+    where: { type: "CODE_TEST", job: { title: { in: JOBS.map((job) => job.title) } } },
+  });
+  for (const stage of unconfiguredStages) {
+    if ((stage.config as { challengeId?: string } | null)?.challengeId) continue;
+    await prisma.processStage.update({
+      where: { id: stage.id },
+      data: {
+        config: { challengeId: firstChallenge.id, languages: firstChallenge.languages, timeLimitMinutes: 60, maxTestRuns: 20 },
+      },
+    });
+  }
 
   // Vaga encerrada com candidatura pré-existente — edge case do spec.md
   // ("vaga despublicada com candidatos inscritos").

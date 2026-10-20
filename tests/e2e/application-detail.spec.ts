@@ -53,7 +53,8 @@ test("recrutador abre relatório do candidato, vê score/currículo e avança a 
   await expect(page.getByRole("heading", { name: "Candidato Fluxo 4" })).toBeVisible();
   await expect(page.getByText("compatibilidade geral")).toBeVisible();
   await expect(page.getByRole("link", { name: /cv-valido\.pdf/ })).toBeVisible();
-  await expect(page.getByText("Ainda não disponível nesta versão.")).toBeVisible();
+  // Spec 005: o cartão do teste de código existe em toda candidatura (com ou sem a etapa).
+  await expect(page.getByRole("heading", { name: "Teste de código" })).toBeVisible();
 
   await page.getByRole("button", { name: "Avançar" }).click();
   // Decisão exige confirmação explícita (spec 004 US5.5).

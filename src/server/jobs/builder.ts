@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { Errors, ApiError } from "@/lib/errors";
 import { recomputeJobMatchesForJob } from "@/server/matching/recompute";
 import type { CreateJobInput, UpdateJobInput, SetStagesInput } from "@/lib/validation/jobs";
+import { codeTestConfigSchema } from "@/lib/validation/challenges";
+import { isCodeTestConfigComplete, MAX_TEST_RUNS, type CodeTestStageConfig } from "@/lib/codeTest";
 
 const LOCKED_FIELDS = ["technologies", "minimumRequirements"] as const;
 
@@ -20,15 +22,37 @@ export interface RecruiterJobView {
   minimumRequirements: string;
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
   publishedAt: Date | null;
-  stages: Array<{ id: string; type: string; order: number }>;
+  stages: Array<{ id: string; type: string; order: number; config: unknown }>;
 }
 
 async function toView(jobId: string): Promise<RecruiterJobView> {
   const job = await prisma.job.findUniqueOrThrow({
     where: { id: jobId },
-    include: { stages: { orderBy: { order: "asc" }, select: { id: true, type: true, order: true } } },
+    include: { stages: { orderBy: { order: "asc" }, select: { id: true, type: true, order: true, config: true } } },
   });
   return job;
+}
+
+/**
+ * Spec 005 US1: valida e normaliza a configuração de cada etapa CODE_TEST — desafio que
+ * existe, linguagens sempre subconjunto das do desafio, tempo dentro dos limites e o teto
+ * de execuções do D5 fixado pelo servidor. Incompleta é aceita no rascunho; a publicação
+ * é que exige completa.
+ */
+async function normalizeCodeTestConfig(config: Record<string, unknown> | undefined): Promise<CodeTestStageConfig> {
+  const parsed = codeTestConfigSchema.safeParse(config ?? {});
+  if (!parsed.success) throw Errors.validation(parsed.error.issues[0]?.message ?? "Configuração do teste de código inválida.");
+  const { challengeId, languages, timeLimitMinutes } = parsed.data;
+  if (!challengeId) return { ...parsed.data, maxTestRuns: MAX_TEST_RUNS };
+
+  const challenge = await prisma.challenge.findUnique({ where: { id: challengeId }, select: { languages: true } });
+  if (!challenge) throw Errors.validation("O desafio escolhido não existe mais no catálogo.");
+  const chosen = languages && languages.length > 0 ? languages : challenge.languages;
+  const outside = chosen.filter((language) => !challenge.languages.includes(language));
+  if (outside.length > 0) {
+    throw Errors.validation(`Linguagem fora das aceitas pelo desafio: ${outside.join(", ")}.`);
+  }
+  return { challengeId, languages: chosen, timeLimitMinutes, maxTestRuns: MAX_TEST_RUNS };
 }
 
 export async function createJob(userId: string, input: CreateJobInput): Promise<RecruiterJobView> {
@@ -65,6 +89,10 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
   // entrelaçam o delete de um com o insert do outro e colidem no índice único
   // (jobId, order). Serializable faz o banco recusar o entrelaçamento em vez de
   // gravar um pipeline pela metade.
+  const configs = await Promise.all(
+    input.stages.map((stage) => (stage.type === "CODE_TEST" ? normalizeCodeTestConfig(stage.config) : (stage.config ?? {}))),
+  );
+
   await prisma.$transaction(
     async (tx) => {
       await tx.processStage.deleteMany({ where: { jobId } });
@@ -73,7 +101,7 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
           jobId,
           type: stage.type,
           order: index,
-          config: (stage.config ?? {}) as Prisma.InputJsonValue,
+          config: configs[index] as Prisma.InputJsonValue,
         })),
       });
     },
@@ -87,7 +115,13 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
 export async function publishJob(jobId: string): Promise<RecruiterJobView> {
   const job = await prisma.job.findUnique({
     where: { id: jobId },
-    select: { status: true, technologies: true, minimumRequirements: true, _count: { select: { stages: true } } },
+    select: {
+      status: true,
+      technologies: true,
+      minimumRequirements: true,
+      _count: { select: { stages: true } },
+      stages: { where: { type: "CODE_TEST" }, select: { config: true } },
+    },
   });
   if (!job) throw Errors.notFound("Vaga");
   if (job.status !== "DRAFT") {
@@ -98,12 +132,14 @@ export async function publishJob(jobId: string): Promise<RecruiterJobView> {
   if (job.technologies.length === 0) missing.push("technologies");
   if (!job.minimumRequirements.trim()) missing.push("minimumRequirements");
   if (job._count.stages === 0) missing.push("stages");
+  // Spec 005 US1.2: etapa de teste de código sem desafio travaria o candidato nela.
+  if (job.stages.some((stage) => !isCodeTestConfigComplete(stage.config))) missing.push("codeTest");
 
   if (missing.length > 0) {
     throw new ApiError(
       422,
       "INCOMPLETE_JOB",
-      "Preencha tecnologias, requisitos mínimos e ao menos uma etapa antes de publicar.",
+      "Preencha tecnologias, requisitos mínimos, ao menos uma etapa e a configuração do teste de código antes de publicar.",
       { missing },
     );
   }
