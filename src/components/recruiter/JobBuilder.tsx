@@ -289,13 +289,13 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     setMessage(null);
     setMissingFields([]);
 
-    const result = await apiFetch<JobBuilderView>(`/api/recruiter/jobs/${jobId}/publish`, { method: "POST" });
+    // A rota de publicação devolve só { id, status, publishedAt }: o resto do estado fica.
+    const result = await apiFetch<{ status: JobBuilderView["status"] }>(`/api/recruiter/jobs/${jobId}/publish`, { method: "POST" });
     setPublishing(false);
     setConfirmPublish(false);
 
     if (result.ok) {
-      applyView(result.data);
-      setStatus("PUBLISHED");
+      setStatus(result.data.status ?? "PUBLISHED");
       setMessage({ tone: "success", text: "Vaga publicada." });
       return;
     }

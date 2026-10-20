@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/server/auth/config";
 import { destinationForRole } from "@/server/auth/redirect";
 
+export { safeInternalPath } from "./safe-path";
+
 type Role = "CANDIDATE" | "RECRUITER" | "ADMIN";
 
 export const RECRUITER_ROLES: Role[] = ["RECRUITER", "ADMIN"];
@@ -32,14 +34,4 @@ export async function requirePageRole(allowed: Role[], path: string) {
   if (!session?.user?.role) redirect(loginUrl(path));
   if (!allowed.includes(session.user.role)) redirect(destinationForRole(session.user.role));
   return session.user;
-}
-
-/**
- * Só aceita destino interno (`/algo`), nunca `//host` nem URL absoluta — `?next=` e
- * `callbackUrl` vêm da query e não podem virar redirecionamento aberto.
- */
-export function safeInternalPath(value: string | string[] | undefined | null): string | null {
-  const raw = Array.isArray(value) ? value[0] : value;
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return null;
-  return raw;
 }

@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { safeInternalPath } from "@/lib/safe-path";
+import { Button, Field, Input, textLinkClasses } from "@/components/ui";
 
 export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? undefined;
+  // Só destino interno: callbackUrl vem da URL e não pode virar redirecionamento aberto.
+  const callbackUrl = safeInternalPath(searchParams.get("callbackUrl")) ?? undefined;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,6 +19,7 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
 
   async function handleCredentialsSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setLoading(true);
 
@@ -22,13 +27,14 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
       email,
       password,
       redirect: false,
-    });
+    }).catch(() => ({ error: "network" }));
 
     setLoading(false);
 
     if (result?.error) {
-      // FR-004: mensagem genérica, sem revelar se o e-mail existe.
-      setError("E-mail ou senha incorretos.");
+      // FR-004: mensagem genérica, sem revelar se o e-mail existe. O e-mail digitado fica.
+      setError(result.error === "network" ? "Sem conexão com o servidor. Tente de novo." : "E-mail ou senha incorretos.");
+      setPassword("");
       return;
     }
 
@@ -37,71 +43,58 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
     window.location.href = callbackUrl ?? "/api/auth/post-login";
   }
 
+  const registerHref = callbackUrl ? `/cadastro?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/cadastro";
+
   return (
-    <div className="mx-auto max-w-sm space-y-6 px-4 py-16">
-      <h1 className="text-2xl font-semibold">Entrar</h1>
+    <div className="space-y-6">
+      <div className="space-y-1 text-center">
+        <h1 className="text-h2 text-ink-900">Entrar</h1>
+        <p className="text-body text-ink-600">
+          {callbackUrl ? "Entre para continuar de onde parou." : "Acesse sua conta para acompanhar seus processos."}
+        </p>
+      </div>
 
       <form onSubmit={handleCredentialsSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium">
-            E-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium">
-            Senha
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          />
-        </div>
+        <Field id="email" label="E-mail">
+          <Input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </Field>
+        <Field id="password" label="Senha">
+          <Input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </Field>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="text-body text-danger-600">
+            {error}
+          </p>
+        )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-        >
+        <Button type="submit" loading={loading} className="w-full">
           {loading ? "Entrando…" : "Entrar"}
-        </button>
+        </Button>
       </form>
 
+      <div className="flex items-center gap-3 text-label font-normal text-ink-600">
+        <span className="h-px flex-1 bg-brand-100" />
+        ou
+        <span className="h-px flex-1 bg-brand-100" />
+      </div>
+
       <div className="space-y-2">
-        <button
-          onClick={() => signIn("github", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}
-          className="w-full rounded border border-slate-300 px-4 py-2"
-        >
+        <Button variant="secondary" className="w-full" onClick={() => signIn("github", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}>
           Entrar com GitHub
-        </button>
+        </Button>
         {linkedInEnabled && (
-          <button
-            onClick={() => signIn("linkedin", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}
-            className="w-full rounded border border-slate-300 px-4 py-2"
-          >
+          <Button variant="secondary" className="w-full" onClick={() => signIn("linkedin", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}>
             Entrar com LinkedIn
-          </button>
+          </Button>
         )}
       </div>
 
-      <p className="text-sm text-slate-600">
+      <p className="text-center text-body text-ink-600">
         Ainda não tem conta?{" "}
-        <a href="/cadastro" className="underline">
+        <Link href={registerHref} className={textLinkClasses}>
           Cadastre-se
-        </a>
+        </Link>
       </p>
     </div>
   );

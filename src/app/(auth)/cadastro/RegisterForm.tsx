@@ -1,99 +1,114 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { registerSchema } from "@/lib/validation/auth";
+import { safeInternalPath } from "@/lib/safe-path";
+import { NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
+import { Button, Field, Input, textLinkClasses } from "@/components/ui";
+
+type FieldName = "name" | "email" | "password";
+
+// O servidor devolve só a mensagem do primeiro erro do mesmo schema; o texto identifica o campo.
+const SERVER_MESSAGE_FIELD: Array<[RegExp, FieldName]> = [
+  [/nome/i, "name"],
+  [/e-mail/i, "email"],
+  [/senha/i, "password"],
+];
 
 export function RegisterForm() {
+  const searchParams = useSearchParams();
+  // Spec 004 US2.1: quem veio de uma vaga volta a ela depois do cadastro.
+  const callbackUrl = safeInternalPath(searchParams.get("callbackUrl"));
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError(null);
+
+    // Mesmo schema Zod do servidor: as regras não mudam, só passam a aparecer sob o campo.
+    const parsed = registerSchema.safeParse({ name, email, password });
+    if (!parsed.success) {
+      const errors: Partial<Record<FieldName, string>> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as FieldName;
+        errors[field] ??= issue.message;
+      }
+      setFieldErrors(errors);
+      return;
+    }
+    setFieldErrors({});
     setLoading(true);
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    setLoading(false);
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => null);
-      setError(body?.error?.message ?? "Não foi possível criar a conta.");
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+    } catch {
+      setLoading(false);
+      setError(NETWORK_ERROR_MESSAGE);
       return;
     }
 
-    // FR-001/FR-006: conta criada e já autenticada — cai em /vagas.
-    window.location.href = "/api/auth/post-login";
+    if (!res.ok) {
+      setLoading(false);
+      const body = await res.json().catch(() => null);
+      const message: string = body?.error?.message ?? "Não foi possível criar a conta.";
+      const field = SERVER_MESSAGE_FIELD.find(([pattern]) => pattern.test(message))?.[1];
+      if (field) setFieldErrors({ [field]: message });
+      else setError(message);
+      return;
+    }
+
+    // FR-001/FR-006: conta criada e já autenticada — volta à origem ou cai em /vagas.
+    window.location.href = callbackUrl ?? "/api/auth/post-login";
   }
 
   return (
-    <div className="mx-auto max-w-sm space-y-6 px-4 py-16">
-      <h1 className="text-2xl font-semibold">Criar conta</h1>
+    <div className="space-y-6">
+      <div className="space-y-1 text-center">
+        <h1 className="text-h2 text-ink-900">Criar conta</h1>
+        <p className="text-body text-ink-600">Candidate-se a vagas e acompanhe cada etapa do processo.</p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium">
-            Nome
-          </label>
-          <input
-            id="name"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          />
-        </div>
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium">
-            E-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium">
-            Senha
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          />
-          <p className="mt-1 text-xs text-slate-500">Mínimo de 8 caracteres.</p>
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <Field id="name" label="Nome" error={fieldErrors.name}>
+          <Input required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field id="email" label="E-mail" error={fieldErrors.email}>
+          <Input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </Field>
+        <Field id="password" label="Senha" hint="Mínimo de 8 caracteres." error={fieldErrors.password}>
+          <Input type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </Field>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="text-body text-danger-600">
+            {error}
+          </p>
+        )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-        >
+        <Button type="submit" loading={loading} className="w-full">
           {loading ? "Criando conta…" : "Criar conta"}
-        </button>
+        </Button>
       </form>
 
-      <p className="text-sm text-slate-600">
+      <p className="text-center text-body text-ink-600">
         Já tem conta?{" "}
-        <a href="/entrar" className="underline">
+        <Link href={callbackUrl ? `/entrar?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/entrar"} className={textLinkClasses}>
           Entrar
-        </a>
+        </Link>
       </p>
     </div>
   );

@@ -33,11 +33,8 @@ test("candidatar-se deslogado leva ao login e retorna à vaga (FR-023)", async (
   await page.getByLabel("Senha").fill("senhaSegura123");
   await page.getByRole("button", { name: "Criar conta" }).click();
 
-  // Após logar, retorna ao fluxo de vagas (o cadastro não preserva o callbackUrl
-  // original nesta sprint — o candidato precisa reabrir a vaga, o que é aceitável
-  // porque o cadastro por e-mail é caminho alternativo ao login direto).
-  await expect(page).toHaveURL(/\/vagas$/);
-  void jobUrl;
+  // Spec 004 US2.1: o cadastro preserva o callbackUrl e devolve o candidato à mesma vaga.
+  await expect(page).toHaveURL(jobUrl);
 });
 
 test("candidato sem currículo é orientado a completar o perfil ao tentar se candidatar", async ({ page }) => {
