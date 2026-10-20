@@ -141,3 +141,36 @@ e `Dashboard` seriam reescritos duas vezes, e a segunda reescrita invalidaria pa
 testes criados na primeira. A fatia por tela mantém as duas specs como critérios de aceite
 independentes — cada uma continua verificável sozinha ao fim da Fase 5 — sem pagar o
 retrabalho.
+
+---
+
+## 4. Status de execução (20/10/2026)
+
+Fases 0–5 executadas na branch `sprint-3`, um commit por fase. Verificação: `pnpm lint`,
+`pnpm test` (71 testes, 15 novos da 005) e `pnpm test:e2e` (58 testes, 360 e 1280) verdes,
+mais um fluxo manual completo — visitante → cadastro → currículo → candidatura → triagem →
+desafio técnico → correção → entrevistas → aprovação, e busca de candidatos.
+
+**Decisões tomadas nesta execução**
+
+- D5: `maxTestRuns = 20` e 1 execução simultânea por candidato (`src/lib/codeTest.ts`).
+- RN005 (e-mail via Resend): **adiada** para depois da Sprint 3.
+- Sandbox: cliente Judge0 configurado por `SANDBOX_URL`/`SANDBOX_TOKEN`. Sem a VM, a
+  execução responde `SANDBOX_UNAVAILABLE` e a submissão fica "em correção" (NFR-202).
+
+**Pendências**
+
+- Trilha A da 005: provisionar a VM Oracle Cloud com Judge0 e preencher `SANDBOX_URL`.
+- Agendar o cron de `POST /api/internal/code-tests/expire` com `CRON_SECRET` (a expiração já
+  acontece sob demanda; o cron cobre quem nunca mais abre a tela).
+
+**Desvios das specs, todos sem alterar contrato de API nas fases 003/004**
+
+- `parseStatus` do currículo (003 US3.6) e "tempo na etapa" (004 US5.2) não saem das APIs
+  existentes: são lidos pelas páginas no servidor via Prisma.
+- A busca de candidatos não devolve o id da candidatura; a rota
+  `/recrutamento/candidatos/abrir` resolve pelo índice único e redireciona ao relatório.
+- "Cargo/senioridade" no topo do perfil (003 US3.1) não existe no modelo; o topo mostra
+  nome, e-mail, cidade e as linguagens do GitHub como chips.
+- Submissão automática por tempo usa `submittedBy = TIME_EXPIRED` (valor do enum), não
+  `SYSTEM` como escrito na 005.
