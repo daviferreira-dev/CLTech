@@ -1,7 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { apiFetch } from "@/lib/api-client";
+import { APPLICATION_STATUS_BADGE, RECRUITER_APPLICATION_STATUS_LABEL } from "@/lib/labels";
+import { cn } from "@/lib/cn";
+import { PageHeader } from "@/components/layout/PageHeader";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardListSkeleton,
+  EmptyState,
+  ErrorState,
+  Input,
+  focusRing,
+  matchVariant,
+  textLinkClasses,
+} from "@/components/ui";
 
 interface CandidateSearchApplication {
   jobId: string;
@@ -17,80 +35,123 @@ interface CandidateSearchItem {
   applications: CandidateSearchApplication[];
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  IN_PROGRESS: "Em andamento",
-  APPROVED: "Aprovado",
-  REJECTED: "Reprovado",
-  WITHDRAWN: "Desistiu",
-};
-
 export function CandidateSearch() {
-  const [query, setQuery] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Os critérios vivem na URL e sobrevivem ao voltar do navegador (spec 004 US6.1).
+  const q = searchParams.get("q") ?? "";
+
+  const [query, setQuery] = useState(q);
   const [items, setItems] = useState<CandidateSearchItem[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
+  useEffect(() => setQuery(q), [q]);
+
+  const runSearch = useCallback(async (term: string) => {
     setSearching(true);
-    // Resposta de erro não traz `items`: sem esta guarda, `items.length` abaixo
-    // lança TypeError e derruba a página inteira.
-    const res = await fetch(`/api/recruiter/candidates?q=${encodeURIComponent(query)}`);
-    const data = res.ok ? await res.json().catch(() => null) : null;
-    setItems(Array.isArray(data?.items) ? data.items : []);
+    setFailed(false);
+    const result = await apiFetch<{ items: CandidateSearchItem[] }>(`/api/recruiter/candidates?q=${encodeURIComponent(term)}`);
+    // Resposta de erro não traz `items`: sem esta guarda, `items.length` derruba a página.
+    if (result.ok && Array.isArray(result.data?.items)) setItems(result.data.items);
+    else if (result.status !== 401) {
+      setItems(null);
+      setFailed(true);
+    }
     setSearching(false);
+  }, []);
+
+  useEffect(() => {
+    if (q.trim()) runSearch(q);
+    else setItems(null);
+  }, [q, runSearch]);
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const term = query.trim();
+    if (!term) return;
+    if (term === q) {
+      runSearch(term); // mesma URL: o efeito não dispararia de novo
+      return;
+    }
+    router.push(`${pathname}?q=${encodeURIComponent(term)}`, { scroll: false });
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold sm:text-2xl">Candidatos</h1>
+    <>
+      <PageHeader title="Candidatos" subtitle="Busque entre todas as pessoas que já se candidataram a alguma vaga." />
 
-      <form onSubmit={handleSearch} className="flex flex-wrap gap-3">
-        <input
+      <form onSubmit={handleSearch} role="search" className="mb-6 flex flex-col gap-3 rounded-card border border-brand-100 bg-surface p-4 sm:flex-row sm:p-6">
+        <label htmlFor="busca-candidatos" className="sr-only">
+          Buscar candidatos
+        </label>
+        <Input
+          id="busca-candidatos"
+          type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Nome, e-mail ou tecnologia"
-          className="min-w-0 flex-1 basis-48 rounded border border-slate-300 px-3 py-2"
+          className="sm:flex-1"
         />
-        <button
-          type="submit"
-          disabled={searching}
-          className="shrink-0 rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-        >
+        <Button type="submit" loading={searching}>
           Buscar
-        </button>
+        </Button>
       </form>
 
-      {items !== null && items.length === 0 && (
-        <p className="text-sm text-slate-500">Nenhum candidato encontrado para essa busca.</p>
+      {searching && items === null && <CardListSkeleton count={2} label="Buscando candidatos…" />}
+      {failed && <ErrorState title="Não foi possível buscar candidatos." onRetry={() => runSearch(q || query)} />}
+
+      {!q && !searching && !failed && (
+        <EmptyState title="Comece pela busca." description="Digite um nome, um e-mail ou uma tecnologia exigida por alguma vaga." />
       )}
 
-      <ul className="space-y-3">
-        {items?.map((candidate) => (
-          <li key={candidate.candidateId} className="rounded border border-slate-200 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="break-words font-medium">{candidate.name}</p>
-                <p className="break-all text-sm text-slate-500 sm:break-words">{candidate.email}</p>
+      {items !== null && items.length === 0 && (
+        // US6.3: sugere afrouxar os critérios sem apagar o que foi digitado.
+        <EmptyState
+          title="Nenhum candidato encontrado para essa busca."
+          description="Tente um termo mais curto — parte do nome, só o domínio do e-mail ou uma única tecnologia."
+        />
+      )}
+
+      {items && items.length > 0 && (
+        <ul className="space-y-4" aria-busy={searching || undefined}>
+          {items.map((candidate) => (
+            <Card as="li" key={candidate.candidateId} className="p-4 sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar name={candidate.name} />
+                  <div className="min-w-0">
+                    <p className="break-words text-h3 text-ink-900">{candidate.name}</p>
+                    <p className="break-all text-body text-ink-600 sm:break-words">{candidate.email}</p>
+                  </div>
+                </div>
+                <Link href="/recrutamento/vagas" className={cn(textLinkClasses, "self-start text-body sm:shrink-0")}>
+                  Convidar para nova vaga
+                </Link>
               </div>
-              <Link href="/recrutamento/vagas" className="shrink-0 text-sm underline">
-                Convidar para nova vaga
-              </Link>
-            </div>
-            <ul className="mt-2 divide-y divide-slate-100">
-              {candidate.applications.map((application) => (
-                <li key={application.jobId} className="flex justify-between gap-2 py-1.5 text-sm text-slate-600">
-                  <span className="min-w-0 break-words">{application.jobTitle}</span>
-                  <span className="shrink-0 text-right">
-                    {STATUS_LABEL[application.status]}
-                    {application.score !== null && ` · ${application.score}%`}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
-    </div>
+              <ul className="mt-4 divide-y divide-brand-100 rounded-card border border-brand-100">
+                {candidate.applications.map((application) => (
+                  <li key={application.jobId} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <Link
+                      href={`/recrutamento/candidatos/abrir?candidato=${candidate.candidateId}&vaga=${application.jobId}&q=${encodeURIComponent(q)}`}
+                      className={cn("min-w-0 break-words rounded-sm text-body font-medium text-ink-900 hover:underline", focusRing)}
+                    >
+                      {application.jobTitle}
+                    </Link>
+                    <span className="flex shrink-0 flex-wrap items-center gap-2">
+                      {application.score !== null && <Badge variant={matchVariant(application.score)}>{application.score}%</Badge>}
+                      <Badge variant={APPLICATION_STATUS_BADGE[application.status]}>
+                        {RECRUITER_APPLICATION_STATUS_LABEL[application.status]}
+                      </Badge>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }

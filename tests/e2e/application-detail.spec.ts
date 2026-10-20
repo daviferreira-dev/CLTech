@@ -56,5 +56,7 @@ test("recrutador abre relatório do candidato, vê score/currículo e avança a 
   await expect(page.getByText("Ainda não disponível nesta versão.")).toBeVisible();
 
   await page.getByRole("button", { name: "Avançar" }).click();
+  // Decisão exige confirmação explícita (spec 004 US5.5).
+  await page.getByRole("button", { name: "Confirmar avanço" }).click();
   await expect(page.getByText("Candidato avançado.")).toBeVisible();
 });

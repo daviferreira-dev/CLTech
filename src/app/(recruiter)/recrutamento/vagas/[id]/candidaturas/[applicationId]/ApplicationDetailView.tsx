@@ -1,8 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { STAGE_LABEL } from "@/lib/processStages";
+import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
+import { APPLICATION_STATUS_BADGE, PROVIDER_LABEL, RECRUITER_APPLICATION_STATUS_LABEL } from "@/lib/labels";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  Badge,
+  Breadcrumb,
+  Button,
+  ButtonLink,
+  Card,
+  CardBody,
+  CardHeader,
+  ChipList,
+  ErrorState,
+  Notice,
+  Skeleton,
+  StageTrail,
+  textLinkClasses,
+  type Crumb,
+} from "@/components/ui";
 
 interface EvaluationView {
   type: string;
@@ -22,149 +42,311 @@ interface ApplicationDetailData {
   codeTest: { status: "NOT_AVAILABLE_YET" };
 }
 
+export type ReportOrigin = { kind: "job"; stage: string } | { kind: "search"; q: string };
+
 const EVALUATION_LABEL: Record<string, string> = { RESUME_MATCH: "Compatibilidade geral", GITHUB_ANALYSIS: "Análise de GitHub" };
 
-export function ApplicationDetailView({ applicationId }: { jobId: string; applicationId: string }) {
+const ACCOUNT_STATUS_LABEL: Record<string, string> = {
+  CONNECTED: "Conectado",
+  PENDING: "Sincronizando",
+  UNAVAILABLE: "Indisponível",
+  DISCONNECTED: "Não conectado",
+};
+
+type Decision = "ADVANCE" | "REJECT";
+
+export function ApplicationDetailView({
+  jobId,
+  applicationId,
+  origin,
+}: {
+  jobId: string;
+  applicationId: string;
+  origin: ReportOrigin;
+}) {
   const router = useRouter();
   const [data, setData] = useState<ApplicationDetailData | null>(null);
+  const [stages, setStages] = useState<Array<{ type: string; order: number }> | null>(null);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "failed" | "notFound">("loading");
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState<Decision | null>(null);
+  const [message, setMessage] = useState<{ tone: "success" | "danger" | "info"; text: string } | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/recruiter/applications/${applicationId}`)
-      .then((res) => res.json())
-      .then(setData);
+  const fetchDetail = useCallback(async () => {
+    const result = await apiFetch<ApplicationDetailData>(`/api/recruiter/applications/${applicationId}`);
+    if (result.ok) {
+      setData(result.data);
+      setLoadState("ready");
+      return result.data;
+    }
+    setLoadState(result.status === 404 ? "notFound" : "failed");
+    return null;
   }, [applicationId]);
 
-  async function handleDecision(decision: "ADVANCE" | "REJECT") {
+  const load = useCallback(async () => {
+    setLoadState("loading");
+    const [detail, job] = await Promise.all([fetchDetail(), apiFetch<{ stages: Array<{ type: string; order: number }> }>(`/api/recruiter/jobs/${jobId}`)]);
+    if (job.ok) setStages(job.data.stages);
+    void detail;
+  }, [fetchDetail, jobId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function handleDecision(decision: Decision) {
+    if (saving) return;
     setSaving(true);
     setMessage(null);
-    const res = await fetch(`/api/recruiter/applications/${applicationId}/decision`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ decision }),
-    });
+    const result = await apiFetch<{ status: ApplicationDetailData["status"]; currentStage: { type: string; order: number } }>(
+      `/api/recruiter/applications/${applicationId}/decision`,
+      jsonInit("POST", { decision }),
+    );
     setSaving(false);
-    if (res.ok) {
-      setMessage(decision === "ADVANCE" ? "Candidato avançado." : "Candidato reprovado.");
+    setPending(null);
+
+    if (result.ok) {
+      // US5.5: a nova etapa (ou a aprovação final) fica explícita na tela.
+      const text =
+        decision === "REJECT"
+          ? "Candidato reprovado."
+          : result.data.status === "APPROVED"
+            ? "Candidato aprovado — era a última etapa, o processo foi concluído."
+            : `Candidato avançado. Etapa atual: ${STAGE_LABEL[result.data.currentStage.type] ?? result.data.currentStage.type}.`;
+      setMessage({ tone: decision === "REJECT" ? "info" : "success", text });
+      await fetchDetail();
       router.refresh();
-      const updated = await fetch(`/api/recruiter/applications/${applicationId}`).then((r) => r.json());
-      setData(updated);
-    } else {
-      const body = await res.json().catch(() => null);
-      setMessage(body?.error?.message ?? "Não foi possível registrar a decisão.");
+      return;
     }
+    if (result.status === 401) return;
+    if (result.networkError) {
+      setMessage({ tone: "danger", text: NETWORK_ERROR_MESSAGE });
+      return;
+    }
+    if (result.error?.code === "APPLICATION_CLOSED") {
+      // US5.7: outro recrutador já decidiu — mostra o estado real em vez de insistir.
+      await fetchDetail();
+      setMessage({ tone: "info", text: "Esta candidatura já foi decidida por outra pessoa. A tela mostra o estado atual." });
+      return;
+    }
+    setMessage({ tone: "danger", text: result.error?.message ?? "Não foi possível registrar a decisão." });
   }
 
-  if (!data) return <p>Carregando…</p>;
+  const jobTitle = data?.job.title ?? "Vaga";
+  const listHref = `/recrutamento/vagas/${jobId}/candidaturas${origin.kind === "job" && origin.stage ? `?etapa=${origin.stage}` : ""}`;
+  const crumbs: Crumb[] =
+    origin.kind === "search"
+      ? [
+          { label: "Painel", href: "/recrutamento" },
+          { label: "Candidatos", href: `/recrutamento/candidatos${origin.q ? `?q=${encodeURIComponent(origin.q)}` : ""}` },
+          { label: data?.candidate.name ?? "Candidato" },
+        ]
+      : [
+          { label: "Painel", href: "/recrutamento" },
+          { label: jobTitle, href: `/recrutamento/vagas/${jobId}` },
+          { label: "Candidaturas", href: listHref },
+          { label: data?.candidate.name ?? "Candidato" },
+        ];
+  const backHref = origin.kind === "search" ? (crumbs[1]?.href ?? "/recrutamento/candidatos") : listHref;
+
+  if (loadState === "loading" && !data) {
+    return (
+      <div role="status" aria-live="polite" className="space-y-4">
+        <span className="sr-only">Carregando relatório…</span>
+        <Skeleton className="h-4 w-64" />
+        <Skeleton className="h-9 w-1/2" />
+        <Skeleton className="h-64 w-full rounded-card" />
+      </div>
+    );
+  }
+  if (loadState === "notFound") {
+    return (
+      <ErrorState
+        title="Candidatura não encontrada."
+        action={
+          <ButtonLink href={backHref} variant="secondary">
+            Voltar
+          </ButtonLink>
+        }
+      />
+    );
+  }
+  if (loadState === "failed" || !data) {
+    return <ErrorState title="Não foi possível carregar o relatório." onRetry={load} />;
+  }
 
   const mainEvaluation = data.evaluations.find((e) => e.type === "RESUME_MATCH");
   const otherEvaluations = data.evaluations.filter((e) => e.type !== "RESUME_MATCH");
+  const currentIndex = stages?.findIndex((s) => s.order === data.currentStage.order) ?? -1;
+  const isLastStage = stages ? currentIndex === stages.length - 1 : false;
+  const currentLabel = STAGE_LABEL[data.currentStage.type] ?? data.currentStage.type;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="break-words text-xl font-semibold sm:text-2xl">{data.candidate.name}</h1>
-        <p className="break-all text-sm text-slate-600 sm:break-words">
-          {data.candidate.email} · {data.job.title}
-        </p>
-      </div>
+      <PageHeader
+        breadcrumb={<Breadcrumb items={crumbs} />}
+        title={data.candidate.name}
+        subtitle={
+          <span className="break-all sm:break-words">
+            {data.candidate.email} · {data.job.title}
+          </span>
+        }
+        actions={<Badge variant={APPLICATION_STATUS_BADGE[data.status]}>{RECRUITER_APPLICATION_STATUS_LABEL[data.status]}</Badge>}
+      />
+
+      {message && <Notice tone={message.tone}>{message.text}</Notice>}
+
+      <Card as="section" aria-labelledby="etapa-atual">
+        <CardHeader titleId="etapa-atual" title="Processo" description={`Etapa atual: ${currentLabel}`} />
+        <CardBody>
+          {stages && currentIndex >= 0 ? (
+            <StageTrail
+              stages={stages.map((s) => ({ type: s.type, label: STAGE_LABEL[s.type] ?? s.type }))}
+              currentIndex={currentIndex}
+              finished={data.status !== "IN_PROGRESS"}
+            />
+          ) : (
+            <p className="text-body text-ink-600">Etapa atual: {currentLabel}</p>
+          )}
+        </CardBody>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <section className="space-y-4">
-          {mainEvaluation && (
-            <div>
-              <p className="text-2xl font-semibold sm:text-3xl">{mainEvaluation.score}%</p>
-              <p className="text-sm text-slate-500">compatibilidade geral</p>
-              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+        <Card as="section" aria-labelledby="match">
+          <CardHeader titleId="match" title="Compatibilidade" />
+          <CardBody className="space-y-4">
+            {mainEvaluation ? (
+              <>
                 <div>
-                  <p className="text-xs font-medium uppercase text-slate-500">Encontradas</p>
-                  <p className="break-words text-sm text-slate-600">
-                    {mainEvaluation.justification?.matched?.join(", ") || "—"}
-                  </p>
+                  <p className="text-display text-ink-900">{mainEvaluation.score}%</p>
+                  <p className="text-body text-ink-600">compatibilidade geral</p>
                 </div>
-                <div>
-                  <p className="text-xs font-medium uppercase text-slate-500">Faltando</p>
-                  <p className="break-words text-sm text-slate-600">
-                    {mainEvaluation.justification?.missing?.join(", ") || "—"}
-                  </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <h3 className="text-label text-ink-600">Encontradas</h3>
+                    <ChipList items={mainEvaluation.justification?.matched ?? []} tone="found" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-label text-ink-600">Faltando</h3>
+                    <ChipList items={mainEvaluation.justification?.missing ?? []} tone="missing" />
+                  </div>
                 </div>
+              </>
+            ) : (
+              <p className="text-body text-ink-600">Sem avaliação de currículo registrada.</p>
+            )}
+            {otherEvaluations.map((evaluation) => (
+              <div key={evaluation.type} className="rounded-card border border-brand-100 p-3">
+                <p className="text-body font-medium text-ink-900">
+                  {EVALUATION_LABEL[evaluation.type] ?? evaluation.type}: {evaluation.score}%
+                </p>
               </div>
-            </div>
-          )}
+            ))}
+          </CardBody>
+        </Card>
 
-          {otherEvaluations.map((evaluation) => (
-            <div key={evaluation.type} className="rounded border border-slate-200 p-3">
-              <p className="text-sm font-medium">
-                {EVALUATION_LABEL[evaluation.type] ?? evaluation.type}: {evaluation.score}%
-              </p>
-            </div>
-          ))}
+        <div className="space-y-6">
+          <Card as="section" aria-labelledby="curriculo-candidato">
+            <CardHeader titleId="curriculo-candidato" title="Currículo" />
+            <CardBody>
+              {data.resume ? (
+                // US5.4: download autenticado em outra aba, sem tirar o recrutador do relatório.
+                <a href={`/api/resumes/${data.resume.id}/download`} target="_blank" rel="noopener noreferrer" className={`${textLinkClasses} break-all text-body`}>
+                  {data.resume.originalFilename}
+                </a>
+              ) : (
+                <p className="text-body text-ink-600">Nenhum currículo.</p>
+              )}
+            </CardBody>
+          </Card>
 
-          <p className="text-sm text-slate-600">
-            Etapa atual: {STAGE_LABEL[data.currentStage.type] ?? data.currentStage.type}
-          </p>
-        </section>
+          <Card as="section" aria-labelledby="contas-candidato">
+            <CardHeader titleId="contas-candidato" title="Contas externas" />
+            <CardBody>
+              {data.externalAccounts.length === 0 ? (
+                <p className="text-body text-ink-600">Nenhuma conta conectada.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {data.externalAccounts.map((account) => (
+                    <li key={account.provider} className="flex items-center justify-between gap-2 text-body text-ink-900">
+                      <span>{PROVIDER_LABEL[account.provider] ?? account.provider}</span>
+                      <Badge variant={account.status === "CONNECTED" ? "success" : account.status === "UNAVAILABLE" ? "warning" : "muted"}>
+                        {ACCOUNT_STATUS_LABEL[account.status] ?? account.status}
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardBody>
+          </Card>
 
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-sm font-medium uppercase text-slate-500">Currículo</h2>
-            {data.resume ? (
-              <a href={`/api/resumes/${data.resume.id}/download`} className="text-sm underline">
-                {data.resume.originalFilename}
-              </a>
-            ) : (
-              <p className="text-sm text-slate-500">Nenhum currículo.</p>
-            )}
-          </div>
-
-          <div>
-            <h2 className="text-sm font-medium uppercase text-slate-500">Contas externas</h2>
-            {data.externalAccounts.length === 0 ? (
-              <p className="text-sm text-slate-500">Nenhuma conta conectada.</p>
-            ) : (
-              <ul className="text-sm text-slate-600">
-                {data.externalAccounts.map((account) => (
-                  <li key={account.provider}>
-                    {account.provider}: {account.status === "UNAVAILABLE" ? "indisponível" : account.status}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div>
-            <h2 className="text-sm font-medium uppercase text-slate-500">Teste de código</h2>
-            <p className="text-sm text-slate-500">Ainda não disponível nesta versão.</p>
-          </div>
-        </section>
+          <Card as="section" aria-labelledby="teste-codigo">
+            <CardHeader titleId="teste-codigo" title="Teste de código" />
+            <CardBody>
+              <p className="text-body text-ink-600">Ainda não disponível nesta versão.</p>
+            </CardBody>
+          </Card>
+        </div>
       </div>
 
-      {data.status === "IN_PROGRESS" && (
-        <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-6">
-          <button
-            onClick={() => handleDecision("ADVANCE")}
-            disabled={saving}
-            className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-          >
-            Avançar
-          </button>
-          <button
-            onClick={() => handleDecision("REJECT")}
-            disabled={saving}
-            className="rounded border border-slate-300 px-4 py-2 disabled:opacity-50"
-          >
-            Reprovar
-          </button>
-        </div>
-      )}
-      {data.status !== "IN_PROGRESS" && (
-        <p className="text-sm text-slate-600 border-t border-slate-200 pt-6">
-          Candidatura {data.status === "APPROVED" ? "aprovada" : data.status === "REJECTED" ? "reprovada" : "retirada"}.
-        </p>
-      )}
+      <Card as="section" aria-labelledby="decisao">
+        <CardHeader
+          titleId="decisao"
+          title="Decisão"
+          description={
+            data.status === "IN_PROGRESS"
+              ? isLastStage
+                ? "Esta é a última etapa: avançar aprova o candidato."
+                : "A decisão é sempre humana — a nota automática nunca move o candidato de etapa."
+              : undefined
+          }
+        />
+        <CardBody>
+          {data.status === "IN_PROGRESS" ? (
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={() => setPending("ADVANCE")} disabled={saving}>
+                {isLastStage ? "Avançar e aprovar" : "Avançar"}
+              </Button>
+              <Button variant="danger" onClick={() => setPending("REJECT")} disabled={saving}>
+                Reprovar
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-body text-ink-900">
+                Candidatura {data.status === "APPROVED" ? "aprovada" : data.status === "REJECTED" ? "reprovada" : "retirada"}.
+              </p>
+              <ButtonLink href={backHref} variant="secondary">
+                {origin.kind === "search" ? "Voltar à busca" : "Voltar às candidaturas"}
+              </ButtonLink>
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
-      {message && <p className="text-sm text-slate-700">{message}</p>}
+      <ConfirmDialog
+        open={pending === "ADVANCE"}
+        title={isLastStage ? "Aprovar candidato?" : "Avançar candidato?"}
+        description={
+          isLastStage
+            ? `${data.candidate.name} está na última etapa. Avançar conclui o processo como aprovado.`
+            : `${data.candidate.name} sai de "${currentLabel}" e vai para "${stages && stages[currentIndex + 1] ? (STAGE_LABEL[stages[currentIndex + 1]!.type] ?? stages[currentIndex + 1]!.type) : "a próxima etapa"}".`
+        }
+        confirmLabel={isLastStage ? "Confirmar aprovação" : "Confirmar avanço"}
+        loading={saving}
+        onCancel={() => setPending(null)}
+        onConfirm={() => handleDecision("ADVANCE")}
+      />
+      <ConfirmDialog
+        open={pending === "REJECT"}
+        title="Reprovar candidato?"
+        description={`A candidatura de ${data.candidate.name} será encerrada. Esta decisão não pode ser desfeita.`}
+        confirmLabel="Confirmar reprovação"
+        tone="danger"
+        loading={saving}
+        onCancel={() => setPending(null)}
+        onConfirm={() => handleDecision("REJECT")}
+      />
     </div>
   );
 }

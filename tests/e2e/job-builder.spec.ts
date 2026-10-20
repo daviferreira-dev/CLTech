@@ -30,6 +30,8 @@ test("recrutador cria vaga, monta pipeline, publica, e vaga publicada trava edi�
   await expect(page).toHaveURL(/\/recrutamento\/vagas\/[^/]+$/);
 
   await page.getByRole("button", { name: "Publicar Vaga" }).click();
+  // Publicar é irreversível: exige confirmação (spec 004 FR-105).
+  await page.getByRole("button", { name: "Confirmar publicação" }).click();
   await expect(page.getByText(/Adicione ao menos uma etapa/)).toBeVisible();
 
   // Monta o pipeline: Análise de Currículo, Análise de GitHub, Entrevista Técnica.
@@ -50,6 +52,8 @@ test("recrutador cria vaga, monta pipeline, publica, e vaga publicada trava edi�
   await expect(stageItem("Entrevista Técnica")).toBeVisible();
 
   await page.getByRole("button", { name: "Publicar Vaga" }).click();
+  // Publicar é irreversível: exige confirmação (spec 004 FR-105).
+  await page.getByRole("button", { name: "Confirmar publicação" }).click();
   await expect(page.getByText("Vaga publicada.")).toBeVisible();
   await expect(page.getByText("Vaga publicada: tecnologias, requisitos mínimos e etapas")).toBeVisible();
 

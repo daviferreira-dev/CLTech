@@ -1,6 +1,5 @@
 import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
 import { PageContainer } from "@/components/layout/AppShell";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { JobBuilder } from "@/components/recruiter/JobBuilder";
 
 export default async function EditarVagaPage({
@@ -15,7 +14,6 @@ export default async function EditarVagaPage({
 
   return (
     <PageContainer className="max-w-4xl">
-      <PageHeader title="Editar Vaga" />
       <JobBuilder jobId={id} />
     </PageContainer>
   );

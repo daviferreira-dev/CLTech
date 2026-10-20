@@ -1,6 +1,8 @@
+import { Suspense } from "react";
+import { prisma } from "@/lib/prisma";
 import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
 import { PageContainer } from "@/components/layout/AppShell";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { CardListSkeleton } from "@/components/ui";
 import { CandidatesForJobList } from "./CandidatesForJobList";
 
 export default async function CandidaturasDaVagaPage({
@@ -13,10 +15,19 @@ export default async function CandidaturasDaVagaPage({
   const { id } = await params;
   await requirePageRole(RECRUITER_ROLES, currentPath(`/recrutamento/vagas/${id}/candidaturas`, await searchParams));
 
+  // "Tempo na etapa" (spec 004 US5.2) não sai de GET /applications, e a sprint não muda
+  // contrato de API: a entrada na etapa atual é lida aqui, do histórico append-only.
+  const openEntries = await prisma.applicationStageHistory.findMany({
+    where: { exitedAt: null, application: { jobId: id } },
+    select: { applicationId: true, enteredAt: true },
+  });
+  const enteredAtById = Object.fromEntries(openEntries.map((entry) => [entry.applicationId, entry.enteredAt.toISOString()]));
+
   return (
     <PageContainer className="max-w-5xl">
-      <PageHeader title="Candidatos" />
-      <CandidatesForJobList jobId={id} />
+      <Suspense fallback={<CardListSkeleton />}>
+        <CandidatesForJobList jobId={id} enteredAtById={enteredAtById} />
+      </Suspense>
     </PageContainer>
   );
 }

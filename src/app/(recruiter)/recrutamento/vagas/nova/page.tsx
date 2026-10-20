@@ -1,6 +1,5 @@
 import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
 import { PageContainer } from "@/components/layout/AppShell";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { JobBuilder } from "@/components/recruiter/JobBuilder";
 
 export default async function NovaVagaPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
@@ -8,7 +7,6 @@ export default async function NovaVagaPage({ searchParams }: { searchParams: Pro
 
   return (
     <PageContainer className="max-w-4xl">
-      <PageHeader title="Criar Vaga" />
       <JobBuilder />
     </PageContainer>
   );

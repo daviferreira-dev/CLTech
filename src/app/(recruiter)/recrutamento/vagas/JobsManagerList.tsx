@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api-client";
+import { JOB_STATUS_BADGE, JOB_STATUS_LABEL } from "@/lib/labels";
+import { cn } from "@/lib/cn";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge, ButtonLink, Card, CardListSkeleton, EmptyState, ErrorState, focusRing } from "@/components/ui";
 
 interface RecruiterJobListItem {
   id: string;
@@ -11,57 +16,73 @@ interface RecruiterJobListItem {
   createdAt: string;
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  DRAFT: "bg-slate-100 text-slate-600",
-  PUBLISHED: "bg-slate-900 text-white",
-  CLOSED: "bg-slate-200 text-slate-500",
-};
-
-const STATUS_LABEL: Record<string, string> = { DRAFT: "Rascunho", PUBLISHED: "Publicada", CLOSED: "Encerrada" };
-
 export function JobsManagerList() {
   const [items, setItems] = useState<RecruiterJobListItem[] | null>(null);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    // Resposta de erro não traz `items`: sem esta guarda, `items.length` abaixo
-    // lança TypeError e derruba a página inteira.
-    fetch("/api/recruiter/jobs")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setItems(Array.isArray(data?.items) ? data.items : []))
-      .catch(() => setItems([]));
+  const load = useCallback(async () => {
+    setFailed(false);
+    setItems(null);
+    // Resposta de erro não traz `items`: sem esta guarda, `items.length` derruba a página.
+    const result = await apiFetch<{ items: RecruiterJobListItem[] }>("/api/recruiter/jobs");
+    if (result.ok && Array.isArray(result.data?.items)) setItems(result.data.items);
+    else setFailed(true);
   }, []);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-semibold sm:text-2xl">Minhas Vagas</h1>
-        <Link href="/recrutamento/vagas/nova" className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white">
-          Criar Vaga
-        </Link>
-      </div>
+  useEffect(() => {
+    load();
+  }, [load]);
 
-      {items === null && <p>Carregando…</p>}
+  return (
+    <>
+      <PageHeader
+        title="Minhas Vagas"
+        subtitle={items ? `${items.length} ${items.length === 1 ? "vaga" : "vagas"}` : undefined}
+        actions={<ButtonLink href="/recrutamento/vagas/nova">Criar Vaga</ButtonLink>}
+      />
+
+      {failed && <ErrorState title="Não foi possível carregar suas vagas." onRetry={load} />}
+      {!failed && items === null && <CardListSkeleton label="Carregando vagas…" />}
       {items !== null && items.length === 0 && (
-        <p className="text-sm text-slate-500">Nenhuma vaga ainda. Crie a primeira para começar.</p>
+        <EmptyState
+          title="Nenhuma vaga ainda."
+          description="Crie a primeira para começar."
+          action={<ButtonLink href="/recrutamento/vagas/nova">Criar a primeira vaga</ButtonLink>}
+        />
       )}
 
-      <ul className="space-y-3">
-        {items?.map((job) => (
-          <li key={job.id} className="flex items-center justify-between gap-3 rounded border border-slate-200 px-4 py-3">
-            <div className="min-w-0 break-words">
-              <Link href={`/recrutamento/vagas/${job.id}`} className="font-medium hover:underline">
-                {job.title}
-              </Link>
-              <p className="text-sm text-slate-500">{job.candidateCount} candidato(s)</p>
-            </div>
-            <span
-              className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[job.status]}`}
-            >
-              {STATUS_LABEL[job.status]}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+      {items && items.length > 0 && (
+        <ul className="space-y-3">
+          {items.map((job) => (
+            <Card as="li" key={job.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="min-w-0 text-h3">
+                    <Link href={`/recrutamento/vagas/${job.id}`} className={cn("break-words rounded-sm text-ink-900 hover:underline", focusRing)}>
+                      {job.title}
+                    </Link>
+                  </h2>
+                  <Badge variant={JOB_STATUS_BADGE[job.status]}>{JOB_STATUS_LABEL[job.status]}</Badge>
+                </div>
+                <p className="text-body text-ink-600">
+                  {job.candidateCount} {job.candidateCount === 1 ? "candidatura" : "candidaturas"} · criada em{" "}
+                  {new Date(job.createdAt).toLocaleDateString("pt-BR")}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <ButtonLink href={`/recrutamento/vagas/${job.id}`} variant="secondary" size="sm">
+                  {job.status === "DRAFT" ? "Editar e publicar" : "Ver vaga"}
+                </ButtonLink>
+                {job.status !== "DRAFT" && (
+                  <ButtonLink href={`/recrutamento/vagas/${job.id}/candidaturas`} size="sm">
+                    Ver candidaturas
+                  </ButtonLink>
+                )}
+              </div>
+            </Card>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }

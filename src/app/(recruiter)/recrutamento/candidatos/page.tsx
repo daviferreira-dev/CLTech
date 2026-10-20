@@ -1,5 +1,7 @@
 import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
+import { Suspense } from "react";
 import { PageContainer } from "@/components/layout/AppShell";
+import { CardListSkeleton } from "@/components/ui";
 import { CandidateSearch } from "./CandidateSearch";
 
 export default async function CandidatosPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
@@ -7,7 +9,9 @@ export default async function CandidatosPage({ searchParams }: { searchParams: P
 
   return (
     <PageContainer className="max-w-4xl">
-      <CandidateSearch />
+      <Suspense fallback={<CardListSkeleton count={2} />}>
+        <CandidateSearch />
+      </Suspense>
     </PageContainer>
   );
 }
