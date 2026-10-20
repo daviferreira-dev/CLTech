@@ -197,5 +197,5 @@ Faltava dono para a frente "LGPD" do cronograma (Semana 16 do ERS, `CT-RNF05`, D
 
 - Rodar `prisma/scripts/006-limpa-tokens-oauth.sql` uma vez no banco (contas OAuth antigas).
 - Emendar o `.docx` do ERS com o texto do D1.
-- Ainda abertos da Sprint 3: VM do Judge0, cron de expiração, e a Semana 17 (matriz de
-  rastreabilidade e manual de execução).
+- Ainda abertos da Sprint 3: VM do Judge0 e cron de expiração. A Semana 17 (matriz de
+  rastreabilidade e manual de execução) está em `docs/rastreabilidade.md` e `docs/manual-execucao.md`.

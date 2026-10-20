@@ -205,12 +205,14 @@ deliberada: mantém a lógica testável sem subir servidor.
 
 ## Como rodar
 
+> Passo a passo completo, contas de demonstração, roteiro de apresentação e problemas
+> comuns: [docs/manual-execucao.md](docs/manual-execucao.md).
+
 ### Pré-requisitos
 
 | Ferramenta | Versão | Para quê |
 |---|---|---|
 | Node.js | 20 LTS ou superior | aplicação Next.js |
-| Python | 3.12 ou superior | serviço de IA (Sprint 2) |
 | Git | recente | controle de versão |
 
 Banco e storage rodam no Supabase (gerenciado) — não precisa de Docker para
@@ -248,25 +250,15 @@ pnpm db:seed                # vagas, pipelines e usuários de demonstração
 ### 3. Rodar a aplicação
 
 ```bash
-pnpm dev                    # http://localhost:3000
+pnpm build && pnpm start    # http://localhost:3000
 ```
 
 Uma aplicação só: as telas React e as rotas de API sobem juntas. Não há segundo servidor.
-
-### 4. Serviço de IA (a partir da Sprint 2)
-
-```bash
-cd services/ai
-python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload  # http://localhost:8000
-```
+O motor de triagem também roda dentro do Next.js (D11); `services/ai/` não é usado.
 
 ### Testes
 
 ```bash
-cp .env.test.example .env.test   # aponta pro mesmo projeto Supabase do .env (ainda é teste)
 pnpm test          # Vitest — unidade e integração; TRUNCATE total antes de cada teste
 pnpm test:e2e      # Playwright — fluxos P1 em 360 px e 1280 px, contra `pnpm build && pnpm start`
 ```
@@ -290,6 +282,8 @@ concorrente com Argon2id sem esgotar conexões.
 | [Modelo de dados](specs/001-portal-candidatura/data-model.md) | Entidades, relações e transições de estado |
 | [Contratos de API](specs/001-portal-candidatura/contracts/api.md) | Rotas HTTP e regras de erro |
 | [Diagramas](docs/diagramas/) | Casos de uso, classes, DER e sequência |
+| [Matriz de rastreabilidade](docs/rastreabilidade.md) | Requisito do ERS → spec → código → teste, com status |
+| [Manual de execução](docs/manual-execucao.md) | Instalação, configuração, demonstração e testes |
 
 ---
 
