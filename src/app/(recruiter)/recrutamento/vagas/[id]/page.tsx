@@ -1,18 +1,22 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/server/auth/config";
+import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
+import { PageContainer } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { JobBuilder } from "@/components/recruiter/JobBuilder";
 
-export default async function EditarVagaPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user) redirect("/entrar");
-  if (session.user.role !== "RECRUITER" && session.user.role !== "ADMIN") redirect("/vagas");
-
+export default async function EditarVagaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<PageSearchParams>;
+}) {
   const { id } = await params;
+  await requirePageRole(RECRUITER_ROLES, currentPath(`/recrutamento/vagas/${id}`, await searchParams));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-6 text-xl font-semibold sm:text-2xl">Editar Vaga</h1>
+    <PageContainer className="max-w-4xl">
+      <PageHeader title="Editar Vaga" />
       <JobBuilder jobId={id} />
-    </div>
+    </PageContainer>
   );
 }

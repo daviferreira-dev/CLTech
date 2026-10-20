@@ -1,18 +1,22 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/server/auth/config";
+import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
+import { PageContainer } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { CandidatesForJobList } from "./CandidatesForJobList";
 
-export default async function CandidaturasDaVagaPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user) redirect("/entrar");
-  if (session.user.role !== "RECRUITER" && session.user.role !== "ADMIN") redirect("/vagas");
-
+export default async function CandidaturasDaVagaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<PageSearchParams>;
+}) {
   const { id } = await params;
+  await requirePageRole(RECRUITER_ROLES, currentPath(`/recrutamento/vagas/${id}/candidaturas`, await searchParams));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-6 text-xl font-semibold sm:text-2xl">Candidatos</h1>
+    <PageContainer className="max-w-5xl">
+      <PageHeader title="Candidatos" />
       <CandidatesForJobList jobId={id} />
-    </div>
+    </PageContainer>
   );
 }

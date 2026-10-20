@@ -1,16 +1,15 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/server/auth/config";
+import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
+import { PageContainer } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { JobBuilder } from "@/components/recruiter/JobBuilder";
 
-export default async function NovaVagaPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/entrar");
-  if (session.user.role !== "RECRUITER" && session.user.role !== "ADMIN") redirect("/vagas");
+export default async function NovaVagaPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
+  await requirePageRole(RECRUITER_ROLES, currentPath("/recrutamento/vagas/nova", await searchParams));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-6 text-xl font-semibold sm:text-2xl">Criar Vaga</h1>
+    <PageContainer className="max-w-4xl">
+      <PageHeader title="Criar Vaga" />
       <JobBuilder />
-    </div>
+    </PageContainer>
   );
 }

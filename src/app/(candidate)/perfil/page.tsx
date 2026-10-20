@@ -1,11 +1,8 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/server/auth/config";
+import { requirePageRole, CANDIDATE_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
 import { ProfileForm } from "./ProfileForm";
 
-export default async function ProfilePage() {
-  const session = await auth();
-  if (!session?.user) redirect("/entrar?callbackUrl=/perfil");
-  if (session.user.role !== "CANDIDATE") redirect("/recrutamento");
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
+  await requirePageRole(CANDIDATE_ROLES, currentPath("/perfil", await searchParams));
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 px-4 py-12">

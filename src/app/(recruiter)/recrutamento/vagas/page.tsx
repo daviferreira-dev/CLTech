@@ -1,15 +1,13 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/server/auth/config";
+import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
+import { PageContainer } from "@/components/layout/AppShell";
 import { JobsManagerList } from "./JobsManagerList";
 
-export default async function VagasRecrutadorPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/entrar");
-  if (session.user.role !== "RECRUITER" && session.user.role !== "ADMIN") redirect("/vagas");
+export default async function VagasRecrutadorPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
+  await requirePageRole(RECRUITER_ROLES, currentPath("/recrutamento/vagas", await searchParams));
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16">
+    <PageContainer className="max-w-5xl">
       <JobsManagerList />
-    </div>
+    </PageContainer>
   );
 }

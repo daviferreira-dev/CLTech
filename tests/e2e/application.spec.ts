@@ -18,7 +18,8 @@ test("filtrar por modalidade reduz a lista", async ({ page }) => {
 
 test("candidatar-se deslogado leva ao login e retorna à vaga (FR-023)", async ({ page }) => {
   await page.goto("/vagas");
-  await page.getByRole("link").first().click();
+  // O AppHeader também tem links (pular conteúdo, logo, navegação): mira o cartão de vaga.
+  await page.locator('a[href^="/vagas/"]').first().click();
   await expect(page).toHaveURL(/\/vagas\/.+/);
   const jobUrl = page.url();
 
@@ -48,7 +49,8 @@ test("candidato sem currículo é orientado a completar o perfil ao tentar se ca
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 
-  await page.getByRole("link").first().click();
+  // O AppHeader também tem links (pular conteúdo, logo, navegação): mira o cartão de vaga.
+  await page.locator('a[href^="/vagas/"]').first().click();
   await page.getByRole("button", { name: "Candidatar-se" }).click();
 
   await expect(page.getByText(/Complete seu perfil com um currículo/)).toBeVisible();

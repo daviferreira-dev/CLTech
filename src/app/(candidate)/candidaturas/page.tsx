@@ -1,6 +1,5 @@
-  import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/server/auth/config";
+import { requirePageRole, CANDIDATE_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
 import { listMyApplications } from "@/server/applications/list";
 
 const STAGE_LABEL: Record<string, string> = {
@@ -19,12 +18,10 @@ const STATUS_LABEL: Record<string, string> = {
   WITHDRAWN: "Retirada",
 };
 
-export default async function MyApplicationsPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/entrar?callbackUrl=/candidaturas");
-  if (session.user.role !== "CANDIDATE") redirect("/recrutamento");
+export default async function MyApplicationsPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
+  const user = await requirePageRole(CANDIDATE_ROLES, currentPath("/candidaturas", await searchParams));
 
-  const applications = await listMyApplications(session.user.id);
+  const applications = await listMyApplications(user.id);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 px-4 py-12">
