@@ -83,9 +83,13 @@ function clip(value: string, max: number): string {
   return value.length > max ? value.slice(0, max).trim() : value;
 }
 
+/** Marcador que o pdf-parse insere entre páginas: "-- 1 of 2 --". */
+const PAGE_MARKER = /^-+\s*\d+\s+of\s+\d+\s*-+$/gim;
+
 function toLines(text: string): string[] {
   return text
     .replace(/\r/g, "")
+    .replace(PAGE_MARKER, "")
     .split("\n")
     .map((line) => line.replace(/[ \t ]+/g, " ").trim());
 }

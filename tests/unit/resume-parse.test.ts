@@ -115,6 +115,10 @@ describe("parseResume", () => {
     expect(parseResume("Experiência com Quarkus e Kotlin", ["Quarkus"]).technologies).toEqual(["Kotlin", "Quarkus"]);
   });
 
+  it("ignora o marcador de página que o pdf-parse insere", () => {
+    expect(parseResume("HABILIDADES\nComunicação, Mentoria\n\n-- 1 of 2 --\n").softSkills).toEqual(["Comunicação", "Mentoria"]);
+  });
+
   it("texto vazio ou sem nada reconhecível volta rascunho vazio", () => {
     const empty = parseResume("");
     expect(empty.experiences).toEqual([]);

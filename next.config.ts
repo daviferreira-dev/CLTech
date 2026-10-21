@@ -12,6 +12,10 @@ export const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // pdf-parse usa o pdfjs-dist, que carrega `pdf.worker.mjs` por caminho relativo ao próprio
+  // arquivo. Empacotado em .next/server/chunks, o worker não vai junto e TODO PDF caía em
+  // parseStatus FAILED ("Setting up fake worker failed"). Fora do bundle, roda do node_modules.
+  serverExternalPackages: ["pdf-parse", "pdfjs-dist"],
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
