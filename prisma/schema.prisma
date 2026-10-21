@@ -93,6 +93,11 @@ model Candidate {
   phone     String? // cifrado AES-256-GCM (R4) — ver src/server/crypto.ts
   city      String?
   state     String?
+  // Perfil profissional (spec 007, FR-701) — digitado ou pré-preenchido pelo currículo.
+  headline     String? // título, ex.: "Dev Backend Pleno"
+  summary      String?
+  technologies String[] @default([]) // entram no match junto com o texto do currículo (FR-708)
+  softSkills   String[] @default([])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -102,8 +107,96 @@ model Candidate {
   resumes          Resume[]
   applications     Application[]
   jobMatches       JobMatch[]
+  experiences      Experience[]
+  educations       Education[]
+  languages        Language[]
+  profileLinks     ProfileLink[]
 
   @@map("Candidate")
+}
+
+// ---------------------------------------------------------------------------
+// Perfil profissional (spec 007, FR-702). Listas substituídas inteiras a cada
+// gravação; `position` guarda a ordem da tela. Datas são mês/ano (dia 1, UTC).
+// ---------------------------------------------------------------------------
+
+enum EducationLevel {
+  TECNICO
+  GRADUACAO
+  POS
+  MESTRADO
+  DOUTORADO
+  CURSO_LIVRE
+  OUTRO
+}
+
+enum LanguageLevel {
+  BASICO
+  INTERMEDIARIO
+  AVANCADO
+  FLUENTE
+  NATIVO
+}
+
+model Experience {
+  id          String    @id @default(uuid())
+  candidateId String
+  position    Int
+  company     String
+  role        String
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@map("Experience")
+}
+
+model Education {
+  id          String         @id @default(uuid())
+  candidateId String
+  position    Int
+  institution String
+  course      String
+  level       EducationLevel
+  startDate   DateTime?
+  endDate     DateTime?
+  inProgress  Boolean        @default(false)
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@map("Education")
+}
+
+model Language {
+  id          String        @id @default(uuid())
+  candidateId String
+  position    Int
+  name        String
+  level       LanguageLevel
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@map("Language")
+}
+
+/// Portfólio, site etc. GitHub/LinkedIn/Lattes seguem em ExternalAccount (coleta).
+model ProfileLink {
+  id          String @id @default(uuid())
+  candidateId String
+  position    Int
+  label       String
+  url         String
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@map("ProfileLink")
 }
 
 enum ExternalProvider {
