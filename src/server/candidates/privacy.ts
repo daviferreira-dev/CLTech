@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Errors, logSafeError } from "@/lib/errors";
 import { decrypt, decryptOrNull } from "@/server/crypto";
 import { deletePrivateObjects } from "@/server/storage";
+import { profileDetailsInclude, toProfileDetails } from "@/server/candidates/profile-details";
 
 export const DELETE_CONFIRMATION = "EXCLUIR";
 
@@ -27,6 +28,7 @@ export async function exportMyData(userId: string) {
           externalAccounts: true,
           githubProfile: true,
           resumes: { orderBy: { uploadedAt: "asc" } },
+          ...profileDetailsInclude,
           applications: {
             orderBy: { appliedAt: "asc" },
             include: {
@@ -52,7 +54,14 @@ export async function exportMyData(userId: string) {
       loginProviders: user.accounts.map((a) => a.provider),
     },
     profile: candidate
-      ? { phone: decryptOrNull(candidate.phone), city: candidate.city, state: candidate.state, updatedAt: candidate.updatedAt }
+      ? {
+          phone: decryptOrNull(candidate.phone),
+          city: candidate.city,
+          state: candidate.state,
+          updatedAt: candidate.updatedAt,
+          // Spec 007 (FR-709): perfil profissional.
+          ...toProfileDetails(candidate),
+        }
       : null,
     externalAccounts: (candidate?.externalAccounts ?? []).map((a) => ({
       provider: a.provider,

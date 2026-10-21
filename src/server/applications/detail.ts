@@ -2,10 +2,14 @@
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
 import { getCodeTestReport, type CodeTestReport } from "@/server/code-test/report";
+import type { ProfileDetails } from "@/lib/profile-details";
+import { profileDetailsInclude, toProfileDetails } from "@/server/candidates/profile-details";
 
 export interface ApplicationDetail {
   id: string;
   candidate: { name: string; email: string };
+  /** Perfil profissional do candidato (spec 007, FR-710). */
+  professionalProfile: ProfileDetails;
   job: { id: string; title: string };
   currentStage: { type: string; order: number };
   status: "IN_PROGRESS" | "APPROVED" | "REJECTED" | "WITHDRAWN";
@@ -19,7 +23,7 @@ export async function getApplicationDetail(applicationId: string): Promise<Appli
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
     include: {
-      candidate: { include: { user: true, externalAccounts: true } },
+      candidate: { include: { user: true, externalAccounts: true, ...profileDetailsInclude } },
       job: { select: { id: true, title: true } },
       currentStage: { select: { type: true, order: true } },
       resume: { select: { id: true, originalFilename: true } },
@@ -37,6 +41,7 @@ export async function getApplicationDetail(applicationId: string): Promise<Appli
   return {
     id: application.id,
     candidate: { name: application.candidate.user.name, email: application.candidate.user.email },
+    professionalProfile: toProfileDetails(application.candidate),
     job: application.job,
     currentStage: application.currentStage,
     status: application.status,

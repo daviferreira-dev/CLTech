@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
 import { PROVIDER_LABEL } from "@/lib/labels";
+import type { ProfileDetails } from "@/lib/profile-details";
+import type { ProfileDraft } from "@/lib/profile-form";
+import { ProfileDetailsForm } from "./ProfileDetailsForm";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import {
@@ -16,8 +19,6 @@ import {
   CardHeader,
   ChipList,
   ErrorState,
-  Field,
-  Input,
   Notice,
   Skeleton,
   buttonClasses,
@@ -36,6 +37,7 @@ interface ProfileView {
   phone: string | null;
   city: string | null;
   state: string | null;
+  details: ProfileDetails;
   externalAccounts: ExternalAccountView[];
   githubProfile: {
     publicRepoCount: number;
@@ -55,8 +57,6 @@ const ACCOUNT_STATUS: Record<ExternalAccountView["status"], { label: string; var
   UNAVAILABLE: { label: "Indisponível", variant: "warning" },
   DISCONNECTED: { label: "Não conectado", variant: "muted" },
 };
-
-const SAVED_MESSAGE_MS = 4000;
 
 /** Linguagens do snapshot do GitHub, da maior participação para a menor. */
 function topLanguages(languages: unknown, limit = 6): string[] {
@@ -80,14 +80,12 @@ export function ProfileForm({
   const [profile, setProfile] = useState<ProfileView | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
-  const [saving, setSaving] = useState(false);
-  const [saveResult, setSaveResult] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
-  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const [uploading, setUploading] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [justUploaded, setJustUploaded] = useState(false);
   const [pendingReplace, setPendingReplace] = useState<File | null>(null);
+  // Spec 007: rascunho lido do último currículo enviado; o formulário mescla nos campos vazios.
+  const [draft, setDraft] = useState<{ nonce: number; value: ProfileDraft } | null>(null);
 
   const [busyProvider, setBusyProvider] = useState<Provider | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
@@ -102,41 +100,7 @@ export function ProfileForm({
 
   useEffect(() => {
     load();
-    return () => {
-      if (savedTimer.current) clearTimeout(savedTimer.current);
-    };
   }, [load]);
-
-  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!profile || saving) return;
-    setSaving(true);
-    setSaveResult(null);
-
-    const form = new FormData(e.currentTarget);
-    const result = await apiFetch<ProfileView>(
-      "/api/me/profile",
-      jsonInit("PATCH", {
-        name: form.get("name"),
-        phone: form.get("phone"),
-        city: form.get("city"),
-        state: form.get("state"),
-      }),
-    );
-    setSaving(false);
-
-    if (result.ok) {
-      setProfile(result.data);
-      setSaveResult({ tone: "success", text: "Alterações salvas." });
-      // US3.7: a confirmação some sozinha; o espaço é reservado, então nada se desloca.
-      if (savedTimer.current) clearTimeout(savedTimer.current);
-      savedTimer.current = setTimeout(() => setSaveResult(null), SAVED_MESSAGE_MS);
-    } else if (result.networkError) {
-      setSaveResult({ tone: "danger", text: NETWORK_ERROR_MESSAGE });
-    } else if (result.status !== 401) {
-      setSaveResult({ tone: "danger", text: result.error?.message ?? "Não foi possível salvar as alterações." });
-    }
-  }
 
   async function uploadResume(file: File) {
     setResumeError(null);
@@ -144,7 +108,7 @@ export function ProfileForm({
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
-    const result = await apiFetch<unknown>("/api/me/resume", { method: "POST", body: formData });
+    const result = await apiFetch<{ draft: ProfileDraft | null }>("/api/me/resume", { method: "POST", body: formData });
     setUploading(false);
 
     if (!result.ok) {
@@ -155,6 +119,7 @@ export function ProfileForm({
       return;
     }
     setJustUploaded(true);
+    if (result.data.draft) setDraft({ nonce: Date.now(), value: result.data.draft });
     await load();
     router.refresh(); // atualiza o parseStatus vindo do servidor
   }
@@ -221,6 +186,7 @@ export function ProfileForm({
           <div className="min-w-0 flex-1 space-y-2">
             <div>
               <p className="break-words text-h2 text-ink-900">{profile.name}</p>
+              {profile.details.headline && <p className="break-words text-body font-medium text-ink-900">{profile.details.headline}</p>}
               <p className="break-all text-body text-ink-600 sm:break-words">
                 {profile.email}
                 {location && ` · ${location}`}
@@ -236,53 +202,12 @@ export function ProfileForm({
         </CardBody>
       </Card>
 
-      {/* Dados básicos */}
-      <Card as="section" aria-labelledby="dados-basicos">
-        <CardHeader titleId="dados-basicos" title="Dados Básicos" />
-        <CardBody>
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="name" label="Nome Completo" className="sm:col-span-2">
-                <Input name="name" defaultValue={profile.name} autoComplete="name" />
-              </Field>
-              <Field id="email" label="E-mail" hint="O e-mail identifica sua conta e não pode ser alterado aqui.">
-                <Input value={profile.email} readOnly disabled />
-              </Field>
-              <Field id="phone" label="Telefone">
-                <Input name="phone" type="tel" defaultValue={profile.phone ?? ""} autoComplete="tel" />
-              </Field>
-              <Field id="city" label="Cidade">
-                <Input name="city" defaultValue={profile.city ?? ""} autoComplete="address-level2" />
-              </Field>
-              <Field id="state" label="Estado (UF)">
-                <Input name="state" maxLength={2} defaultValue={profile.state ?? ""} className="uppercase" autoComplete="address-level1" />
-              </Field>
-            </div>
-
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* Altura reservada: a mensagem entra e sai sem deslocar o layout (US3.7). */}
-              <div className="min-h-5" aria-live="polite">
-                {saveResult && (
-                  <p role={saveResult.tone === "danger" ? "alert" : undefined} className={saveResult.tone === "danger" ? "text-body text-danger-600" : "text-body text-ink-900"}>
-                    {saveResult.tone === "success" && <span aria-hidden="true" className="mr-1 text-accent-600">✓</span>}
-                    {saveResult.text}
-                  </p>
-                )}
-              </div>
-              <Button type="submit" loading={saving}>
-                {saving ? "Salvando…" : "Salvar alterações"}
-              </Button>
-            </div>
-          </form>
-        </CardBody>
-      </Card>
-
       {/* Currículo */}
       <Card as="section" aria-labelledby="curriculo">
         <CardHeader
           titleId="curriculo"
           title="Currículo"
-          description="É a partir dele que calculamos seu match com cada vaga."
+          description="É a partir dele que calculamos seu match com cada vaga. Ao enviar, preenchemos os campos vazios do perfil abaixo com o que conseguirmos ler — você revisa e salva."
         />
         <CardBody className="space-y-4">
           {justUploaded && (
@@ -334,6 +259,9 @@ export function ProfileForm({
           />
         </CardBody>
       </Card>
+
+      {/* Dados básicos + perfil profissional (spec 007) */}
+      <ProfileDetailsForm profile={profile} draft={draft} onSaved={setProfile} />
 
       {/* Contas externas */}
       <Card as="section" aria-labelledby="contas">

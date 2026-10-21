@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
 import { decryptOrNull, encryptOrNull } from "@/server/crypto";
 import type { UpdateProfileInput } from "@/lib/validation/profile";
+import type { ProfileDetails } from "@/lib/profile-details";
+import { profileDetailsColumns, profileDetailsInclude, replaceProfileLists, toProfileDetails } from "@/server/candidates/profile-details";
+import { recomputeJobMatchesForCandidate } from "@/server/matching/recompute";
 
 export interface ProfileView {
   name: string;
@@ -10,6 +13,8 @@ export interface ProfileView {
   phone: string | null;
   city: string | null;
   state: string | null;
+  /** Perfil profissional (spec 007). */
+  details: ProfileDetails;
   externalAccounts: Array<{
     provider: "GITHUB" | "LINKEDIN" | "LATTES";
     status: "PENDING" | "CONNECTED" | "UNAVAILABLE" | "DISCONNECTED";
@@ -39,6 +44,7 @@ async function findCandidateByUserId(userId: string) {
       externalAccounts: true,
       githubProfile: true,
       resumes: { where: { isCurrent: true }, take: 1 },
+      ...profileDetailsInclude,
     },
   });
   if (!candidate) throw Errors.notFound("Perfil");
@@ -55,6 +61,7 @@ export async function getProfile(userId: string): Promise<ProfileView> {
     phone: decryptOrNull(candidate.phone),
     city: candidate.city,
     state: candidate.state,
+    details: toProfileDetails(candidate),
     externalAccounts: candidate.externalAccounts.map((acc) => ({
       provider: acc.provider,
       status: acc.status,
@@ -88,19 +95,24 @@ export async function updateProfile(
   const candidate = await prisma.candidate.findUnique({ where: { userId } });
   if (!candidate) throw Errors.notFound("Perfil");
 
-  await prisma.$transaction([
-    ...(input.name
-      ? [prisma.user.update({ where: { id: userId }, data: { name: input.name } })]
-      : []),
-    prisma.candidate.update({
+  // Interativa: as listas do perfil profissional são apagadas e recriadas (FR-704), e
+  // nada pode ficar pela metade se uma delas falhar.
+  await prisma.$transaction(async (tx) => {
+    if (input.name) await tx.user.update({ where: { id: userId }, data: { name: input.name } });
+    await tx.candidate.update({
       where: { userId },
       data: {
         ...(input.phone !== undefined ? { phone: encryptOrNull(input.phone || null) } : {}),
         ...(input.city !== undefined ? { city: input.city || null } : {}),
         ...(input.state !== undefined ? { state: input.state || null } : {}),
+        ...profileDetailsColumns(input),
       },
-    }),
-  ]);
+    });
+    await replaceProfileLists(tx, candidate.id, input);
+  });
+
+  // FR-708: tecnologias do perfil contam no match — mesmo gatilho fire-and-forget do upload.
+  if (input.technologies !== undefined) recomputeJobMatchesForCandidate(candidate.id).catch(() => {});
 
   return getProfile(userId);
 }

@@ -9,6 +9,8 @@ import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
 import { APPLICATION_STATUS_BADGE, PROVIDER_LABEL, RECRUITER_APPLICATION_STATUS_LABEL } from "@/lib/labels";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import type { ProfileDetails } from "@/lib/profile-details";
+import { ProfessionalProfileCard } from "./ProfessionalProfileCard";
 import {
   Badge,
   Breadcrumb,
@@ -35,6 +37,7 @@ interface EvaluationView {
 interface ApplicationDetailData {
   id: string;
   candidate: { name: string; email: string };
+  professionalProfile: ProfileDetails;
   job: { id: string; title: string };
   currentStage: { type: string; order: number };
   status: "IN_PROGRESS" | "APPROVED" | "REJECTED" | "WITHDRAWN";
@@ -290,6 +293,8 @@ export function ApplicationDetailView({
       </div>
 
       <CodeTestCard report={data.codeTest} />
+
+      <ProfessionalProfileCard profile={data.professionalProfile} />
 
       <Card as="section" aria-labelledby="decisao">
         <CardHeader

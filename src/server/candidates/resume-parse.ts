@@ -76,7 +76,7 @@ const PART_SEPARATOR = /\s+[-–—|]\s+|\s*[|@]\s*|\s+at\s+|\s*,\s+(?=\p{Lu})/u
 const BULLET = /^[-•*▪◦·>]\s*/;
 
 function fold(value: string): string {
-  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 }
 
 function clip(value: string, max: number): string {
@@ -126,10 +126,10 @@ function parseMonth(value: string): string | null {
 function parseRange(line: string): { start: string; end: string; current: boolean; rest: string } | null {
   const match = RANGE.exec(line);
   if (!match) return null;
-  const start = parseMonth(match[1]);
+  const start = parseMonth(match[1] ?? "");
   if (!start) return null;
-  const current = IS_CURRENT.test(match[2].trim());
-  const end = current ? "" : (parseMonth(match[2]) ?? "");
+  const current = IS_CURRENT.test((match[2] ?? "").trim());
+  const end = current ? "" : (parseMonth(match[2] ?? "") ?? "");
   const rest = (line.slice(0, match.index) + " " + line.slice(match.index + match[0].length)).trim();
   return { start, end, current, rest };
 }
@@ -166,7 +166,7 @@ function findCityState(lines: string[]): { city: string; state: string } | undef
   );
   for (const line of lines.slice(0, 15)) {
     const m = pattern.exec(line);
-    if (m && m[1].length <= 40) return { city: m[1], state: m[2] };
+    if (m?.[1] && m[2] && m[1].length <= 40) return { city: m[1], state: m[2] };
   }
   return undefined;
 }
@@ -298,7 +298,7 @@ function assignRoleCompany(parts: string[]): { role: string; company: string } {
   const roleIndex = parts.findIndex((p) => ROLE_KEYWORDS.test(fold(p)));
   if (roleIndex >= 0) {
     const company = parts.find((_, i) => i !== roleIndex) ?? "";
-    return { role: parts[roleIndex], company };
+    return { role: parts[roleIndex] ?? "", company };
   }
   return { company: parts[0] ?? "", role: parts[1] ?? "" };
 }
@@ -310,13 +310,13 @@ function findExperiences(lines: string[]): ExperienceForm[] {
   dated.forEach(({ index, range }, k) => {
     const r = range!;
     const restParts = splitParts(r.rest);
-    const previousDate = k > 0 ? dated[k - 1].index : -1;
+    const previousDate = k > 0 ? (dated[k - 1]?.index ?? -1) : -1;
     const headerLines: string[] = [];
     let headerStart = index;
     const maxBack = restParts.length >= 2 ? 0 : restParts.length === 1 ? 1 : 2;
     for (let j = index - 1; j > previousDate && headerLines.length < maxBack; j--) {
-      if (!isHeaderLine(lines[j])) break;
-      headerLines.unshift(lines[j]);
+      if (!isHeaderLine(lines[j] ?? "")) break;
+      headerLines.unshift(lines[j] ?? "");
       headerStart = j;
     }
     const parts = [...headerLines.flatMap(splitParts), ...restParts];
@@ -335,7 +335,7 @@ function findExperiences(lines: string[]): ExperienceForm[] {
   });
 
   return entries.slice(0, PROFILE_LIMITS.listItems).map((entry, k) => {
-    const end = k + 1 < entries.length ? entries[k + 1].headerStart : lines.length;
+    const end = k + 1 < entries.length ? (entries[k + 1]?.headerStart ?? lines.length) : lines.length;
     const description = lines.slice(entry.dateIndex + 1, end).join("\n").trim();
     return { ...entry.form, description: clip(description, PROFILE_LIMITS.description) };
   });

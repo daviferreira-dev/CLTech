@@ -14,13 +14,21 @@ function parseGithubLanguages(languages: unknown): GithubLanguageSignal[] | null
 }
 
 export async function getCandidateSignals(candidateId: string) {
-  const [currentResume, githubProfile] = await Promise.all([
+  const [currentResume, githubProfile, candidate] = await Promise.all([
     prisma.resume.findFirst({ where: { candidateId, isCurrent: true }, select: { extractedText: true } }),
     prisma.githubProfile.findUnique({ where: { candidateId }, select: { languages: true } }),
+    prisma.candidate.findUnique({ where: { id: candidateId }, select: { technologies: true } }),
   ]);
 
+  // Spec 007 (FR-708): as tecnologias declaradas no perfil entram no sinal de currículo —
+  // uma tecnologia conta se estiver no texto do arquivo OU na lista do perfil. Uma por
+  // linha, para o casamento por palavra inteira do score.ts não juntar termos vizinhos.
+  const resumeText = [decryptOrNull(currentResume?.extractedText ?? null), ...(candidate?.technologies ?? [])]
+    .filter(Boolean)
+    .join("\n");
+
   return {
-    resumeText: decryptOrNull(currentResume?.extractedText ?? null),
+    resumeText: resumeText || null,
     githubLanguages: githubProfile ? parseGithubLanguages(githubProfile.languages) : null,
   };
 }
@@ -37,13 +45,13 @@ export async function recomputeJobMatchesForCandidate(candidateId: string): Prom
   await upsertMatches(candidateId, jobs, signals);
 }
 
-/** Gatilho 3: publicação de uma vaga — cria JobMatch inicial para todo candidato com currículo vigente. */
+/** Gatilho 3: publicação de uma vaga — cria JobMatch inicial para todo candidato com currículo vigente ou tecnologias no perfil. */
 export async function recomputeJobMatchesForJob(jobId: string): Promise<void> {
   const job = await prisma.job.findUnique({ where: { id: jobId }, select: { id: true, technologies: true } });
   if (!job) return;
 
   const candidates = await prisma.candidate.findMany({
-    where: { resumes: { some: { isCurrent: true } } },
+    where: { OR: [{ resumes: { some: { isCurrent: true } } }, { technologies: { isEmpty: false } }] },
     select: { id: true },
   });
 

@@ -8,6 +8,8 @@ import { encrypt, encryptOrNull } from "@/server/crypto";
 import { MAX_RESUME_SIZE_BYTES, ALLOWED_RESUME_MIME_TYPES } from "@/lib/validation/profile";
 import { extractText } from "@/server/matching/text-extract";
 import { recomputeJobMatchesForCandidate } from "@/server/matching/recompute";
+import { parseResume } from "@/server/candidates/resume-parse";
+import type { ProfileDraft } from "@/lib/profile-form";
 
 const PDF_MAGIC = Buffer.from("%PDF");
 const DOCX_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04]); // PK\x03\x04 (zip, base do .docx)
@@ -25,6 +27,8 @@ export interface UploadResumeResult {
   originalFilename: string;
   sizeBytes: number;
   uploadedAt: Date;
+  /** Spec 007 (FR-706): o que deu para ler do currículo, para a tela pré-preencher. null se o texto não foi lido. */
+  draft: ProfileDraft | null;
 }
 
 export async function uploadResume(
@@ -79,5 +83,12 @@ export async function uploadResume(
     originalFilename: resume.originalFilename,
     sizeBytes: resume.sizeBytes,
     uploadedAt: resume.uploadedAt,
+    draft: extractedText ? parseResume(extractedText, await publishedJobTechnologies()) : null,
   };
+}
+
+/** Tecnologias das vagas publicadas — o parser as reconhece além do catálogo fixo (FR-707). */
+async function publishedJobTechnologies(): Promise<string[]> {
+  const jobs = await prisma.job.findMany({ where: { status: "PUBLISHED" }, select: { technologies: true } });
+  return [...new Set(jobs.flatMap((job) => job.technologies))];
 }

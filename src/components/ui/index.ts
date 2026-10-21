@@ -5,6 +5,7 @@ export type { ButtonVariant, ButtonSize } from "./Button";
 export { Card, CardHeader, CardBody } from "./Card";
 export { Input, Select, Textarea, Field } from "./Field";
 export { Chip, ChipList } from "./Chip";
+export { TagInput } from "./TagInput";
 export { Badge, MatchBadge, matchVariant } from "./Badge";
 export type { BadgeVariant, MatchState } from "./Badge";
 export { Avatar } from "./Avatar";
