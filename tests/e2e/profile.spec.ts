@@ -23,13 +23,13 @@ test("preencher telefone e cidade persiste após recarregar (FR-009)", async ({ 
   await page.goto("/perfil");
 
   await page.getByLabel("Telefone").fill("85999999999");
-  await page.getByLabel("Cidade").fill("Fortaleza");
+  await page.getByLabel("Cidade", { exact: true }).fill("Fortaleza");
   await page.getByRole("button", { name: "Salvar alterações" }).click();
   await expect(page.getByText("Alterações salvas.")).toBeVisible();
 
   await page.reload();
   await expect(page.getByLabel("Telefone")).toHaveValue("85999999999");
-  await expect(page.getByLabel("Cidade")).toHaveValue("Fortaleza");
+  await expect(page.getByLabel("Cidade", { exact: true })).toHaveValue("Fortaleza");
 });
 
 test("upload de PDF válido é aceito; .txt é recusado sem apagar o anterior (FR-014)", async ({ page }) => {
