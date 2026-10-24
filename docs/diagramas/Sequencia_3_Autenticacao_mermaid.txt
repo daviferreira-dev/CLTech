@@ -22,6 +22,19 @@ sequenceDiagram
             S-->>T: Recusa o login
             T-->>U: Exibe "E-mail ou senha incorretos"
         end
+    else Entrar com GitHub (RF01-A1)
+        U->>T: Clica em "Entrar com GitHub"
+        T->>S: Inicia o login OAuth
+        S-->>U: Redireciona para autorizar no GitHub
+        U->>S: Volta autorizado, com o e-mail verificado pelo GitHub
+        S->>BD: Busca usuário pelo e-mail
+        alt E-mail já cadastrado
+            S->>BD: Vincula a conta GitHub ao usuário existente, sem guardar tokens
+        else Primeiro acesso
+            S->>BD: Cria Usuário com papel Candidato e o perfil de Candidato
+        end
+        S->>S: Gera sessão autenticada com o papel do usuário
+        S-->>T: Redireciona conforme o papel
     else Cadastro (RF01-A3)
         U->>T: Informa nome, e-mail e senha
         T->>T: Valida formato dos campos

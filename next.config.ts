@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
   // arquivo. Empacotado em .next/server/chunks, o worker não vai junto e TODO PDF caía em
   // parseStatus FAILED ("Setting up fake worker failed"). Fora do bundle, roda do node_modules.
   serverExternalPackages: ["pdf-parse", "pdfjs-dist"],
+  // O rastreio de arquivos do deploy (Vercel) leva o pdf.mjs mas não o worker, carregado por
+  // caminho dinâmico: sem isto, em produção todo PDF voltaria a cair em FAILED.
+  outputFileTracingIncludes: {
+    "/api/me/resume": ["./node_modules/.pnpm/pdfjs-dist@*/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },

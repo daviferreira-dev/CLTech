@@ -1,0 +1,217 @@
+%% CLTech - Diagrama Entidade-Relacionamento (fonte: prisma/schema.prisma)
+%% Cole em: draw.io > Arrange > Insert > Advanced > Mermaid
+%% Fora do diagrama: Session e VerificationToken (tabelas do Auth.js sem uso - a sessao e JWT, D10)
+erDiagram
+    User ||--o{ Account : "autentica por"
+    User ||--o| Candidate : "tem perfil"
+    User ||--o{ Job : "cria"
+    User |o--o{ ApplicationStageHistory : "decide"
+
+    Candidate ||--o{ Experience : "possui"
+    Candidate ||--o{ Education : "possui"
+    Candidate ||--o{ Language : "possui"
+    Candidate ||--o{ ProfileLink : "possui"
+    Candidate ||--o{ ExternalAccount : "conecta"
+    Candidate ||--o| GithubProfile : "coleta"
+    Candidate ||--o{ Resume : "envia"
+    Candidate ||--o{ Application : "se candidata"
+    Candidate ||--o{ JobMatch : "compatibilidade"
+
+    Job ||--o{ ProcessStage : "pipeline"
+    Job ||--o{ Application : "recebe"
+    Job ||--o{ JobMatch : "compatibilidade"
+
+    Resume ||--o{ Application : "anexado a"
+    ProcessStage ||--o{ Application : "etapa atual"
+    ProcessStage ||--o{ ApplicationStageHistory : "registra"
+    ProcessStage |o--o{ CodeDraft : "etapa do teste"
+
+    Application ||--|{ ApplicationStageHistory : "historico"
+    Application ||--|{ Evaluation : "avaliada por"
+    Application ||--o{ CodeDraft : "rascunho"
+    Application ||--o{ CodeSubmission : "submete"
+
+    Challenge ||--o{ CodeDraft : "enunciado"
+    Challenge ||--o{ CodeSubmission : "enunciado"
+    Evaluation |o--o{ CodeSubmission : "resultado"
+
+    User {
+        uuid id PK
+        string email UK "RN007"
+        string name
+        string passwordHash "Argon2id, nulo se so OAuth"
+        UserRole role "CANDIDATE, RECRUITER, ADMIN"
+        datetime emailVerified
+        datetime createdAt
+    }
+    Account {
+        uuid id PK
+        uuid userId FK
+        string type
+        string provider UK "GitHub ou LinkedIn"
+        string providerAccountId UK
+    }
+    Candidate {
+        uuid id PK
+        uuid userId FK, UK
+        string phone "cifrado AES-256-GCM"
+        string city
+        string state
+        string headline
+        string summary
+        text_array technologies
+        text_array softSkills
+    }
+    Experience {
+        uuid id PK
+        uuid candidateId FK
+        int position
+        string company
+        string role
+        date startDate
+        date endDate
+        boolean isCurrent
+    }
+    Education {
+        uuid id PK
+        uuid candidateId FK
+        int position
+        string institution
+        string course
+        EducationLevel level
+        boolean inProgress
+    }
+    Language {
+        uuid id PK
+        uuid candidateId FK
+        int position
+        string name
+        LanguageLevel level
+    }
+    ProfileLink {
+        uuid id PK
+        uuid candidateId FK
+        int position
+        string label
+        string url
+    }
+    ExternalAccount {
+        uuid id PK
+        uuid candidateId FK, UK
+        ExternalProvider provider UK "GITHUB, LINKEDIN, LATTES"
+        string externalUsername
+        string url
+        ExternalAccountStatus status
+        string unavailableReason
+        datetime lastSyncedAt
+    }
+    GithubProfile {
+        uuid id PK
+        uuid candidateId FK, UK
+        int publicRepoCount
+        json languages
+        int activityLast90Days
+        int followers
+        datetime collectedAt
+    }
+    Resume {
+        uuid id PK
+        uuid candidateId FK
+        string storageKey "bucket privado"
+        string originalFilename
+        string mimeType
+        int sizeBytes
+        boolean isCurrent
+        ResumeParseStatus parseStatus
+        string extractedText "cifrado AES-256-GCM"
+        datetime uploadedAt
+    }
+    Job {
+        uuid id PK
+        uuid createdById FK
+        string title
+        string description
+        string company
+        string location
+        WorkMode workMode
+        Seniority seniority
+        text_array technologies "RN002"
+        string minimumRequirements "RN002"
+        JobStatus status "DRAFT, PUBLISHED, CLOSED"
+        datetime publishedAt
+    }
+    ProcessStage {
+        uuid id PK
+        uuid jobId FK, UK
+        int order UK
+        ProcessStageType type
+        json config "desafio do CODE_TEST"
+    }
+    Application {
+        uuid id PK
+        uuid candidateId FK, UK
+        uuid jobId FK, UK
+        uuid resumeId FK
+        uuid currentStageId FK
+        ApplicationStatus status
+        int matchScore
+        MatchScoreStatus matchScoreStatus
+        datetime appliedAt
+    }
+    ApplicationStageHistory {
+        uuid id PK
+        uuid applicationId FK
+        uuid stageId FK
+        uuid decidedByUserId FK
+        datetime enteredAt
+        datetime exitedAt
+    }
+    JobMatch {
+        uuid id PK
+        uuid candidateId FK, UK
+        uuid jobId FK, UK
+        int score
+        json justification
+        datetime computedAt
+        datetime staleSince
+    }
+    Evaluation {
+        uuid id PK
+        uuid applicationId FK
+        EvaluationType type "RESUME_MATCH, GITHUB_ANALYSIS, CODE_TEST"
+        int score "imutavel - trigger BEFORE UPDATE (RN003)"
+        json justification
+        int version
+        datetime createdAt
+    }
+    Challenge {
+        uuid id PK
+        string title
+        string statement
+        text_array languages
+        ChallengeDifficulty difficulty
+        json testCases "casos ocultos nunca saem do servidor"
+        int timeLimitSeconds
+    }
+    CodeDraft {
+        uuid id PK
+        uuid applicationId FK, UK
+        uuid challengeId FK, UK
+        uuid stageId FK
+        string language
+        string sourceCode "cifrado AES-256-GCM"
+        int testRunCount "maximo 20"
+        datetime startedAt
+    }
+    CodeSubmission {
+        uuid id PK
+        uuid applicationId FK, UK "RN006 - tentativa unica"
+        uuid challengeId FK, UK
+        uuid evaluationId FK
+        string language
+        string sourceCode "cifrado AES-256-GCM"
+        CodeExecutionStatus executionStatus
+        CodeSubmittedBy submittedBy "CANDIDATE ou TIME_EXPIRED"
+        int retryCount "maximo 1"
+        datetime submittedAt
+    }

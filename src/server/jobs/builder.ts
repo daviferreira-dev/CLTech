@@ -7,6 +7,7 @@ import { recomputeJobMatchesForJob } from "@/server/matching/recompute";
 import type { CreateJobInput, UpdateJobInput, SetStagesInput } from "@/lib/validation/jobs";
 import { codeTestConfigSchema } from "@/lib/validation/challenges";
 import { isCodeTestConfigComplete, MAX_TEST_RUNS, type CodeTestStageConfig } from "@/lib/codeTest";
+import { keepAlive } from "@/server/background";
 
 const LOCKED_FIELDS = ["technologies", "minimumRequirements"] as const;
 
@@ -147,7 +148,7 @@ export async function publishJob(jobId: string): Promise<RecruiterJobView> {
   await prisma.job.update({ where: { id: jobId }, data: { status: "PUBLISHED", publishedAt: new Date() } });
 
   // Gatilho 3 (FR-034): cria o JobMatch inicial para candidatos elegíveis. Fire-and-forget.
-  recomputeJobMatchesForJob(jobId).catch(() => {});
+  keepAlive(recomputeJobMatchesForJob(jobId).catch(() => {}));
 
   return toView(jobId);
 }

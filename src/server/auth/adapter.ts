@@ -20,6 +20,13 @@ export function createAdapter(): Adapter {
   const base = PrismaAdapter(prisma);
   return {
     ...base,
+    // Primeiro login por OAuth cria o User aqui, sem passar por registerCandidate: o perfil
+    // de Candidate (1:1) precisa nascer junto, ou /perfil e a candidatura dão NOT_FOUND.
+    createUser: async (data) => {
+      const user = await base.createUser!(data);
+      await prisma.candidate.create({ data: { userId: user.id } });
+      return user;
+    },
     linkAccount: (account) => base.linkAccount!(stripOAuthTokens(account)),
   };
 }

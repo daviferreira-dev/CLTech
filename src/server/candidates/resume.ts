@@ -10,6 +10,7 @@ import { extractText } from "@/server/matching/text-extract";
 import { recomputeJobMatchesForCandidate } from "@/server/matching/recompute";
 import { parseResume } from "@/server/candidates/resume-parse";
 import type { ProfileDraft } from "@/lib/profile-form";
+import { keepAlive } from "@/server/background";
 
 const PDF_MAGIC = Buffer.from("%PDF");
 const DOCX_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04]); // PK\x03\x04 (zip, base do .docx)
@@ -76,7 +77,7 @@ export async function uploadResume(
 
   // Gatilho 1 (FR-034): recalcula o match com todas as vagas publicadas. Fire-and-forget —
   // não bloqueia a resposta do upload; falha aqui não derruba a candidatura nem o upload.
-  recomputeJobMatchesForCandidate(candidate.id).catch(() => {});
+  keepAlive(recomputeJobMatchesForCandidate(candidate.id).catch(() => {}));
 
   return {
     id: resume.id,

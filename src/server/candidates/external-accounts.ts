@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
 import { collectGithubProfile } from "@/server/integrations/github";
 import type { ConnectExternalAccountInput } from "@/lib/validation/profile";
+import { keepAlive } from "@/server/background";
 
 async function getCandidateIdForUser(userId: string): Promise<string> {
   const candidate = await prisma.candidate.findUnique({ where: { userId }, select: { id: true } });
@@ -46,7 +47,7 @@ export async function connectExternalAccount(
     // via Account (Auth.js); fallback para o nome informado em `url` como handle.
     const githubUsername = extractGithubUsername(input.url) ?? (await resolveGithubUsernameFromAccount(userId));
     if (githubUsername) {
-      void collectGithubProfile(candidateId, githubUsername);
+      keepAlive(collectGithubProfile(candidateId, githubUsername));
     } else {
       await prisma.externalAccount.update({
         where: { candidateId_provider: { candidateId, provider: "GITHUB" } },
@@ -86,7 +87,7 @@ export async function retrySync(
   });
 
   if (provider === "GITHUB" && account.externalUsername) {
-    void collectGithubProfile(candidateId, account.externalUsername);
+    keepAlive(collectGithubProfile(candidateId, account.externalUsername));
   }
 
   return { status: "PENDING" };

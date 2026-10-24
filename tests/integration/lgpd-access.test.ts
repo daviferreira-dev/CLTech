@@ -5,7 +5,6 @@
 // (SC-302) sem que ninguém precise lembrar de acrescentá-la aqui.
 import { readdirSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prisma } from "@/lib/prisma";
 
@@ -28,7 +27,8 @@ function routeFiles(area: string): string[] {
 }
 
 async function handlersOf(route: string): Promise<[string, Handler][]> {
-  const mod = (await import(pathToFileURL(path.join(API_ROOT, route, "route.ts")).href)) as Record<string, unknown>;
+  // Pelo alias, não por file:// — o resolvedor do Vite não decodifica %20 de caminhos com espaço.
+  const mod = (await import(`@/app/api/${route}/route`)) as Record<string, unknown>;
   return METHODS.filter((m) => typeof mod[m] === "function").map((m) => [m, mod[m] as Handler]);
 }
 

@@ -1,60 +1,62 @@
-%% CLTech - RF02 + RF03 - Completar Perfil e Candidatar-se
+%% CLTech - RF02 + RF03 - Completar Perfil, Candidatar-se e Triagem Automatica (RN001)
 %% Cole em: draw.io > Arrange > Insert > Advanced > Mermaid
 sequenceDiagram
-    actor Candidato
-    participant SIS as Sistema
-    participant SSO as Provedor SSO
+    autonumber
+    actor C as Candidato
+    participant SIS as Sistema CLTech
+    participant ST as Storage privado
+    participant GH as API do GitHub
     participant BD as Banco de Dados
 
-    Candidato->>SIS: acessarPerfil()
-    SIS-->>Candidato: exibirPerfil()
-    Candidato->>SIS: enviarCurriculo(arquivo)
-    SIS->>SIS: extrairDadosCurriculo()
-    SIS->>BD: salvarDadosPerfil(dadosExtraidos)
-    BD-->>SIS: sucesso
-    SIS-->>Candidato: exibirCamposPreenchidos(dados)
-    opt Candidato edita um campo
-        Candidato->>SIS: editarCampo(campo, valor)
-        SIS->>BD: atualizarCampoPerfil(campo, valor)
-        BD-->>SIS: sucesso
-        SIS-->>Candidato: confirmaAtualizacao()
+    C->>SIS: Envia o currículo (PDF ou DOCX, até 5 MB)
+    alt Arquivo válido
+        SIS->>ST: Guarda o arquivo no bucket privado
+        SIS->>SIS: Extrai o texto do currículo
+        SIS->>BD: Grava o currículo como vigente, com o texto cifrado
+        SIS-->>C: Devolve a sugestão de perfil lida do currículo
+        SIS->>SIS: Recalcula em segundo plano a compatibilidade com as vagas
+    else Formato ou tamanho inválido (RF02-A3)
+        SIS-->>C: Recusa e mantém o currículo anterior
     end
-    loop Para cada rede LinkedIn e GitHub
-        Candidato->>SIS: clicarConectar(rede)
-        SIS->>SSO: iniciarAutenticacaoSSO(rede)
-        SSO-->>Candidato: solicitarLogin()
-        Candidato->>SSO: autorizarAcesso(credenciais)
-        alt Coleta bem sucedida
-            SSO-->>SIS: tokenAcesso e dadosPerfil
-            SIS->>BD: salvarConexao(rede, CONECTADA)
-            BD-->>SIS: sucesso
-            SIS-->>Candidato: exibirRedeConectada(rede)
-        else Perfil privado ou provedor indisponivel (RF02-E1)
-            SSO-->>SIS: falha na coleta
-            SIS->>BD: salvarConexao(rede, INDISPONIVEL)
-            SIS-->>Candidato: exibirIndisponivel(rede)
+
+    opt Candidato revisa o perfil
+        C->>SIS: Salva dados, experiências, formação, idiomas e tecnologias
+        SIS->>BD: Grava o perfil
+    end
+
+    opt Candidato conecta o GitHub (RF02-A1)
+        C->>SIS: Informa o usuário do GitHub
+        SIS->>BD: Marca a conexão como Pendente
+        SIS-->>C: Conexão em andamento
+        SIS->>GH: Coleta repositórios públicos, linguagens e atividade
+        alt Perfil público encontrado
+            GH-->>SIS: Dados públicos
+            SIS->>BD: Grava o resumo do GitHub e marca Conectado
+        else Perfil privado, inexistente ou API fora do ar (RF02-A2, RF02-E1)
+            GH-->>SIS: Erro
+            SIS->>BD: Marca Indisponível, sem bloquear o candidato
         end
     end
-    Candidato->>SIS: informarLinkLattes(url)
-    SIS->>BD: salvarLinkLattes(url)
-    BD-->>SIS: sucesso
-    Candidato->>SIS: enviarFoto(imagem)
-    SIS->>BD: salvarFoto(imagem)
-    BD-->>SIS: sucesso
-    SIS-->>Candidato: exibirFotoAtualizada()
-    Candidato->>SIS: acessarTelaVagas()
-    SIS->>SIS: calcularCompatibilidadePerfilVagas()
-    SIS->>BD: buscarVagasOrdenadasPorCompatibilidade(candidato_id)
-    BD-->>SIS: listaVagasOrdenada
-    SIS-->>Candidato: exibirVagas(ordenadasPorCompatibilidade)
-    Candidato->>SIS: clicarVaga(vaga_id)
-    SIS-->>Candidato: exibirDetalhesVaga()
-    Candidato->>SIS: clicarAplicar()
-    alt Ainda nao inscrito nesta vaga
-        SIS->>BD: registrarCandidatura(candidato_id, vaga_id)
-        BD-->>SIS: sucesso
-        SIS-->>Candidato: exibirConfirmacaoCandidatura()
-    else Ja inscrito (UK candidato+vaga)
-        BD-->>SIS: violacao de chave unica
-        SIS-->>Candidato: exibirStatusAtual()
+
+    C->>SIS: Abre a lista de vagas
+    SIS->>BD: Busca vagas publicadas e a compatibilidade já calculada
+    BD-->>SIS: Vagas e percentuais
+    SIS-->>C: Exibe as vagas com o percentual de compatibilidade
+
+    C->>SIS: Clica em Candidatar-se
+    SIS->>BD: Busca o currículo vigente e as etapas da vaga
+    BD-->>SIS: Currículo e etapas
+    alt Sem currículo vigente
+        SIS-->>C: Orienta a enviar o currículo antes
+    else Vaga aberta e currículo presente
+        SIS->>SIS: Calcula o score: tecnologias da vaga x currículo, perfil e GitHub
+        SIS->>BD: Em uma transação: candidatura na 1ª etapa, histórico e Avaliação com o score
+        alt Primeira candidatura nesta vaga
+            BD-->>SIS: Gravado
+            SIS-->>C: Exibe "Candidatura enviada"
+            Note over SIS,BD: A candidatura nunca existe sem a avaliação automática (RN001). O score não pode ser alterado (RN003)
+        else Já inscrito (RF03-A2)
+            BD-->>SIS: Violação da chave única candidato + vaga
+            SIS-->>C: Exibe o status atual da candidatura
+        end
     end

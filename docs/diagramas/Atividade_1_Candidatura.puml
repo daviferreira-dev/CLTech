@@ -1,7 +1,7 @@
 @startuml atividade-candidatura
-' CLTech - Diagrama de Atividade: Candidatura a uma Vaga [RF03]
-' Fonte: ERS secao 2.1 RF03 (fluxo principal, A1, A2) e spec.md User Story 3
-' Renderizar em: https://www.plantuml.com/plantuml ou extensao PlantUML do VS Code
+' CLTech - Diagrama de Atividade: Candidatura a uma Vaga [RF03 + RN001]
+' Conferido contra src/server/applications/apply.ts
+' Renderizar: java -jar plantuml.jar -charset UTF-8 Atividade_1_Candidatura.puml
 
 title Candidatura a uma Vaga — RF03
 
@@ -15,20 +15,21 @@ skinparam ActivityDiamondBorderColor #C2903A
 |#F3F6FA|Candidato|
 start
 :Acessa a listagem de vagas;
-note right: FR-018 — listagem publica,\nnao exige login (ver D8)
+note right: Listagem pública,\nnão exige login
 
 |#FFFFFF|Sistema|
-:Consulta vagas com status PUBLISHED;
-:Exibe titulo, empresa, localizacao,\nmodalidade e tecnologias;
+:Consulta vagas publicadas;
+:Exibe título, empresa, local,\nmodalidade e tecnologias;
+note right: Logado e com currículo, vê também\no percentual de compatibilidade\njá calculado (nunca calculado na hora)
 
 |Candidato|
-:Aplica filtros\n(modalidade, senioridade, tecnologia);
+:Aplica busca e filtros\n(texto, tecnologia, modalidade, senioridade);
 
 |Sistema|
 :Recalcula a lista;
-if (Ha vagas correspondentes?) then (nao)
-  :Informa "nenhuma vaga corresponde"\ne sugere ampliar a busca;
-  note right: RF03-A1 / FR-019
+if (Há vagas correspondentes?) then (não)
+  :Informa que nenhuma vaga corresponde\ne sugere ampliar a busca;
+  note right: RF03-A1
   |Candidato|
   :Ajusta os filtros;
   detach
@@ -36,65 +37,67 @@ else (sim)
 endif
 
 |Candidato|
-:Abre "Ver Detalhes" da vaga;
+:Abre os detalhes da vaga;
 
 |Sistema|
-:Exibe descricao, requisitos\ne etapas do processo seletivo;
-note right: FR-020
+:Exibe descrição, requisitos\ne etapas do processo seletivo;
 
 |Candidato|
-:Confirma a candidatura;
+:Clica em Candidatar-se;
 
 |Sistema|
-if (Esta autenticado?) then (nao)
+if (Está autenticado?) then (não)
   |Candidato|
-  :E levado ao login ou cadastro;
-  note right: FR-023
-  :Conclui a autenticacao;
+  :É levado ao login ou cadastro;
+  :Conclui a autenticação;
   |Sistema|
-  :Retorna a vaga de origem;
+  :Retorna à vaga de origem;
 else (sim)
 endif
 
-if (Possui curriculo vigente?) then (nao)
-  :Orienta a completar o perfil\nantes de concluir;
-  note right: FR-024 / RESUME_REQUIRED (422)
+if (Possui currículo vigente?) then (não)
+  :Orienta a enviar o currículo\nantes de concluir;
   |Candidato|
-  :Anexa o curriculo em "Meu Perfil";
+  :Envia o currículo em "Meu Perfil";
   detach
 else (sim)
 endif
 
 |Sistema|
-:Tenta inserir a candidatura\n(indice unico candidateId + jobId);
-note right
-  FR-022 / SC-003
-  A unicidade e garantida pela constraint
-  do banco, nao por SELECT previo.
-  E isso que torna o envio simultaneo seguro.
-end note
-
-if (A insercao violou a constraint?) then (sim)
-  :Recusa e exibe o status atual\ndo processo do candidato;
-  note right: RF03-A2 / ALREADY_APPLIED (409)
+if (A vaga ainda está aberta?) then (não)
+  :Informa que a vaga fechou;
   stop
-else (nao)
+else (sim)
 endif
 
-:Vincula o curriculo vigente a candidatura;
-:Define a etapa inicial do pipeline da vaga;
-:Registra ApplicationStageHistory\n(enteredAt);
-:Grava matchScoreStatus = NOT_CALCULATED;
-note right: FR-026 — o score e da Sprint 2
+:Calcula o score de compatibilidade\n(tecnologias da vaga x currículo, perfil e GitHub);
+note right
+  RN001 — a triagem automática acontece
+  ANTES da candidatura existir.
+  Sem nenhum sinal, o score é 0, mas a
+  avaliação existe do mesmo jeito.
+end note
 
-fork
-  :Dispara a triagem automatica;
-  note right: RN001 — Sprint 2
-fork again
-  |Candidato|
-  :Visualiza a inscricao\nem "Minhas Candidaturas";
-  note right: FR-025
-end fork
+:Em uma única transação, grava a candidatura\nna 1ª etapa, o histórico de etapa\ne a Avaliação (RESUME_MATCH);
+note right
+  A unicidade candidato + vaga é garantida
+  pelo índice único do banco, não por consulta
+  prévia: é isso que torna envios simultâneos seguros.
+  A Avaliação é imutável (RN003).
+end note
+
+if (O índice único foi violado?) then (sim)
+  :Recusa e exibe o status atual\ndo processo do candidato;
+  note right: RF03-A2
+  stop
+else (não)
+endif
+
+|Candidato|
+:Vê "Candidatura enviada" e acompanha\nem "Minhas Candidaturas";
+
+|Sistema|
+:Disponibiliza a candidatura, já com o score,\nno painel do recrutador;
 
 stop
 

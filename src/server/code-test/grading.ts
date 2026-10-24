@@ -7,6 +7,7 @@ import { decrypt } from "@/server/crypto";
 import { getSandbox, SandboxUnavailableError } from "@/server/sandbox";
 import type { CaseOutcome } from "@/lib/codeTest";
 import { parseTestCases, type StoredTestCase } from "./challenges";
+import { keepAlive } from "@/server/background";
 
 /** Uma retentativa automática apenas sobre falha técnica (RF06-E1, FR-205). */
 export const MAX_GRADING_RETRIES = 1;
@@ -127,6 +128,7 @@ export function kickGrading(submissionId: string): void {
     .catch((err) => logSafeError(`code-test ${submissionId}`, err))
     .finally(() => inFlight.delete(task));
   inFlight.add(task);
+  keepAlive(task);
 }
 
 /** Só para testes: espera as correções disparadas em segundo plano terminarem. */

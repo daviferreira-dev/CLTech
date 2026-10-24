@@ -4,6 +4,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { recomputeJobMatchesForCandidate } from "@/server/matching/recompute";
+import { keepAlive } from "@/server/background";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -90,7 +91,7 @@ export async function collectGithubProfile(
 
     // Gatilho 2 (FR-034): GitHub sincronizado — recalcula o match com todas as vagas
     // publicadas. Fire-and-forget, não atrasa a resposta da sincronização.
-    recomputeJobMatchesForCandidate(candidateId).catch(() => {});
+    keepAlive(recomputeJobMatchesForCandidate(candidateId).catch(() => {}));
 
     return { ok: true };
   } catch (err) {

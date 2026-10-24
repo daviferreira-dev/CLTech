@@ -6,6 +6,7 @@ import type { UpdateProfileInput } from "@/lib/validation/profile";
 import type { ProfileDetails } from "@/lib/profile-details";
 import { profileDetailsColumns, profileDetailsInclude, replaceProfileLists, toProfileDetails } from "@/server/candidates/profile-details";
 import { recomputeJobMatchesForCandidate } from "@/server/matching/recompute";
+import { keepAlive } from "@/server/background";
 
 export interface ProfileView {
   name: string;
@@ -112,7 +113,7 @@ export async function updateProfile(
   });
 
   // FR-708: tecnologias do perfil contam no match — mesmo gatilho fire-and-forget do upload.
-  if (input.technologies !== undefined) recomputeJobMatchesForCandidate(candidate.id).catch(() => {});
+  if (input.technologies !== undefined) keepAlive(recomputeJobMatchesForCandidate(candidate.id).catch(() => {}));
 
   return getProfile(userId);
 }

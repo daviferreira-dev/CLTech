@@ -4,6 +4,7 @@ import * as argon2 from "argon2";
 import { prisma } from "@/lib/prisma";
 import { registerCandidate } from "@/server/auth/register";
 import { destinationForRole } from "@/server/auth/redirect";
+import { createAdapter } from "@/server/auth/adapter";
 import { ApiError } from "@/lib/errors";
 
 describe("registerCandidate (FR-001, FR-004, FR-007)", () => {
@@ -61,6 +62,19 @@ describe("registerCandidate (FR-001, FR-004, FR-007)", () => {
       expect(apiErr.message.toLowerCase()).not.toContain("já cadastrado");
       return true;
     });
+  });
+});
+
+describe("primeiro login por OAuth (FR-003)", () => {
+  it("cria o Candidate 1:1 junto com o User criado pelo adapter", async () => {
+    const user = await createAdapter().createUser!({
+      id: crypto.randomUUID(),
+      name: "Carla GitHub",
+      email: "carla@example.com",
+      emailVerified: null,
+    });
+
+    expect(await prisma.candidate.findUnique({ where: { userId: user.id } })).not.toBeNull();
   });
 });
 

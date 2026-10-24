@@ -1,0 +1,53 @@
+@startuml casos-de-uso-recrutamento
+' CLTech - Casos de Uso (2/2): Recrutador e Administrador. Versão completa e editável: Diagrama_Casos_de_Uso.drawio
+' Renderizar: java -jar plantuml.jar -charset UTF-8 Casos_de_Uso_2_Recrutamento.puml
+title Casos de Uso — Recrutamento
+left to right direction
+skinparam backgroundColor White
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #F7F9FC
+  BorderColor #3B6EA5
+}
+
+actor Recrutador
+actor Administrador
+Administrador -up-|> Recrutador
+actor "Sistema (IA)" as IA
+
+rectangle CLTech {
+  usecase "Realizar Login" as Login
+  usecase "Criar Vaga" as Vaga
+  usecase "Configurar Pipeline" as Config
+  usecase "Publicar Vaga" as Pub
+  usecase "Visualizar Painel de Recrutamento" as Painel
+  usecase "Analisar Perfil do Candidato" as Analisar
+  usecase "Visualizar Relatório" as Rel
+  usecase "Registrar Decisão" as Dec
+  usecase "Buscar Candidatos" as BuscaCand
+  usecase "Visualizar Histórico" as Hist
+  usecase "Convidar para Nova Vaga" as Conv
+  usecase "Calcular Percentual de Match" as Match
+}
+
+Recrutador --> Login
+Recrutador --> Vaga
+Recrutador --> Painel
+Recrutador --> Analisar
+Recrutador --> BuscaCand
+
+Match <-- IA
+
+Vaga ..> Config : <<include>>
+Pub ..> Vaga : <<extend>>
+Pub ..> Match : <<include>>
+Analisar ..> Rel : <<include>>
+Analisar ..> Dec : <<include>>
+Hist ..> BuscaCand : <<extend>>
+Conv ..> BuscaCand : <<extend>>
+
+note right of Conv
+  Hoje é um link para a lista de vagas;
+  convite por e-mail fica para a Sprint 3
+end note
+@enduml

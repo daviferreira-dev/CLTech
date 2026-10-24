@@ -1,0 +1,74 @@
+@startuml casos-de-uso-candidato
+' CLTech - Casos de Uso (1/2): Candidato. Versão completa e editável: Diagrama_Casos_de_Uso.drawio
+' Renderizar: java -jar plantuml.jar -charset UTF-8 Casos_de_Uso_1_Candidato.puml
+title Casos de Uso — Candidato
+left to right direction
+skinparam backgroundColor White
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #F7F9FC
+  BorderColor #3B6EA5
+}
+
+actor Candidato
+actor "Sistema (IA)" as IA
+
+rectangle CLTech {
+  usecase "Realizar Cadastro" as Cad
+  usecase "Realizar Login" as Login
+  usecase "Realizar Login via OAuth" as OAuth
+  usecase "Gerenciar Perfil" as Perfil
+  usecase "Anexar Currículo" as CV
+  usecase "Conectar Contas Externas" as Contas
+  usecase "Buscar Vagas" as Buscar
+  usecase "Filtrar Vagas" as Filtrar
+  usecase "Visualizar Detalhe da Vaga" as Detalhe
+  usecase "Candidatar-se à Vaga" as Cand
+  usecase "Iniciar Pipeline" as Pipe
+  usecase "Acompanhar Candidaturas" as Acomp
+  usecase "Realizar Teste de Código" as Teste
+  usecase "Submeter Solução" as Sub
+  usecase "Exportar Meus Dados (LGPD)" as Export
+  usecase "Excluir Conta (LGPD)" as Excluir
+  usecase "Ler e Triar Currículos" as Triar
+  usecase "Calcular Percentual de Match" as Match
+  usecase "Corrigir Teste e Gerar Relatório" as Corrigir
+  usecase "Enviar Feedback ao Candidato" as Feedback
+}
+
+Candidato --> Cad
+Candidato --> Login
+Candidato --> Perfil
+Candidato --> Buscar
+Candidato --> Filtrar
+Candidato --> Detalhe
+Candidato --> Cand
+Candidato --> Acomp
+Candidato --> Teste
+Candidato --> Export
+Candidato --> Excluir
+
+Triar <-- IA
+Match <-- IA
+Corrigir <-- IA
+Feedback <-- IA
+
+OAuth ..> Login : <<extend>>
+OAuth ..> Cad : <<extend>>
+CV ..> Perfil : <<extend>>
+Contas ..> Perfil : <<extend>>
+Filtrar ..> Buscar : <<extend>>
+Buscar ..> Match : <<include>>
+Cand ..> Login : <<include>>
+Cand ..> CV : <<include>>
+Cand ..> Pipe : <<include>>
+Cand ..> Triar : <<include>>
+Teste ..> Sub : <<include>>
+Sub ..> Corrigir : <<include>>
+Corrigir ..> Feedback : <<include>>
+
+note right of Feedback
+  RN005: e-mail ainda não
+  implementado (Sprint 3)
+end note
+@enduml

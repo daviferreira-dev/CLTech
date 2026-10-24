@@ -1,0 +1,184 @@
+%% CLTech - Diagrama de Classes (dominio em prisma/schema.prisma, regras em src/server)
+%% Cole em: draw.io > Arrange > Insert > Advanced > Mermaid
+classDiagram
+    direction TB
+
+    class User {
+        -id: UUID
+        -email: String
+        -name: String
+        -passwordHash: String
+        -role: UserRole
+        +registerCandidate(name, email, password) User
+        +login(email, password) Session
+    }
+    class UserRole {
+        <<enumeration>>
+        CANDIDATE
+        RECRUITER
+        ADMIN
+    }
+    class Candidate {
+        -phone: String «cifrado»
+        -city: String
+        -state: String
+        -headline: String
+        -summary: String
+        -technologies: String[]
+        -softSkills: String[]
+        +updateProfile(dados) void
+        +uploadResume(arquivo) Resume
+        +connectExternalAccount(provedor) void
+        +applyToJob(vaga) Application
+        +exportData() JSON
+        +deleteAccount() void
+    }
+    class Experience {
+        -company: String
+        -role: String
+        -startDate: Date
+        -endDate: Date
+    }
+    class Education {
+        -institution: String
+        -course: String
+        -level: EducationLevel
+    }
+    class Language {
+        -name: String
+        -level: LanguageLevel
+    }
+    class ExternalAccount {
+        -provider: ExternalProvider
+        -externalUsername: String
+        -status: ExternalAccountStatus
+        +sync() void
+    }
+    class GithubProfile {
+        -publicRepoCount: int
+        -languages: JSON
+        -activityLast90Days: int
+    }
+    class Resume {
+        -storageKey: String
+        -originalFilename: String
+        -isCurrent: boolean
+        -parseStatus: ResumeParseStatus
+        -extractedText: String «cifrado»
+        +signedDownloadUrl() String
+    }
+    class Job {
+        -title: String
+        -description: String
+        -workMode: WorkMode
+        -seniority: Seniority
+        -technologies: String[]
+        -minimumRequirements: String
+        -status: JobStatus
+        +setStages(etapas) void
+        +publish() void
+    }
+    class ProcessStage {
+        -type: ProcessStageType
+        -order: int
+        -config: JSON
+    }
+    class ProcessStageType {
+        <<enumeration>>
+        RESUME_ANALYSIS
+        CODE_TEST
+        GITHUB_ANALYSIS
+        HR_INTERVIEW
+        TECH_INTERVIEW
+        FINAL_OFFER
+    }
+    class Application {
+        -status: ApplicationStatus
+        -matchScore: int
+        -appliedAt: DateTime
+        +recordDecision(ADVANCE ou REJECT) void
+    }
+    class ApplicationStageHistory {
+        -enteredAt: DateTime
+        -exitedAt: DateTime
+    }
+    class JobMatch {
+        -score: int
+        -justification: JSON
+        -staleSince: DateTime
+    }
+    class Evaluation {
+        <<somente leitura>>
+        -type: EvaluationType
+        -score: int
+        -justification: JSON
+        -version: int
+    }
+    class Challenge {
+        -title: String
+        -statement: String
+        -languages: String[]
+        -difficulty: ChallengeDifficulty
+        -testCases: JSON
+        -timeLimitSeconds: int
+    }
+    class CodeDraft {
+        -language: String
+        -sourceCode: String «cifrado»
+        -testRunCount: int
+        -startedAt: DateTime
+        +save(codigo) void
+        +runVisibleTests() Resultado[]
+        +submit() CodeSubmission
+    }
+    class CodeSubmission {
+        -sourceCode: String «cifrado»
+        -executionStatus: CodeExecutionStatus
+        -submittedBy: CodeSubmittedBy
+        -retryCount: int
+    }
+    class MotorTriagem {
+        <<servico>>
+        +computeScore(tecnologias, sinais) Score
+        +recomputeJobMatches(candidato ou vaga) void
+    }
+    class CorretorCodigo {
+        <<servico>>
+        +gradeSubmission(submissao) Evaluation
+    }
+    class Sandbox {
+        <<interface>>
+        +run(linguagem, codigo, entrada, limite) Resultado
+    }
+    class Judge0Sandbox
+
+    User "1" -- "0..1" Candidate
+    User ..> UserRole
+    User "1" -- "0..*" Job : cria
+    Candidate "1" *-- "0..*" Experience
+    Candidate "1" *-- "0..*" Education
+    Candidate "1" *-- "0..*" Language
+    Candidate "1" *-- "0..*" ExternalAccount
+    Candidate "1" *-- "0..1" GithubProfile
+    Candidate "1" *-- "0..*" Resume
+    Candidate "1" -- "0..*" Application
+    Candidate "1" -- "0..*" JobMatch
+    Job "1" *-- "1..*" ProcessStage
+    ProcessStage ..> ProcessStageType
+    Job "1" -- "0..*" Application
+    Job "1" -- "0..*" JobMatch
+    Application "0..*" --> "1" Resume : usa
+    Application "0..*" --> "1" ProcessStage : etapa atual
+    Application "1" *-- "1..*" ApplicationStageHistory
+    Application "1" *-- "1..*" Evaluation
+    Application "1" -- "0..*" CodeDraft
+    Application "1" -- "0..*" CodeSubmission
+    CodeDraft "0..*" --> "1" Challenge
+    CodeSubmission "0..*" --> "1" Challenge
+    CodeSubmission "0..*" --> "0..1" Evaluation : resultado
+    MotorTriagem ..> JobMatch : grava
+    MotorTriagem ..> Evaluation : RESUME_MATCH
+    CorretorCodigo ..> Evaluation : CODE_TEST
+    CorretorCodigo --> Sandbox
+    CodeDraft ..> Sandbox : testes visiveis
+    Sandbox <|.. Judge0Sandbox

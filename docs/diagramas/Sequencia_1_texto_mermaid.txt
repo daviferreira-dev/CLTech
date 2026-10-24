@@ -1,44 +1,51 @@
 %% CLTech - RF04 - Criar Vaga e Configurar Pipeline
 %% Cole em: draw.io > Arrange > Insert > Advanced > Mermaid
 sequenceDiagram
-    actor RH
-    participant TI as Tela Inicial
-    participant TC as Tela de Criacao
-    participant SIS as Sistema
+    autonumber
+    actor RH as Recrutador
+    participant TC as Tela de Vaga (JobBuilder)
+    participant SIS as Sistema CLTech
     participant BD as Banco de Dados
-    participant LS as Armaz Local
 
-    RH->>TI: Acessa lista de vagas
-    RH->>TI: Clica Criar vaga
-    TI->>TC: Abre tela de criacao
-    RH->>TC: Preenche titulo e descricao
-    RH->>TC: Clica Proxima fase
-    TC->>SIS: Solicita opcoes de fase
-    SIS-->>TC: Retorna fases disponiveis
-    loop Para cada fase, exceto Proposta Final
-        RH->>TC: Seleciona a fase
-        RH->>TC: Preenche titulo, descricao e participantes
-        TC->>SIS: Armazena dados da fase
+    RH->>TC: Clica em "Nova vaga"
+    RH->>TC: Preenche título, descrição, empresa, local, modalidade, senioridade, tecnologias e requisitos mínimos
+    RH->>TC: Clica em Salvar
+    TC->>SIS: Cria a vaga
+    SIS->>BD: Grava a vaga como Rascunho
+    BD-->>SIS: Vaga criada
+    SIS-->>TC: Abre a vaga salva para montar o pipeline
+    Note over TC,BD: O rascunho fica no servidor: sair e voltar depois não perde nada
+
+    loop Para cada etapa adicionada, removida ou reordenada
+        RH->>TC: Escolhe o tipo da etapa e a posição
+        opt Etapa Teste de Código
+            TC->>SIS: Lista os desafios do catálogo
+            SIS-->>TC: Desafios disponíveis
+            RH->>TC: Escolhe o desafio, as linguagens e o prazo (5 a 240 min)
+        end
+        TC->>SIS: Envia o pipeline completo, já ordenado
+        SIS->>BD: Substitui as etapas numa transação serializável
+        BD-->>SIS: Etapas gravadas
+        SIS-->>TC: Pipeline salvo
     end
-    RH->>TC: Preenche Proposta Final
-    RH->>TC: Clica Finalizar
-    TC->>SIS: Solicita revisao
-    SIS-->>RH: Exibe revisao de todas as fases
-    alt Confirma envio
-        RH->>TC: Clica Enviar
-        TC->>SIS: Envia dados da vaga
-        SIS->>BD: Persiste vaga e fases
-        BD-->>SIS: Confirma gravacao
-        SIS-->>RH: Exibe sucesso
-    else Campos obrigatorios vazios
-        RH->>TC: Clica Enviar
-        TC->>SIS: Valida campos obrigatorios
-        SIS-->>RH: Bloqueia publicacao e destaca campos pendentes (RN002)
-    else Cancela criacao
-        RH->>TC: Clica Cancelar criacao
-        TC->>SIS: Descarta itens, nao salva
-    else Pausa criacao
-        RH->>TC: Clica Pausar
-        TC->>LS: Salva rascunho localmente
-        Note over LS: Ao reabrir, recupera rascunho salvo
+
+    RH->>TC: Clica em Publicar e confirma
+    TC->>SIS: Solicita a publicação
+    SIS->>BD: Lê tecnologias, requisitos e etapas
+    BD-->>SIS: Dados da vaga
+    alt Tudo preenchido (RN002)
+        SIS->>BD: Muda o status para Publicada
+        SIS-->>TC: Vaga publicada
+        TC-->>RH: Exibe "Vaga publicada"
+        SIS->>SIS: Calcula em segundo plano a compatibilidade dos candidatos com a vaga
+    else Falta tecnologia, requisito, etapa ou desafio do teste (RF04-A1)
+        SIS-->>TC: Recusa e lista o que falta
+        TC-->>RH: Destaca os campos pendentes e mantém o rascunho
+    end
+
+    opt Recrutador edita uma vaga já publicada (RF04-A2)
+        RH->>TC: Altera tecnologias, requisitos ou etapas
+        TC->>SIS: Envia a alteração
+        SIS-->>TC: Recusa (vaga travada)
+        TC-->>RH: Explica que só os demais campos podem mudar
     end

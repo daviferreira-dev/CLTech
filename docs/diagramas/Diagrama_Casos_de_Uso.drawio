@@ -168,7 +168,7 @@
         <mxCell id="Y4Rtp4wap_Nywu_7r1CB-6" parent="mo4Cw-ob1erO2F5RVyFF-10" style="ellipse;whiteSpace=wrap;html=1;align=center;" value="Corrigir Teste e Gerar Relatório" vertex="1">
           <mxGeometry height="40" width="110" x="440" y="330" as="geometry" />
         </mxCell>
-        <mxCell id="Y4Rtp4wap_Nywu_7r1CB-30" edge="1" parent="mo4Cw-ob1erO2F5RVyFF-10" source="mo4Cw-ob1erO2F5RVyFF-9" style="html=1;verticalAlign=bottom;labelBackgroundColor=none;endArrow=open;endFill=0;dashed=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;">
+        <mxCell id="Y4Rtp4wap_Nywu_7r1CB-30" edge="1" target="Y4Rtp4wap_Nywu_7r1CB-5" parent="mo4Cw-ob1erO2F5RVyFF-10" source="mo4Cw-ob1erO2F5RVyFF-9" style="html=1;verticalAlign=bottom;labelBackgroundColor=none;endArrow=open;endFill=0;dashed=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;">
           <mxGeometry relative="1" width="160" x="0.504" y="15" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="170.00000000000023" y="65.00000000000011" as="sourcePoint" />
@@ -264,12 +264,6 @@
             <mxPoint x="340" y="520" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="mo4Cw-ob1erO2F5RVyFF-64" edge="1" parent="1" source="mo4Cw-ob1erO2F5RVyFF-5" style="endArrow=none;html=1;rounded=0;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.06;entryY=0.7;entryDx=0;entryDy=0;entryPerimeter=0;" target="mo4Cw-ob1erO2F5RVyFF-53" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="380" y="370" as="sourcePoint" />
-            <mxPoint x="230" y="340" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
         <mxCell id="mo4Cw-ob1erO2F5RVyFF-65" edge="1" parent="1" source="mo4Cw-ob1erO2F5RVyFF-5" style="endArrow=none;html=1;rounded=0;entryX=0.06;entryY=0.725;entryDx=0;entryDy=0;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryPerimeter=0;" target="mo4Cw-ob1erO2F5RVyFF-54" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <mxPoint x="170" y="490" as="sourcePoint" />
@@ -333,6 +327,24 @@
           <mxGeometry height="60" width="30" x="83" y="520" as="geometry" />
         </mxCell>
         <mxCell id="uc7" edge="1" parent="1" source="uc6" style="endArrow=block;endFill=0;html=1;rounded=0;" target="mo4Cw-ob1erO2F5RVyFF-5" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ucAcomp" parent="mo4Cw-ob1erO2F5RVyFF-10" style="ellipse;whiteSpace=wrap;html=1;" value="Acompanhar Candidaturas" vertex="1">
+          <mxGeometry height="40" width="120" x="230" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ucAcomp-e" edge="1" parent="1" source="mo4Cw-ob1erO2F5RVyFF-2" style="endArrow=none;html=1;rounded=0;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;" target="ucAcomp" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ucExport" parent="mo4Cw-ob1erO2F5RVyFF-10" style="ellipse;whiteSpace=wrap;html=1;" value="Exportar Meus Dados (LGPD)" vertex="1">
+          <mxGeometry height="40" width="120" x="440" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ucExport-e" edge="1" parent="1" source="mo4Cw-ob1erO2F5RVyFF-2" style="endArrow=none;html=1;rounded=0;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;" target="ucExport" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ucExcluir" parent="mo4Cw-ob1erO2F5RVyFF-10" style="ellipse;whiteSpace=wrap;html=1;" value="Excluir Conta (LGPD)" vertex="1">
+          <mxGeometry height="40" width="120" x="440" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="ucExcluir-e" edge="1" parent="1" source="mo4Cw-ob1erO2F5RVyFF-2" style="endArrow=none;html=1;rounded=0;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;" target="ucExcluir" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
