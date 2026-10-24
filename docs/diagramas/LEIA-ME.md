@@ -26,6 +26,17 @@ arquivo. Para o desenho refletir a correção:
 Se a janela não abrir, cole o texto de `Sequencia_1_texto_mermaid.txt` /
 `Sequencia_2_texto_mermaid.txt` em `Arrange → Insert → Advanced → Mermaid`.
 
+## Sequências novas (RF01 e RF05/RF06)
+
+Refazem os rascunhos `docs/entregas/1000437211.png` e `1000437216.png`, conferidos contra o código.
+O PNG já está renderizado; para editar no draw.io, cole o `.txt` em
+`Arrange → Insert → Advanced → Mermaid`.
+
+| Arquivo | Fonte | Observação |
+|---|---|---|
+| `Sequencia_3_Autenticacao.png` | `Sequencia_3_Autenticacao_mermaid.txt` | O cartão S1·9 pede sequências ligadas ao valor da solução, não login/cadastro; confirmar se entra na ERS |
+| `Sequencia_4_Teste_Codigo.png` | `Sequencia_4_Teste_Codigo_mermaid.txt` | Cobre RF05 e RF06; a correção não avança a etapa (decisão do recrutador), divergindo do RF06 passo 5 da ERS |
+
 ## Ainda não prontos
 
 | Arquivo | Vai para | Estado |

@@ -1,0 +1,43 @@
+%% CLTech - RF01 - Autenticacao e Cadastro
+%% Cole em: draw.io > Arrange > Insert > Advanced > Mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuário
+    participant T as Tela de autenticação
+    participant S as Sistema CLTech
+    participant BD as Banco de Dados
+
+    U->>T: Acessa Login ou Cadastro
+    alt Login com e-mail e senha
+        U->>T: Informa e-mail e senha
+        T->>S: Envia credenciais
+        S->>BD: Busca usuário pelo e-mail
+        BD-->>S: Usuário e hash da senha, se existir
+        S->>S: Compara a senha com o hash (Argon2)
+        alt Credenciais válidas
+            S->>S: Gera sessão autenticada com o papel do usuário
+            S-->>T: Redireciona conforme o papel
+            T-->>U: Candidato vai para Vagas, Recrutador e Admin para o Painel
+        else E-mail inexistente ou senha incorreta (RF01-A2)
+            S-->>T: Recusa o login
+            T-->>U: Exibe "E-mail ou senha incorretos"
+        end
+    else Cadastro (RF01-A3)
+        U->>T: Informa nome, e-mail e senha
+        T->>T: Valida formato dos campos
+        T->>S: Envia dados de cadastro
+        S->>BD: Verifica se o e-mail já existe (RN007)
+        BD-->>S: Resultado da consulta
+        alt E-mail ainda não cadastrado
+            S->>S: Gera hash da senha (Argon2)
+            S->>BD: Grava Usuário com papel Candidato e o perfil de Candidato
+            BD-->>S: Confirma gravação
+            S->>S: Gera sessão autenticada
+            S-->>T: Conta criada
+            T-->>U: Redireciona para Vagas
+        else E-mail já cadastrado
+            S-->>T: Recusa com mensagem genérica
+            T-->>U: Exibe "Não foi possível criar a conta com esses dados"
+            Note over T,S: A mensagem não revela que o e-mail existe (LGPD)
+        end
+    end

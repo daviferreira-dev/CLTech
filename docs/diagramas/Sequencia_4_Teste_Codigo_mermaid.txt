@@ -1,0 +1,73 @@
+%% CLTech - RF05 + RF06 - Teste de Codigo e Correcao Automatica
+%% Cole em: draw.io > Arrange > Insert > Advanced > Mermaid
+sequenceDiagram
+    autonumber
+    actor C as Candidato
+    participant E as Editor de Código (Interface)
+    participant S as Sistema CLTech
+    participant BD as Banco de Dados
+    participant SB as Sandbox
+
+    C->>E: Acessa o teste técnico da vaga
+    E->>S: Solicita o desafio
+    S->>BD: Confere se a candidatura está na etapa Teste de Código
+    BD-->>S: Etapa, desafio e rascunho existente
+    opt Primeira abertura
+        S->>BD: Cria rascunho e grava o horário de início
+    end
+    S-->>E: Enunciado, casos visíveis, linguagens e prazo
+    Note over E,S: Casos ocultos nunca saem do servidor. O prazo é contado pelo relógio do servidor.
+
+    loop Enquanto o candidato escreve, dentro do prazo
+        C->>E: Escreve o código
+        E->>S: Salva o rascunho automaticamente
+        S->>BD: Atualiza o rascunho (cifrado)
+        opt Candidato clica em Testar
+            E->>S: Envia o código para execução
+            alt Ainda há execuções disponíveis (máximo 20)
+                S->>SB: Executa contra os casos visíveis
+                SB-->>S: Saída ou erro de compilação
+                S->>BD: Incrementa o contador de execuções
+                S-->>E: Resultado de cada caso
+                E-->>C: Exibe o resultado ou o erro (RF05-A2)
+            else Limite atingido
+                S-->>E: Recusa a execução
+                E-->>C: Informa que resta apenas submeter
+            end
+        end
+    end
+
+    alt Submissão manual
+        C->>E: Clica em Submeter e confirma
+        E->>S: Envia a submissão final
+    else Tempo esgotado (RF05-A1)
+        E->>S: Consulta o estado do desafio
+        S->>S: Verifica que o prazo venceu
+        Note over S: Se a aba foi fechada, uma rotina periódica faz esta verificação
+    end
+    S->>BD: Grava a submissão a partir do último rascunho salvo
+    alt Primeira submissão
+        BD-->>S: Submissão gravada na fila de correção
+        S-->>E: Submissão registrada
+        E-->>C: Exibe a tela de conclusão com "Correção em andamento"
+    else Já existe submissão (RN006)
+        BD-->>S: Violação da chave única
+        S-->>E: Recusa o reenvio
+        E-->>C: Informa que a tentativa é única
+    end
+
+    Note over S,SB: Correção automática em segundo plano (RF06)
+    S->>SB: Executa contra todos os casos, inclusive os ocultos
+    alt Execução concluída
+        SB-->>S: Resultado e tempo de cada caso
+        S->>S: Calcula o percentual de casos aprovados
+        S->>BD: Insere a Avaliação com o score (imutável, RN003)
+        Note over S,BD: Estouro de tempo ou acesso bloqueado conta como caso reprovado (RF06-A1)
+    else Falha técnica do sandbox (RF06-E1)
+        SB-->>S: Falha de infraestrutura
+        S->>SB: Reprocessa uma única vez
+    end
+    E->>S: Consulta o status periodicamente
+    S-->>E: Correção concluída
+    E-->>C: Exibe "Correção concluída", sem a nota
+    Note over S: Avançar ou reprovar na etapa é decisão do recrutador (RF08)
