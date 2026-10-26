@@ -125,7 +125,21 @@ export default async function MyApplicationsPage({ searchParams }: { searchParam
 
                 {STATUS_MESSAGE[app.status] && <p className="text-body text-ink-900">{STATUS_MESSAGE[app.status]}</p>}
 
-                {app.status === "IN_PROGRESS" && app.currentStage.type === "CODE_TEST" && (
+                {app.status === "IN_PROGRESS" && app.currentStage.type === "CODE_TEST" && app.codeTestSubmitted && (
+                  <Notice
+                    tone="info"
+                    title="Teste de código enviado"
+                    action={
+                      <ButtonLink href={`/desafios/${app.applicationId}`} size="sm" variant="secondary">
+                        Ver submissão
+                      </ButtonLink>
+                    }
+                  >
+                    Sua solução foi submetida e a tentativa é única. Agora é com a empresa: acompanhe o andamento por aqui.
+                  </Notice>
+                )}
+
+                {app.status === "IN_PROGRESS" && app.currentStage.type === "CODE_TEST" && !app.codeTestSubmitted && (
                   <Notice
                     tone="warning"
                     title="Sua vez: teste de código"

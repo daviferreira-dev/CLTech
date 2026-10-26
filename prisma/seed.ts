@@ -2,8 +2,9 @@
 // Vagas já nascem PUBLISHED porque o construtor de vagas (RF04) é da Sprint 2;
 // sem isso não há como demonstrar as histórias P1 (busca e candidatura).
 
-import { PrismaClient, type ProcessStageType, type WorkMode, type Seniority } from "@prisma/client";
+import { Prisma, PrismaClient, type ProcessStageType, type WorkMode, type Seniority } from "@prisma/client";
 import * as argon2 from "argon2";
+import { CHALLENGES } from "./challenges";
 
 const prisma = new PrismaClient();
 
@@ -86,39 +87,6 @@ const JOBS: JobSeed[] = [
   },
 ];
 
-// Spec 005 US4: catálogo inicial. Cada desafio lê da entrada padrão e escreve na saída
-// padrão; casos `hidden` nunca saem do servidor.
-const CHALLENGES = [
-  {
-    title: "Soma de inteiros",
-    statement:
-      "Leia uma linha com inteiros separados por espaço e imprima a soma deles.\n\nEntrada: uma linha, por exemplo `1 2 3`.\nSaída: um único inteiro, por exemplo `6`.",
-    languages: ["python", "javascript", "typescript", "java", "cpp", "go"],
-    difficulty: "EASY" as const,
-    timeLimitSeconds: 5,
-    testCases: [
-      { input: "1 2 3\n", expectedOutput: "6", hidden: false },
-      { input: "10 -4\n", expectedOutput: "6", hidden: false },
-      { input: "0\n", expectedOutput: "0", hidden: true },
-      { input: "1000000 2000000 3000000\n", expectedOutput: "6000000", hidden: true },
-    ],
-  },
-  {
-    title: "Palíndromo",
-    statement:
-      "Leia uma palavra e imprima `SIM` se ela for um palíndromo (ignorando maiúsculas/minúsculas) ou `NAO` caso contrário.",
-    languages: ["python", "javascript", "typescript", "java"],
-    difficulty: "MID" as const,
-    timeLimitSeconds: 5,
-    testCases: [
-      { input: "arara\n", expectedOutput: "SIM", hidden: false },
-      { input: "react\n", expectedOutput: "NAO", hidden: false },
-      { input: "Ana\n", expectedOutput: "SIM", hidden: true },
-      { input: "ab\n", expectedOutput: "NAO", hidden: true },
-    ],
-  },
-];
-
 async function main() {
   const passwordHash = await hashedPassword();
 
@@ -179,7 +147,11 @@ async function main() {
   const challengeIds: string[] = [];
   for (const challengeSeed of CHALLENGES) {
     const existing = await prisma.challenge.findFirst({ where: { title: challengeSeed.title } });
-    const challenge = existing ?? (await prisma.challenge.create({ data: challengeSeed }));
+    const challenge =
+      existing ??
+      (await prisma.challenge.create({
+        data: { ...challengeSeed, testCases: challengeSeed.testCases as unknown as Prisma.InputJsonValue },
+      }));
     challengeIds.push(challenge.id);
   }
   console.log(`Seed: ${CHALLENGES.length} desafios no catálogo.`);

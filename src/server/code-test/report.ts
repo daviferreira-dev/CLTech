@@ -1,9 +1,11 @@
 // Spec 005 US3.6 — o que o recrutador vê do teste técnico no relatório da candidatura:
-// nota, casos aprovados/reprovados, linguagem, tempo gasto e o código submetido. Casos
-// ocultos aparecem só por índice e resultado (FR-201).
+// nota, cada caso (entrada, saída esperada, saída obtida, erro), linguagem, tempo gasto e o
+// código submetido. Inclui os casos ocultos: o recrutador precisa entender a nota, e esta
+// resposta só existe na rota do recrutador — ao candidato eles continuam nunca saindo (FR-201).
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/server/crypto";
 import { DEFAULT_TIME_LIMIT_MINUTES, type CaseOutcome, type CodeTestStageConfig } from "@/lib/codeTest";
+import { parseTestCases } from "./challenges";
 import { resumeIfStale } from "./grading";
 import { expireOverdueDrafts } from "./session";
 
@@ -18,13 +20,32 @@ export type CodeTestReport =
       score: number;
       passed: number;
       total: number;
-      cases: Array<{ index: number; hidden: boolean; outcome: CaseOutcome }>;
+      cases: CodeTestCaseReport[];
       language: string;
       submittedAt: string;
       submittedBy: string;
       timeSpentSeconds: number | null;
       sourceCode: string;
     };
+
+export interface CodeTestCaseReport {
+  index: number;
+  hidden: boolean;
+  outcome: CaseOutcome;
+  input: string;
+  expectedOutput: string;
+  /** null em avaliações anteriores à gravação da saída por caso. */
+  actualOutput: string | null;
+  diagnostics: string | null;
+}
+
+interface StoredCaseResult {
+  index: number;
+  hidden: boolean;
+  outcome: CaseOutcome;
+  actualOutput?: string;
+  diagnostics?: string;
+}
 
 export async function getCodeTestReport(applicationId: string, now = new Date()): Promise<CodeTestReport> {
   const application = await prisma.application.findUnique({
@@ -36,7 +57,7 @@ export async function getCodeTestReport(applicationId: string, now = new Date())
 
   const config = (stage.config ?? {}) as CodeTestStageConfig;
   if (!config.challengeId) return { status: "NOT_STARTED", challengeTitle: null };
-  const challenge = await prisma.challenge.findUnique({ where: { id: config.challengeId }, select: { id: true, title: true } });
+  const challenge = await prisma.challenge.findUnique({ where: { id: config.challengeId }, select: { id: true, title: true, testCases: true } });
   if (!challenge) return { status: "NOT_STARTED", challengeTitle: null };
 
   const key = { applicationId_challengeId: { applicationId, challengeId: challenge.id } };
@@ -68,15 +89,25 @@ export async function getCodeTestReport(applicationId: string, now = new Date())
   const justification = submission.evaluation.justification as {
     passed?: number;
     total?: number;
-    cases?: Array<{ index: number; hidden: boolean; outcome: CaseOutcome }>;
+    cases?: StoredCaseResult[];
   };
+  // Casos do desafio não mudam depois do primeiro uso (challenges.ts), então o índice casa.
+  const testCases = parseTestCases(challenge.testCases);
   return {
     status: "COMPLETED",
     ...base,
     score: submission.evaluation.score,
     passed: justification.passed ?? 0,
     total: justification.total ?? 0,
-    cases: justification.cases ?? [],
+    cases: (justification.cases ?? []).map((c) => ({
+      index: c.index,
+      hidden: c.hidden,
+      outcome: c.outcome,
+      input: testCases[c.index]?.input ?? "",
+      expectedOutput: testCases[c.index]?.expectedOutput ?? "",
+      actualOutput: c.actualOutput ?? null,
+      diagnostics: c.diagnostics ?? null,
+    })),
     timeSpentSeconds: draft ? Math.max(0, Math.round((submission.submittedAt.getTime() - draft.startedAt.getTime()) / 1000)) : null,
     sourceCode: decrypt(submission.sourceCode),
   };

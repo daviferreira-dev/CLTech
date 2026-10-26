@@ -102,6 +102,13 @@ export async function gradeSubmission(submissionId: string): Promise<void> {
   }
 }
 
+// Saída gigante (loop imprimindo) não deve inflar a avaliação.
+const MAX_STORED_OUTPUT_CHARS = 2_000;
+
+function clip(value: string): string {
+  return value.length > MAX_STORED_OUTPUT_CHARS ? `${value.slice(0, MAX_STORED_OUTPUT_CHARS)}\n… (cortado)` : value;
+}
+
 async function recordEvaluation(submissionId: string, applicationId: string, language: string, results: CaseResult[]) {
   const passed = results.filter((r) => r.outcome === "PASSED").length;
   const total = results.length;
@@ -113,13 +120,20 @@ async function recordEvaluation(submissionId: string, applicationId: string, lan
         applicationId,
         type: "CODE_TEST",
         score,
-        // Casos identificados por índice e visibilidade, nunca pelo conteúdo (US3.3).
+        // Entrada e saída esperada ficam no Challenge (imutável após uso) e são juntadas pelo
+        // índice no relatório; aqui só o que é desta execução. Só o recrutador lê (report.ts).
         justification: {
           language,
           passed,
           total,
           compileError: results.some((r) => r.outcome === "COMPILE_ERROR"),
-          cases: results.map((r) => ({ index: r.index, hidden: r.hidden, outcome: r.outcome })),
+          cases: results.map((r) => ({
+            index: r.index,
+            hidden: r.hidden,
+            outcome: r.outcome,
+            actualOutput: clip(r.actualOutput),
+            diagnostics: clip(r.diagnostics),
+          })),
         } as Prisma.InputJsonValue,
       },
     });

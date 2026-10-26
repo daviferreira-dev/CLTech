@@ -40,14 +40,31 @@ export async function recordDecision(
   const nextStage = application.job.stages.find((stage) => stage.order === application.currentStage.order + 1);
 
   if (!nextStage) {
-    // Última etapa (ex.: proposta final) — avançar aprova de fato.
-    await prisma.$transaction([
-      prisma.application.update({ where: { id: applicationId }, data: { status: "APPROVED" } }),
-      prisma.applicationStageHistory.updateMany({
+    // Última etapa (ex.: proposta final) — avançar aprova de fato. A vaga foi preenchida:
+    // encerra a vaga e reprova quem ainda estava em andamento nela, tudo na mesma transação.
+    await prisma.$transaction(async (tx) => {
+      // O UPDATE trava a linha da vaga: duas aprovações simultâneas na mesma vaga não passam.
+      const closed = await tx.job.updateMany({
+        where: { id: application.jobId, status: { not: "CLOSED" } },
+        data: { status: "CLOSED" },
+      });
+      if (closed.count === 0) {
+        throw Errors.conflict("JOB_CLOSED", "Esta vaga já foi encerrada com outro candidato aprovado.");
+      }
+
+      await tx.application.update({ where: { id: applicationId }, data: { status: "APPROVED" } });
+      await tx.applicationStageHistory.updateMany({
         where: { applicationId, stageId: application.currentStageId, exitedAt: null },
         data: { exitedAt: now, decidedByUserId },
-      }),
-    ]);
+      });
+
+      const others = { jobId: application.jobId, status: "IN_PROGRESS" as const, id: { not: applicationId } };
+      await tx.applicationStageHistory.updateMany({
+        where: { exitedAt: null, application: others },
+        data: { exitedAt: now, decidedByUserId },
+      });
+      await tx.application.updateMany({ where: others, data: { status: "REJECTED" } });
+    });
     return { currentStage: { type: application.currentStage.type, order: application.currentStage.order }, status: "APPROVED" };
   }
 

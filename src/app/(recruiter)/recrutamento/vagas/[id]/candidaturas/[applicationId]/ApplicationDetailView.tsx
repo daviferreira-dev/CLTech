@@ -127,7 +127,7 @@ export function ApplicationDetailView({
         decision === "REJECT"
           ? "Candidato reprovado."
           : result.data.status === "APPROVED"
-            ? "Candidato aprovado — era a última etapa, o processo foi concluído."
+            ? "Candidato aprovado — era a última etapa. A vaga foi encerrada e os demais candidatos em andamento foram reprovados."
             : `Candidato avançado. Etapa atual: ${STAGE_LABEL[result.data.currentStage.type] ?? result.data.currentStage.type}.`;
       setMessage({ tone: decision === "REJECT" ? "info" : "success", text });
       await fetchDetail();
@@ -394,6 +394,55 @@ function formatDuration(seconds: number | null): string {
 }
 
 /** Spec 005 US3.6: nota, casos, linguagem, tempo gasto e código submetido. */
+type CaseItem = Extract<CodeTestReport, { status: "COMPLETED" }>["cases"][number];
+
+/** Um caso de teste: reprovados já abrem expandidos, que é o que o recrutador quer entender. */
+function CaseRow({ item }: { item: CaseItem }) {
+  const passed = item.outcome === "PASSED";
+  return (
+    <li>
+      <details open={!passed} className="rounded-field border border-brand-100 bg-surface">
+        <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-body text-ink-900">
+          <span className="font-medium">Caso {item.index + 1}</span>
+          <span className="text-ink-600">{item.hidden ? "oculto" : "visível ao candidato"}</span>
+          <Badge variant={passed ? "success" : "danger"}>{CASE_OUTCOME_LABEL[item.outcome] ?? item.outcome}</Badge>
+        </summary>
+        <dl className="grid gap-3 border-t border-brand-100 px-3 py-3 sm:grid-cols-3">
+          <CaseField label="Entrada" value={item.input} />
+          <CaseField label="Saída esperada" value={item.expectedOutput} />
+          <CaseField
+            label="Saída do candidato"
+            value={item.actualOutput}
+            empty={item.actualOutput === null ? "Não registrada (correção anterior a esta versão)" : "(vazia)"}
+          />
+          {!passed && item.diagnostics && (
+            <div className="sm:col-span-3">
+              <CaseField label="Erro" value={item.diagnostics} />
+            </div>
+          )}
+        </dl>
+      </details>
+    </li>
+  );
+}
+
+function CaseField({ label, value, empty = "(vazia)" }: { label: string; value: string | null; empty?: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-label text-ink-600">{label}</dt>
+      <dd className="mt-1">
+        {value ? (
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-field bg-canvas p-2 font-mono text-label font-normal text-ink-900">
+            {value}
+          </pre>
+        ) : (
+          <span className="text-label font-normal text-ink-600">{empty}</span>
+        )}
+      </dd>
+    </div>
+  );
+}
+
 function CodeTestCard({ report }: { report: CodeTestReport }) {
   const [showCode, setShowCode] = useState(false);
 
@@ -448,14 +497,13 @@ function CodeTestCard({ report }: { report: CodeTestReport }) {
               <dd className="text-ink-900">{report.submittedBy === "TIME_EXPIRED" ? "Automático (tempo esgotado)" : "Pelo candidato"}</dd>
             </dl>
           </div>
-          <ul className="flex flex-wrap gap-2" aria-label="Resultado por caso">
+          <p className="text-label font-normal text-ink-600">
+            Nota = casos aprovados ÷ total de casos, contando os ocultos (que o candidato não vê). A saída é comparada
+            linha a linha, ignorando espaços no fim.
+          </p>
+          <ul className="space-y-2" aria-label="Resultado por caso">
             {report.cases.map((c) => (
-              <li key={c.index}>
-                <Badge variant={c.outcome === "PASSED" ? "success" : "danger"}>
-                  Caso {c.index + 1}
-                  {c.hidden ? " (oculto)" : ""}: {CASE_OUTCOME_LABEL[c.outcome] ?? c.outcome}
-                </Badge>
-              </li>
+              <CaseRow key={c.index} item={c} />
             ))}
           </ul>
           <div>

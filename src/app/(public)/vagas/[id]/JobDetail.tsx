@@ -40,6 +40,7 @@ interface JobDetailView {
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
   stages: Array<{ type: string; order: number }>;
   matchScore?: MatchScore;
+  hasApplied?: boolean;
 }
 
 type Viewer = "candidate" | "staff" | "visitor";
@@ -67,6 +68,9 @@ export function JobDetail({ jobId, viewer }: { jobId: string; viewer: Viewer }) 
     const result = await apiFetch<JobDetailView>(`/api/jobs/${jobId}`);
     if (result.ok) {
       setJob(result.data);
+      // Já candidatado: mostra o acompanhamento em vez do botão (inclusive ao voltar pelo
+      // histórico, quando o Next reaproveita a página em cache).
+      if (result.data.hasApplied) setApply({ kind: "alreadyApplied" });
       setLoadState("ready");
     } else if (result.status === 404) {
       setLoadState("notFound");

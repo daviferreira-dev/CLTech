@@ -18,6 +18,8 @@ export interface JobDetail {
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
   stages: Array<{ type: string; order: number }>;
   matchScore?: MatchScoreView & { matched?: string[]; missing?: string[] };
+  /** Só para o próprio candidato: já existe candidatura dele nesta vaga (única por par). */
+  hasApplied?: boolean;
 }
 
 export async function getJobDetail(jobId: string, requesterUserId: string | null): Promise<JobDetail> {
@@ -28,16 +30,14 @@ export async function getJobDetail(jobId: string, requesterUserId: string | null
 
   if (!job) throw Errors.notFound("Vaga");
 
-  if (job.status !== "PUBLISHED") {
-    const hasOwnApplication =
-      requesterUserId &&
-      (await prisma.application.findFirst({
+  const hasOwnApplication = requesterUserId
+    ? (await prisma.application.findFirst({
         where: { jobId, candidate: { userId: requesterUserId } },
         select: { id: true },
-      }));
+      })) !== null
+    : false;
 
-    if (!hasOwnApplication) throw Errors.notFound("Vaga");
-  }
+  if (job.status !== "PUBLISHED" && !hasOwnApplication) throw Errors.notFound("Vaga");
 
   const matchScore = requesterUserId ? await getMatchScoreForRequester(job.id, requesterUserId) : undefined;
 
@@ -54,6 +54,7 @@ export async function getJobDetail(jobId: string, requesterUserId: string | null
     status: job.status,
     stages: job.stages,
     ...(matchScore ? { matchScore } : {}),
+    ...(hasOwnApplication ? { hasApplied: true } : {}),
   };
 }
 

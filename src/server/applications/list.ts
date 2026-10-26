@@ -9,6 +9,8 @@ export interface MyApplicationItem {
   currentStage: { type: string; order: number };
   status: "IN_PROGRESS" | "APPROVED" | "REJECTED" | "WITHDRAWN";
   matchScoreStatus: "NOT_CALCULATED" | "PENDING" | "CALCULATED" | "FAILED";
+  /** Etapa atual é teste de código e o desafio dela já foi submetido (tentativa única). */
+  codeTestSubmitted: boolean;
 }
 
 export async function listMyApplications(userId: string): Promise<MyApplicationItem[]> {
@@ -20,16 +22,22 @@ export async function listMyApplications(userId: string): Promise<MyApplicationI
     orderBy: { appliedAt: "desc" },
     include: {
       job: { select: { id: true, title: true, company: true } },
-      currentStage: { select: { type: true, order: true } },
+      currentStage: { select: { type: true, order: true, config: true } },
+      codeSubmissions: { select: { challengeId: true } },
     },
   });
 
-  return applications.map((app) => ({
-    applicationId: app.id,
-    job: app.job,
-    appliedAt: app.appliedAt,
-    currentStage: app.currentStage,
-    status: app.status,
-    matchScoreStatus: app.matchScoreStatus,
-  }));
+  return applications.map((app) => {
+    const challengeId = (app.currentStage.config as { challengeId?: string } | null)?.challengeId;
+    return {
+      applicationId: app.id,
+      job: app.job,
+      appliedAt: app.appliedAt,
+      currentStage: { type: app.currentStage.type, order: app.currentStage.order },
+      status: app.status,
+      matchScoreStatus: app.matchScoreStatus,
+      codeTestSubmitted:
+        app.currentStage.type === "CODE_TEST" && app.codeSubmissions.some((s) => s.challengeId === challengeId),
+    };
+  });
 }

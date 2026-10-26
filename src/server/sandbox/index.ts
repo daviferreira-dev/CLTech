@@ -225,8 +225,10 @@ export function getSandbox(): Sandbox {
   if (override) return override;
   const url = process.env.SANDBOX_URL;
   if (url === "local") {
-    // Em produção falha como infraestrutura indisponível, igual a SANDBOX_URL vazia.
-    return process.env.NODE_ENV === "production" ? new UnconfiguredSandbox() : new LocalSandbox();
+    // Em produção falha como infraestrutura indisponível, igual a SANDBOX_URL vazia — salvo
+    // opt-in explícito de quem roda o build na própria máquina (run.bat).
+    const allowed = process.env.NODE_ENV !== "production" || process.env.SANDBOX_ALLOW_LOCAL === "1";
+    return allowed ? new LocalSandbox() : new UnconfiguredSandbox();
   }
   return url ? new Judge0Sandbox(url, process.env.SANDBOX_TOKEN) : new UnconfiguredSandbox();
 }

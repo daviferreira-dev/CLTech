@@ -180,8 +180,10 @@ Alguém precisa cadastrar os desafios antes que qualquer vaga possa usá-los.
 
 ### Funcionais
 
-- **FR-201**: Casos de teste com `hidden: true` MUST permanecer exclusivamente no servidor —
-  jamais serializados em resposta de API, para candidato ou recrutador.
+- **FR-201**: Casos de teste com `hidden: true` MUST nunca ser serializados em resposta de API
+  ao candidato (nem no catálogo de desafios). Exceção: o relatório da candidatura do recrutador
+  mostra entrada, saída esperada e saída obtida de todos os casos, para explicar a nota
+  (decisão de 26/10/2026).
 - **FR-202**: `CodeDraft.sourceCode` e `CodeSubmission.sourceCode` MUST ser cifrados em
   repouso, no mesmo padrão já usado em `Resume.extractedText`.
 - **FR-203**: O acesso ao desafio MUST derivar da etapa atual da candidatura do próprio

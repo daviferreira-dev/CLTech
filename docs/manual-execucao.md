@@ -44,7 +44,7 @@ Copie `.env.example` para `.env` e preencha:
 | `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` | sim | Supabase → Storage → *S3 Connection*. O bucket **precisa ser privado**. |
 | `NEXTAUTH_URL` | sim | `http://localhost:3000` local; a URL pública em produção |
 | `LINKEDIN_ID` / `LINKEDIN_SECRET` | não | vazio esconde o botão do LinkedIn |
-| `SANDBOX_URL` / `SANDBOX_TOKEN` | não | URL da VM com Judge0. Vazio: "Executar testes" e "Submeter" respondem que o ambiente está indisponível (o rascunho fica salvo). Submissão que falhou na correção é retentada a cada consulta, no máximo a cada 5 minutos, quando o sandbox volta. `local` (só dev): roda python/javascript/typescript direto na máquina, sem isolamento; ignorado com `NODE_ENV=production` |
+| `SANDBOX_URL` / `SANDBOX_TOKEN` | não | URL da VM com Judge0. Vazio: "Executar testes" e "Submeter" respondem que o ambiente está indisponível (o rascunho fica salvo). Submissão que falhou na correção é retentada a cada consulta, no máximo a cada 5 minutos, quando o sandbox volta. `local` (só dev): roda python/javascript/typescript direto na máquina, sem isolamento; ignorado com `NODE_ENV=production`, salvo `SANDBOX_ALLOW_LOCAL=1` (o `run.bat` já define) |
 | `CRON_SECRET` | não | protege `POST /api/internal/code-tests/expire`. Vazio desliga a rota |
 | `RESEND_API_KEY` | não | sem uso: o RN005 foi adiado |
 

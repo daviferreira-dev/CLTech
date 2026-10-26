@@ -190,9 +190,21 @@ describe("casos ocultos nunca saem do servidor (SC-203, FR-201)", () => {
     bodies.push(await runVisibleTests(user.id, application.id, { language: "python", sourceCode: "SUM" }));
     bodies.push(await submitChallenge(user.id, application.id, { language: "python", sourceCode: "SUM" }));
     await waitForPendingGradings();
-    bodies.push(await getApplicationDetail(application.id));
 
     for (const body of bodies) expect(JSON.stringify(body)).not.toContain(HIDDEN_MARKER);
+  });
+
+  it("o relatório do recrutador mostra todos os casos, inclusive ocultos, com a saída obtida", async () => {
+    const { user, application } = await setup();
+    await openChallenge(user.id, application.id);
+    await submitChallenge(user.id, application.id, { language: "python", sourceCode: "SUM" });
+    await waitForPendingGradings();
+
+    const report = (await getApplicationDetail(application.id)).codeTest;
+    if (report.status !== "COMPLETED") throw new Error(`status inesperado: ${report.status}`);
+    const hidden = report.cases.find((c) => c.input.includes(HIDDEN_MARKER));
+    expect(hidden).toMatchObject({ hidden: true, expectedOutput: `3 ${HIDDEN_MARKER}` });
+    expect(report.cases.every((c) => typeof c.actualOutput === "string")).toBe(true);
   });
 });
 

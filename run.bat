@@ -19,6 +19,9 @@ rem Aplica migracoes pendentes e o seed (idempotente: rodar de novo nao duplica 
 call pnpm prisma migrate deploy || goto :erro
 call pnpm db:seed || goto :erro
 call pnpm build || goto :erro
+rem Com SANDBOX_URL="local" no .env, o teste de codigo roda direto nesta maquina (sem isolamento).
+rem O build e de producao, entao a liberacao precisa ser explicita.
+set SANDBOX_ALLOW_LOCAL=1
 call pnpm start
 goto :fim
 
