@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { STAGE_TYPES, STAGE_LABEL } from "@/lib/processStages";
+import { STAGE_TYPES, STAGE_LABEL, MIN_POSITIONS, MAX_POSITIONS, positionsOf } from "@/lib/processStages";
 import {
   DEFAULT_TIME_LIMIT_MINUTES,
   DIFFICULTY_LABEL,
@@ -163,6 +163,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
   }, []);
 
   // Catálogo de desafios só é buscado quando o pipeline tem teste de código (spec 005 US1).
+  const hasFinalOffer = stages.some((stage) => stage.type === "FINAL_OFFER");
   const hasCodeTest = stages.some((stage) => stage.type === "CODE_TEST");
   useEffect(() => {
     if (!hasCodeTest || catalog !== null) return;
@@ -264,10 +265,11 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
   }
 
   function addStage() {
+    if (newStageType === "FINAL_OFFER" && hasFinalOffer) return;
     handleSaveStages([...stages, { type: newStageType }]);
   }
 
-  function updateStageConfig(index: number, config: CodeTestStageConfig) {
+  function updateStageConfig(index: number, config: CodeTestStageConfig | { positions: number }) {
     handleSaveStages(stages.map((stage, i) => (i === index ? { ...stage, config: config as Record<string, unknown> } : stage)));
   }
 
@@ -515,6 +517,15 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                           onSave={(config) => updateStageConfig(index, config)}
                         />
                       )}
+                      {stage.type === "FINAL_OFFER" && (
+                        <FinalOfferPanel
+                          stageIndex={index}
+                          positions={positionsOf(stage.config)}
+                          locked={locked}
+                          saving={savingStages}
+                          onSave={(positions) => updateStageConfig(index, { positions })}
+                        />
+                      )}
                     </li>
                   );
                 })}
@@ -531,7 +542,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                 <Field id="novo-tipo-etapa" label="Tipo de etapa" className="sm:w-72">
                   <Select value={newStageType} onChange={(e) => setNewStageType(e.target.value as StageType)}>
                     {STAGE_TYPES.map((type) => (
-                      <option key={type} value={type}>
+                      <option key={type} value={type} disabled={type === "FINAL_OFFER" && hasFinalOffer}>
                         {STAGE_LABEL[type]}
                       </option>
                     ))}
@@ -709,6 +720,44 @@ function CodeTestConfigPanel({
       >
         Salvar configuração do teste
       </Button>
+    </div>
+  );
+}
+
+function FinalOfferPanel({
+  stageIndex,
+  positions,
+  locked,
+  saving,
+  onSave,
+}: {
+  stageIndex: number;
+  positions: number;
+  locked: boolean;
+  saving: boolean;
+  onSave: (positions: number) => void;
+}) {
+  const [value, setValue] = useState(String(positions));
+  useEffect(() => setValue(String(positions)), [positions]);
+  const number = Number(value);
+  const valid = Number.isInteger(number) && number >= MIN_POSITIONS && number <= MAX_POSITIONS;
+
+  return (
+    <div className="mt-3 flex flex-col gap-3 rounded-card border border-brand-100 bg-canvas p-3 sm:flex-row sm:items-end">
+      <Field
+        id={`vagas-etapa-${stageIndex}`}
+        label="Quantidade de vagas"
+        hint="A vaga só é encerrada quando todas forem preenchidas."
+        error={valid ? undefined : `Entre ${MIN_POSITIONS} e ${MAX_POSITIONS}.`}
+        className="sm:w-72"
+      >
+        <Input type="number" min={MIN_POSITIONS} max={MAX_POSITIONS} disabled={locked} value={value} onChange={(e) => setValue(e.target.value)} />
+      </Field>
+      {!locked && (
+        <Button size="sm" variant="secondary" loading={saving} disabled={!valid || number === positions} onClick={() => onSave(number)}>
+          Salvar quantidade
+        </Button>
+      )}
     </div>
   );
 }

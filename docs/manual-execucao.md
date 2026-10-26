@@ -46,7 +46,7 @@ Copie `.env.example` para `.env` e preencha:
 | `LINKEDIN_ID` / `LINKEDIN_SECRET` | não | vazio esconde o botão do LinkedIn |
 | `SANDBOX_URL` / `SANDBOX_TOKEN` | não | URL da VM com Judge0. Vazio: "Executar testes" e "Submeter" respondem que o ambiente está indisponível (o rascunho fica salvo). Submissão que falhou na correção é retentada a cada consulta, no máximo a cada 5 minutos, quando o sandbox volta. `local` (só dev): roda python/javascript/typescript direto na máquina, sem isolamento; ignorado com `NODE_ENV=production`, salvo `SANDBOX_ALLOW_LOCAL=1` (o `run.bat` já define) |
 | `CRON_SECRET` | não | protege `POST /api/internal/code-tests/expire`. Vazio desliga a rota |
-| `RESEND_API_KEY` | não | sem uso: o RN005 foi adiado |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | não | e-mail ao candidato quando ele passa de etapa, é aprovado ou reprovado (RN005). Gmail: `smtp.gmail.com`, porta 587 e uma *senha de app* (myaccount.google.com/apppasswords). Vazio desliga o envio |
 
 ## 4. Banco de dados
 

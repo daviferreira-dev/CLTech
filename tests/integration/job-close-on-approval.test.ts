@@ -7,6 +7,9 @@ import { applyToJob } from "@/server/applications/apply";
 import { recordDecision } from "@/server/applications/decision";
 import { encrypt } from "@/server/crypto";
 
+// Entrevistas exigem data e link da reunião ao avançar para elas.
+const MEETING = { scheduledAt: new Date(Date.now() + 86_400_000).toISOString(), url: "https://meet.example.com/abc" };
+
 async function createPublishedJob() {
   const recruiter = await prisma.user.create({
     data: { name: "Recrutador Teste", email: `recrutador-${Date.now()}-${Math.random()}@example.com`, role: "RECRUITER" },
@@ -57,8 +60,8 @@ describe("aprovação final encerra a vaga", () => {
     const alreadyRejected = await applyToJob((await createCandidateWithResume(`reprovado-${suffix}@example.com`)).id, job.id);
     await recordDecision(alreadyRejected.applicationId, recruiter.id, "REJECT");
 
-    await recordDecision(winner.applicationId, recruiter.id, "ADVANCE");
-    const result = await recordDecision(winner.applicationId, recruiter.id, "ADVANCE");
+    await recordDecision(winner.applicationId, recruiter.id, "ADVANCE", MEETING);
+    const result = await recordDecision(winner.applicationId, recruiter.id, "ADVANCE", MEETING);
     expect(result.status).toBe("APPROVED");
 
     expect((await prisma.job.findUniqueOrThrow({ where: { id: job.id } })).status).toBe("CLOSED");
@@ -70,7 +73,7 @@ describe("aprovação final encerra a vaga", () => {
     });
     expect(openHistory).toBe(0);
 
-    await expect(recordDecision(other.applicationId, recruiter.id, "ADVANCE")).rejects.toMatchObject({ code: "APPLICATION_CLOSED" });
+    await expect(recordDecision(other.applicationId, recruiter.id, "ADVANCE", MEETING)).rejects.toMatchObject({ code: "APPLICATION_CLOSED" });
   });
 
   it("não aprova um segundo candidato numa vaga já encerrada", async () => {
@@ -78,12 +81,12 @@ describe("aprovação final encerra a vaga", () => {
     const suffix = `${Date.now()}-${Math.random()}`;
     const first = await applyToJob((await createCandidateWithResume(`primeiro-${suffix}@example.com`)).id, job.id);
     const second = await applyToJob((await createCandidateWithResume(`segundo-${suffix}@example.com`)).id, job.id);
-    await recordDecision(first.applicationId, recruiter.id, "ADVANCE");
-    await recordDecision(second.applicationId, recruiter.id, "ADVANCE");
+    await recordDecision(first.applicationId, recruiter.id, "ADVANCE", MEETING);
+    await recordDecision(second.applicationId, recruiter.id, "ADVANCE", MEETING);
 
     const results = await Promise.allSettled([
-      recordDecision(first.applicationId, recruiter.id, "ADVANCE"),
-      recordDecision(second.applicationId, recruiter.id, "ADVANCE"),
+      recordDecision(first.applicationId, recruiter.id, "ADVANCE", MEETING),
+      recordDecision(second.applicationId, recruiter.id, "ADVANCE", MEETING),
     ]);
 
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { STAGE_LABEL } from "@/lib/processStages";
+import { INTERVIEW_STAGES, STAGE_LABEL } from "@/lib/processStages";
 import { CASE_OUTCOME_LABEL, LANGUAGE_LABEL } from "@/lib/codeTest";
 import type { CodeTestReport } from "@/server/code-test/report";
 import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { ProfileDetails } from "@/lib/profile-details";
 import { ProfessionalProfileCard } from "./ProfessionalProfileCard";
+import { MeetingDialog } from "./MeetingDialog";
 import {
   Badge,
   Breadcrumb,
@@ -31,7 +32,18 @@ import {
 interface EvaluationView {
   type: string;
   score: number;
-  justification: { matched?: string[]; missing?: string[] } | null;
+  justification: {
+    matched?: string[];
+    missing?: string[];
+    resumeReadable?: boolean;
+    username?: string | null;
+    publicRepoCount?: number;
+    followers?: number;
+    activityLast90Days?: number;
+    topLanguages?: Array<{ name: string; share: number }>;
+    collectedAt?: string | null;
+    note?: string | null;
+  } | null;
 }
 
 interface ApplicationDetailData {
@@ -110,13 +122,13 @@ export function ApplicationDetailView({
     load();
   }, [load]);
 
-  async function handleDecision(decision: Decision) {
+  async function handleDecision(decision: Decision, meeting?: { scheduledAt: string; url: string }) {
     if (saving) return;
     setSaving(true);
     setMessage(null);
     const result = await apiFetch<{ status: ApplicationDetailData["status"]; currentStage: { type: string; order: number } }>(
       `/api/recruiter/applications/${applicationId}/decision`,
-      jsonInit("POST", { decision }),
+      jsonInit("POST", { decision, meeting }),
     );
     setSaving(false);
     setPending(null);
@@ -129,7 +141,20 @@ export function ApplicationDetailView({
           : result.data.status === "APPROVED"
             ? "Candidato aprovado — era a última etapa. A vaga foi encerrada e os demais candidatos em andamento foram reprovados."
             : `Candidato avançado. Etapa atual: ${STAGE_LABEL[result.data.currentStage.type] ?? result.data.currentStage.type}.`;
-      setMessage({ tone: decision === "REJECT" ? "info" : "success", text });
+      if (decision === "ADVANCE") {
+        // Aprovado na etapa: volta para a vaga, que mostra o aviso com o destino do candidato.
+        const params = new URLSearchParams();
+        if (origin.kind === "job" && origin.stage) params.set("etapa", origin.stage);
+        params.set("aprovado", data?.candidate.name ?? "Candidato");
+        params.set(
+          "destino",
+          result.data.status === "APPROVED" ? "FINAL" : (STAGE_LABEL[result.data.currentStage.type] ?? result.data.currentStage.type),
+        );
+        // Navegação completa: garante sair do candidato e recarregar a lista já com a nova etapa.
+        window.location.assign(`/recrutamento/vagas/${jobId}/candidaturas?${params.toString()}`);
+        return;
+      }
+      setMessage({ tone: "info", text });
       await fetchDetail();
       router.refresh();
       return;
@@ -195,6 +220,9 @@ export function ApplicationDetailView({
   const otherEvaluations = data.evaluations.filter((e) => e.type !== "RESUME_MATCH");
   const currentIndex = stages?.findIndex((s) => s.order === data.currentStage.order) ?? -1;
   const isLastStage = stages ? currentIndex === stages.length - 1 : false;
+  const nextStage = stages && currentIndex >= 0 ? stages[currentIndex + 1] : undefined;
+  const nextIsInterview = !!nextStage && INTERVIEW_STAGES.includes(nextStage.type);
+  const nextStageLabel = nextStage ? (STAGE_LABEL[nextStage.type] ?? nextStage.type) : "";
   const currentLabel = STAGE_LABEL[data.currentStage.type] ?? data.currentStage.type;
 
   return (
@@ -237,6 +265,11 @@ export function ApplicationDetailView({
                   <p className="text-display text-ink-900">{mainEvaluation.score}%</p>
                   <p className="text-body text-ink-600">compatibilidade geral</p>
                 </div>
+                {mainEvaluation.justification?.resumeReadable === false && (
+                  <p className="text-body text-ink-600">
+                    Não foi possível ler o texto do currículo; a nota considera só as tecnologias do perfil.
+                  </p>
+                )}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <h3 className="text-label text-ink-600">Encontradas</h3>
@@ -256,6 +289,28 @@ export function ApplicationDetailView({
                 <p className="text-body font-medium text-ink-900">
                   {EVALUATION_LABEL[evaluation.type] ?? evaluation.type}: {evaluation.score}%
                 </p>
+                {evaluation.type === "GITHUB_ANALYSIS" && evaluation.justification && (
+                  <div className="mt-2 space-y-2 text-body text-ink-600">
+                    {evaluation.justification.note && <p>{evaluation.justification.note}</p>}
+                    <p>
+                      {evaluation.justification.publicRepoCount ?? 0} repositórios públicos ·{" "}
+                      {evaluation.justification.activityLast90Days ?? 0} eventos recentes ·{" "}
+                      {evaluation.justification.followers ?? 0} seguidores
+                    </p>
+                    {(evaluation.justification.topLanguages ?? []).length > 0 && (
+                      <p>
+                        Linguagens:{" "}
+                        {(evaluation.justification.topLanguages ?? [])
+                          .map((lang) => `${lang.name} ${Math.round(lang.share * 100)}%`)
+                          .join(", ")}
+                      </p>
+                    )}
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <ChipList items={evaluation.justification.matched ?? []} tone="found" />
+                      <ChipList items={evaluation.justification.missing ?? []} tone="missing" />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </CardBody>
@@ -359,8 +414,16 @@ export function ApplicationDetailView({
         </CardBody>
       </Card>
 
+      <MeetingDialog
+        open={pending === "ADVANCE" && nextIsInterview}
+        title={`Agendar ${nextStageLabel}`}
+        description={`${data.candidate.name} vai para "${nextStageLabel}". Informe quando será a reunião; o candidato recebe a data e o link por e-mail.`}
+        loading={saving}
+        onCancel={() => setPending(null)}
+        onConfirm={(meeting) => handleDecision("ADVANCE", meeting)}
+      />
       <ConfirmDialog
-        open={pending === "ADVANCE"}
+        open={pending === "ADVANCE" && !nextIsInterview}
         title={isLastStage ? "Aprovar candidato?" : "Avançar candidato?"}
         description={
           isLastStage

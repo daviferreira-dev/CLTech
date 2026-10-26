@@ -43,12 +43,22 @@ test("ALREADY_APPLIED vira 'Candidatura enviada' com link para acompanhar", asyn
   await page.locator('a[href^="/vagas/"]').first().click();
   await expect(page).toHaveURL(/\/vagas\/.+/);
   const jobUrl = page.url();
-  await page.getByRole("button", { name: "Candidatar-se" }).click();
-  await expect(page).toHaveURL(/\/candidaturas\?nova=/);
 
-  await page.goto(jobUrl);
+  // Candidatura feita em outra aba depois que esta carregou: o botão ainda aparece e a API
+  // responde ALREADY_APPLIED.
+  await page.route("**/api/jobs/*/apply", (route) => route.fulfill(fulfillError(409, "ALREADY_APPLIED")));
   await page.getByRole("button", { name: "Candidatar-se" }).click();
   await expect(page.getByText("Candidatura enviada")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Acompanhar candidatura" })).toHaveAttribute("href", "/candidaturas");
+  await page.unroute("**/api/jobs/*/apply");
+
+  // Candidatura real: ao voltar à vaga, o acompanhamento já aparece no lugar do botão.
+  await page.goto(jobUrl);
+  await page.getByRole("button", { name: "Candidatar-se" }).click();
+  await expect(page).toHaveURL(/\/candidaturas\?nova=/);
+  await page.goto(jobUrl);
+  await expect(page.getByText("Candidatura enviada")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Candidatar-se" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Acompanhar candidatura" })).toHaveAttribute("href", "/candidaturas");
 });
 

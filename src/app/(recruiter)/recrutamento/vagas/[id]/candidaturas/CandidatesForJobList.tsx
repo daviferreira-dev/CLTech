@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { STAGE_LABEL } from "@/lib/processStages";
+import { STAGE_LABEL, RECOMMENDATION_THRESHOLD } from "@/lib/processStages";
 import { apiFetch } from "@/lib/api-client";
 import { APPLICATION_STATUS_BADGE, RECRUITER_APPLICATION_STATUS_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/cn";
@@ -18,6 +18,7 @@ import {
   EmptyState,
   ErrorState,
   Field,
+  Notice,
   Select,
   focusRing,
   matchVariant,
@@ -51,6 +52,9 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
   const searchParams = useSearchParams();
   // Recorte por etapa vem na URL (do painel, spec 004 US5.1) e é preservado no ida-e-volta.
   const stageFilter = searchParams.get("etapa") ?? "";
+  // Vindo da decisão no relatório: avisa quem foi aprovado e para onde seguiu.
+  const approvedName = searchParams.get("aprovado");
+  const approvedTo = searchParams.get("destino");
 
   const [items, setItems] = useState<JobApplicationListItem[] | null>(null);
   const [job, setJob] = useState<JobSummary | null>(null);
@@ -83,6 +87,13 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
 
   return (
     <>
+      {approvedName && (
+        <Notice tone="success" className="mb-4">
+          {approvedTo === "FINAL"
+            ? `${approvedName} foi aprovado(a) na última etapa.`
+            : `${approvedName} foi aprovado(a) e avançou para: ${approvedTo}.`}
+        </Notice>
+      )}
       {/* O título da vaga fica fixo no topo enquanto se percorre a lista (US5.2). */}
       <div className="-mx-4 bg-canvas/95 px-4 pb-2 pt-2 backdrop-blur sm:-mx-6 sm:px-6 md:sticky md:top-16 md:z-10">
         <PageHeader
@@ -163,6 +174,13 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   {item.matchScore !== null && <Badge variant={matchVariant(item.matchScore)}>{item.matchScore}% match</Badge>}
+                  {item.status === "IN_PROGRESS" && item.matchScore !== null && (
+                    item.matchScore >= RECOMMENDATION_THRESHOLD ? (
+                      <Badge variant="success">Recomendado</Badge>
+                    ) : (
+                      <Badge variant="warning">Não recomendado</Badge>
+                    )
+                  )}
                   <Badge variant={APPLICATION_STATUS_BADGE[item.status]}>{RECRUITER_APPLICATION_STATUS_LABEL[item.status]}</Badge>
                 </div>
               </Card>

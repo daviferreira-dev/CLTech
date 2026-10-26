@@ -8,6 +8,9 @@ import { recordDecision } from "@/server/applications/decision";
 import { recordDecisionSchema } from "@/lib/validation/applications";
 import { encrypt } from "@/server/crypto";
 
+// Entrevistas exigem data e link da reunião ao avançar para elas.
+const MEETING = { scheduledAt: new Date(Date.now() + 86_400_000).toISOString(), url: "https://meet.example.com/abc" };
+
 async function createPublishedJobWithTwoStages() {
   const recruiter = await prisma.user.create({
     data: { name: "Recrutador Teste", email: `recrutador-${Date.now()}-${Math.random()}@example.com`, role: "RECRUITER" },
@@ -64,7 +67,7 @@ describe("recordDecision nunca altera score (Princípio II, FR-050)", () => {
     const before = await prisma.evaluation.findFirstOrThrow({ where: { applicationId: applied.applicationId } });
     expect(before.score).toBe(100);
 
-    await recordDecision(applied.applicationId, recruiter.id, "ADVANCE");
+    await recordDecision(applied.applicationId, recruiter.id, "ADVANCE", MEETING);
 
     const after = await prisma.evaluation.findFirstOrThrow({ where: { applicationId: applied.applicationId } });
     expect(after.score).toBe(100);

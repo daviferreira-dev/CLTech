@@ -400,6 +400,9 @@ model ApplicationStageHistory {
   enteredAt       DateTime  @default(now())
   exitedAt        DateTime?
   decidedByUserId String?
+  /// Reunião marcada pelo recrutador ao mover o candidato para uma entrevista (RH/técnica).
+  meetingAt  DateTime?
+  meetingUrl String?
 
   application Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   stage       ProcessStage @relation(fields: [stageId], references: [id])

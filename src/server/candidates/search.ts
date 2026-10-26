@@ -26,7 +26,8 @@ export async function searchCandidates(query: string): Promise<CandidateSearchIt
       user: { select: { name: true, email: true } },
       applications: {
         include: { job: { select: { id: true, title: true, technologies: true } } },
-        orderBy: { appliedAt: "desc" },
+        // Maior match primeiro dentro do candidato; sem nota vai pro fim.
+        orderBy: [{ matchScore: { sort: "desc", nulls: "last" } }, { appliedAt: "desc" }],
       },
     },
   });
@@ -38,6 +39,10 @@ export async function searchCandidates(query: string): Promise<CandidateSearchIt
       application.job.technologies.some((tech) => tech.toLowerCase().includes(needle)),
     );
   });
+
+  // Candidatos ordenados pelo melhor match entre as candidaturas (já vem na primeira); sem nota no fim.
+  const bestScore = (candidate: (typeof matches)[number]) => candidate.applications[0]?.matchScore ?? -1;
+  matches.sort((a, b) => bestScore(b) - bestScore(a));
 
   return matches.map((candidate) => ({
     candidateId: candidate.id,

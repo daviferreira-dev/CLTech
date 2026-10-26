@@ -11,6 +11,8 @@ import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
 import { getCandidateSignals } from "@/server/matching/recompute";
 import { computeScore } from "@/server/matching/score";
+import { keepAlive } from "@/server/background";
+import { runStageAnalysis } from "@/server/applications/stage-analysis";
 
 export interface ApplyResult {
   applicationId: string;
@@ -96,6 +98,9 @@ export async function applyToJob(userId: string, jobId: string): Promise<ApplyRe
 
       return created;
     });
+
+    // Se o processo abre direto numa etapa de GitHub, atualiza a coleta e reavalia em segundo plano.
+    if (firstStage.type === "GITHUB_ANALYSIS") keepAlive(runStageAnalysis(application.id, firstStage.type));
 
     return {
       applicationId: application.id,

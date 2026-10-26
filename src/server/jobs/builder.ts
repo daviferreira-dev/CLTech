@@ -6,6 +6,7 @@ import { Errors, ApiError } from "@/lib/errors";
 import { recomputeJobMatchesForJob } from "@/server/matching/recompute";
 import type { CreateJobInput, UpdateJobInput, SetStagesInput } from "@/lib/validation/jobs";
 import { codeTestConfigSchema } from "@/lib/validation/challenges";
+import { MAX_POSITIONS, MIN_POSITIONS } from "@/lib/processStages";
 import { isCodeTestConfigComplete, MAX_TEST_RUNS, type CodeTestStageConfig } from "@/lib/codeTest";
 import { keepAlive } from "@/server/background";
 
@@ -56,6 +57,15 @@ async function normalizeCodeTestConfig(config: Record<string, unknown> | undefin
   return { challengeId, languages: chosen, timeLimitMinutes, maxTestRuns: MAX_TEST_RUNS };
 }
 
+/** Proposta Final: grava só `positions`, inteiro dentro dos limites (padrão 1). */
+function normalizeFinalOfferConfig(config: Record<string, unknown> | undefined): { positions: number } {
+  const raw = config?.positions ?? MIN_POSITIONS;
+  if (typeof raw !== "number" || !Number.isInteger(raw) || raw < MIN_POSITIONS || raw > MAX_POSITIONS) {
+    throw Errors.validation(`A quantidade de vagas da proposta final deve ser um inteiro entre ${MIN_POSITIONS} e ${MAX_POSITIONS}.`);
+  }
+  return { positions: raw };
+}
+
 export async function createJob(userId: string, input: CreateJobInput): Promise<RecruiterJobView> {
   const job = await prisma.job.create({
     data: { ...input, status: "DRAFT", createdById: userId },
@@ -86,12 +96,20 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
     throw Errors.conflict("JOB_LOCKED", "Vagas publicadas têm o pipeline travado.");
   }
 
+  if (input.stages.filter((stage) => stage.type === "FINAL_OFFER").length > 1) {
+    throw Errors.validation("A vaga pode ter só uma Proposta Final; use a quantidade de vagas para contratar mais de uma pessoa.");
+  }
+
   // Substituição completa (FR-039/042): sob Read Committed, dois PUT concorrentes
   // entrelaçam o delete de um com o insert do outro e colidem no índice único
   // (jobId, order). Serializable faz o banco recusar o entrelaçamento em vez de
   // gravar um pipeline pela metade.
   const configs = await Promise.all(
-    input.stages.map((stage) => (stage.type === "CODE_TEST" ? normalizeCodeTestConfig(stage.config) : (stage.config ?? {}))),
+    input.stages.map((stage) => {
+      if (stage.type === "CODE_TEST") return normalizeCodeTestConfig(stage.config);
+      if (stage.type === "FINAL_OFFER") return normalizeFinalOfferConfig(stage.config);
+      return stage.config ?? {};
+    }),
   );
 
   await prisma.$transaction(
