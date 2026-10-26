@@ -94,8 +94,8 @@ Instalação local por parte do candidato — a plataforma é 100% navegador.
 
 ## Arquitetura
 
-Três camadas, alinhadas às tecnologias exigidas na demanda (React, Node.js e Python para
-IA):
+Uma aplicação Next.js (React + Node.js) com o banco e o storage no Supabase. A triagem roda
+dentro da própria aplicação, e a execução de código fica numa máquina isolada (Judge0):
 
 ```mermaid
 flowchart LR
@@ -109,17 +109,13 @@ flowchart LR
         B["src/server<br/>regra de negócio"]
     end
 
-    subgraph ext ["Serviço separado"]
-        A["services/ai<br/>Python + FastAPI"]
-    end
-
     subgraph dados ["Persistência"]
         DB[("PostgreSQL")]
         S[("Storage privado<br/>currículos")]
     end
 
     GH{{"API do GitHub"}}
-    SB["Sandbox isolado<br/>execução de código"]
+    SB["Sandbox isolado (Judge0)<br/>execução de código"]
 
     C --> F
     R --> F
@@ -127,8 +123,7 @@ flowchart LR
     B --> DB
     B --> S
     B --> GH
-    B <--> A
-    A --> SB
+    B --> SB
 ```
 
 ### Responsabilidade de cada camada
@@ -136,8 +131,8 @@ flowchart LR
 | Camada | Responsabilidade |
 |---|---|
 | **`src/app`** | Telas do candidato e do recrutador, editor de código embutido, responsividade, e as rotas de API (casca fina sobre `src/server`) |
-| **`src/server`** | Regras de negócio, autenticação e sessão, controle de acesso por papel, criptografia, integração com o GitHub, persistência |
-| **`services/ai`** | Extração de texto do currículo, cálculo do score de compatibilidade, correção das submissões de código |
+| **`src/server`** | Regras de negócio, autenticação e sessão, controle de acesso por papel, criptografia, integração com o GitHub, triagem (extração do currículo e score de compatibilidade), correção das submissões de código, persistência |
+| **Sandbox (Judge0)** | Execução isolada do código dos candidatos, sem rede e com limite de tempo — máquina separada, prevista para a Sprint 3 |
 
 ### Decisões de arquitetura
 
@@ -171,7 +166,7 @@ não podem ser flexibilizados por prazo ou conveniência de demonstração:
 ```text
 CLTech/
 ├── prisma/            Schema, migrações e seed
-│   ├── schema.prisma  14 entidades — 9 ativas na Sprint 1, 5 modeladas para as seguintes
+│   ├── schema.prisma  21 tabelas (DER em docs/diagramas)
 │   ├── migrations/    Inclui a trigger de imutabilidade de Evaluation
 │   └── seed.ts        Vagas, pipelines e usuários de demonstração
 ├── src/
@@ -179,23 +174,16 @@ CLTech/
 │   ├── server/        Regra de negócio testável, sem HTTP
 │   ├── components/    UI reutilizável
 │   └── lib/           Utilitários compartilhados
-├── services/
-│   └── ai/            Serviço Python (FastAPI) — triagem por NLP e correção de código
+├── services/ai/       Reservado; não usado (a triagem roda em src/server — decisão D11)
 ├── tests/             Vitest (unidade/integração) e Playwright (ponta a ponta)
 ├── docs/              Documentação acadêmica
 │   ├── diagramas/     Casos de uso, classes, DER, sequência, atividade
 │   ├── prototipo/     Protótipo das interfaces e navegação
-│   └── entregas/      Checklists e evidências por sprint
+│   └── entregas/      ERS, relatórios e evidências por sprint
 ├── specs/             Especificação técnica (Spec Kit)
-│   └── 001-portal-candidatura/
-│       ├── spec.md               Requisitos da Sprint 1, sem detalhe técnico
-│       ├── plan.md               Plano de implementação
-│       ├── research.md           Decisões técnicas e alternativas descartadas
-│       ├── data-model.md         Entidades, relações e transições de estado
-│       ├── ers-divergences.md    Divergências em relação ao ERS, com prazo de ação
-│       ├── contracts/api.md      Contratos HTTP
-│       └── quickstart.md         Setup e roteiro de validação
-└── CLTech - ERS.docx  Especificação de Requisitos de Software
+│   ├── 001-portal-candidatura/      Sprint 1: spec, plano, decisões (research.md), divergências do ERS
+│   ├── 002-painel-de-recrutamento/  Sprint 2: contracts/api.md é a referência de todas as rotas
+│   └── 003 a 007                    Sprint 3: visual, fluxo, teste técnico, LGPD, perfil completo
 ```
 
 A separação entre `src/app/api/` (casca HTTP) e `src/server/` (regra de negócio) é
@@ -273,15 +261,18 @@ concorrente com Argon2id sem esgotar conexões.
 
 | Documento | Conteúdo |
 |---|---|
-| [ERS](CLTech%20-%20ERS.docx) | Especificação de Requisitos de Software completa |
+| [ERS v1.1 (PDF)](docs/entregas/CLTech%20-%20ERS%20v1.1.pdf) · [Word](docs/entregas/CLTech%20-%20ERS.docx) | Especificação de Requisitos de Software completa |
 | [Constituição](.specify/memory/constitution.md) | Princípios técnicos inegociáveis do projeto |
 | [Especificação da Sprint 1](specs/001-portal-candidatura/spec.md) | Histórias de usuário, requisitos e critérios de sucesso |
 | [Plano de implementação](specs/001-portal-candidatura/plan.md) | Contexto técnico e estrutura de código |
 | [Decisões técnicas](specs/001-portal-candidatura/research.md) | O que foi escolhido, o que foi descartado e por quê |
 | [Divergências do ERS](specs/001-portal-candidatura/ers-divergences.md) | Onde a implementação difere do ERS, por quê e o que precisa ser emendado |
 | [Modelo de dados](specs/001-portal-candidatura/data-model.md) | Entidades, relações e transições de estado |
-| [Contratos de API](specs/001-portal-candidatura/contracts/api.md) | Rotas HTTP e regras de erro |
-| [Diagramas](docs/diagramas/) | Casos de uso, classes, DER e sequência |
+| [Contratos de API](specs/002-painel-de-recrutamento/contracts/api.md) | As 32 rotas HTTP, corpos, respostas e códigos de erro |
+| [Diagramas](docs/diagramas/LEIA-ME.md) | Casos de uso, classes, DER, sequência e atividade |
+| [Relatório de testes da Sprint 2](docs/entregas/Sprint2_Relatorio_Testes.md) | Resultado das suítes e o que cada teste prova |
+| [Dificuldades e decisões da Sprint 2](docs/entregas/Sprint2_Dificuldades_Decisoes.md) | Decisões de arquitetura, problemas resolvidos e mudanças de escopo |
+| [Deploy na Vercel](docs/deploy-vercel.md) | Passo a passo para publicar a aplicação |
 | [Matriz de rastreabilidade](docs/rastreabilidade.md) | Requisito do ERS → spec → código → teste, com status |
 | [Manual de execução](docs/manual-execucao.md) | Instalação, configuração, demonstração e testes |
 
