@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logSafeError } from "@/lib/errors";
 import { decrypt } from "@/server/crypto";
-import { getSandbox, SandboxUnavailableError } from "@/server/sandbox";
+import { canGrade, getSandbox, SandboxUnavailableError } from "@/server/sandbox";
 import type { CaseOutcome } from "@/lib/codeTest";
 import { parseTestCases, type StoredTestCase } from "./challenges";
 import { keepAlive } from "@/server/background";
@@ -14,6 +14,15 @@ export const MAX_GRADING_RETRIES = 1;
 
 /** Submissão parada na fila há mais que isto é reenfileirada ao ser consultada. */
 const STALE_QUEUE_MS = 60_000;
+
+/** RUNNING há mais que isto = processo morreu no meio da correção; volta para a fila. */
+const STALE_RUNNING_MS = 15 * 60_000;
+
+/**
+ * Intervalo entre rodadas de correção de uma submissão em ERROR. ERROR não é final: quando o
+ * sandbox volta, a próxima consulta (candidato ou recrutador) reenfileira a submissão.
+ */
+export const ERROR_RETRY_MS = 5 * 60_000;
 
 export interface CaseResult {
   index: number;
@@ -60,7 +69,7 @@ export async function runCases(
 export async function gradeSubmission(submissionId: string): Promise<void> {
   const claimed = await prisma.codeSubmission.updateMany({
     where: { id: submissionId, executionStatus: "QUEUED" },
-    data: { executionStatus: "RUNNING" },
+    data: { executionStatus: "RUNNING", gradingStartedAt: new Date() },
   });
   if (claimed.count === 0) return;
 
@@ -82,7 +91,8 @@ export async function gradeSubmission(submissionId: string): Promise<void> {
       // Erro do código do candidato nunca chega aqui: vira resultado de caso, não falha técnica.
       if (retryCount >= MAX_GRADING_RETRIES) {
         await prisma.codeSubmission.update({ where: { id: submission.id }, data: { executionStatus: "ERROR" } });
-        // Notificação à equipe técnica: o log de erro é o canal monitorado (não há outro hoje).
+        // O log de erro é o único canal de alerta hoje. A submissão volta para a fila em
+        // ERROR_RETRY_MS, na próxima consulta com o sandbox disponível (resumeIfStale).
         console.error(`[code-test] Falha persistente do sandbox na submissão ${submission.id}: ${err.message}`);
         return;
       }
@@ -136,9 +146,43 @@ export async function waitForPendingGradings(): Promise<void> {
   while (inFlight.size > 0) await Promise.all([...inFlight]);
 }
 
-/** Reenfileira uma submissão esquecida na fila (processo que morreu antes de corrigir). */
-export function resumeIfStale(submission: { id: string; executionStatus: string; submittedAt: Date }, now = new Date()) {
-  if (submission.executionStatus === "QUEUED" && now.getTime() - submission.submittedAt.getTime() > STALE_QUEUE_MS) {
+/**
+ * Destrava submissões paradas, chamado sempre que alguém consulta a submissão:
+ *  - QUEUED esquecida na fila (processo morreu antes de começar);
+ *  - RUNNING há muito tempo (processo morreu no meio da correção);
+ *  - ERROR, depois de ERROR_RETRY_MS e só se o sandbox atual consegue rodar a linguagem.
+ * A troca de estado é condicional (updateMany com o estado esperado), então consultas
+ * simultâneas reenfileiram uma vez só.
+ */
+export function resumeIfStale(
+  submission: { id: string; executionStatus: string; submittedAt: Date; gradingStartedAt: Date | null; language: string },
+  now = new Date(),
+) {
+  const since = (date: Date) => now.getTime() - date.getTime();
+  const lastAttempt = submission.gradingStartedAt ?? submission.submittedAt;
+
+  if (submission.executionStatus === "QUEUED" && since(submission.submittedAt) > STALE_QUEUE_MS) {
     kickGrading(submission.id);
+  } else if (submission.executionStatus === "RUNNING" && since(lastAttempt) > STALE_RUNNING_MS) {
+    requeue(submission.id, "RUNNING", lastAttempt);
+  } else if (submission.executionStatus === "ERROR" && since(lastAttempt) > ERROR_RETRY_MS && canGrade(submission.language)) {
+    requeue(submission.id, "ERROR", lastAttempt);
   }
+}
+
+function requeue(submissionId: string, from: "RUNNING" | "ERROR", lastAttempt: Date): void {
+  const task = prisma.codeSubmission
+    .updateMany({
+      // gradingStartedAt na condição: se outra consulta já reenfileirou, esta não faz nada.
+      where: { id: submissionId, executionStatus: from, OR: [{ gradingStartedAt: lastAttempt }, { gradingStartedAt: null }] },
+      // Nova rodada ganha de novo a retentativa automática (RF06-E1 vale por rodada).
+      data: { executionStatus: "QUEUED", retryCount: 0 },
+    })
+    .then((res) => {
+      if (res.count > 0) kickGrading(submissionId);
+    })
+    .catch((err) => logSafeError(`code-test requeue ${submissionId}`, err));
+  inFlight.add(task);
+  void task.finally(() => inFlight.delete(task));
+  keepAlive(task);
 }

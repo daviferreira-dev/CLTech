@@ -14,7 +14,7 @@ export interface ApplicationDetail {
   currentStage: { type: string; order: number };
   status: "IN_PROGRESS" | "APPROVED" | "REJECTED" | "WITHDRAWN";
   evaluations: Array<{ type: string; score: number; justification: unknown }>;
-  externalAccounts: Array<{ provider: string; status: string }>;
+  externalAccounts: Array<{ provider: string; status: string; externalUsername: string | null; url: string | null; verified: boolean; verifiedName: string | null }>;
   resume: { id: string; originalFilename: string } | null;
   codeTest: CodeTestReport;
 }
@@ -49,6 +49,10 @@ export async function getApplicationDetail(applicationId: string): Promise<Appli
     externalAccounts: application.candidate.externalAccounts.map((account) => ({
       provider: account.provider,
       status: account.status,
+      externalUsername: account.externalUsername,
+      url: account.url,
+      verified: account.verifiedAt !== null,
+      verifiedName: account.verifiedName,
     })),
     resume: application.resume,
     codeTest: await getCodeTestReport(application.id),

@@ -7,6 +7,13 @@ import { signIn } from "next-auth/react";
 import { safeInternalPath } from "@/lib/safe-path";
 import { Button, Field, Input, textLinkClasses } from "@/components/ui";
 
+const OAUTH_ERROR: Record<string, string> = {
+  AccountNotLinked: "Essa conta do GitHub/LinkedIn já está vinculada a outro usuário da CLTech.",
+  OAuthAccountNotLinked: "Essa conta do GitHub/LinkedIn já está vinculada a outro usuário da CLTech.",
+  AccessDenied: "O acesso à conta não foi autorizado.",
+  OAuthCallbackError: "Não foi possível concluir o login com o provedor. Tente de novo.",
+};
+
 export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
   const searchParams = useSearchParams();
   // Só destino interno: callbackUrl vem da URL e não pode virar redirecionamento aberto.
@@ -14,7 +21,8 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  // Erros do OAuth chegam como ?error=<tipo> (Auth.js redireciona para pages.signIn).
+  const [error, setError] = useState<string | null>(() => OAUTH_ERROR[searchParams.get("error") ?? ""] ?? null);
   const [loading, setLoading] = useState(false);
 
   async function handleCredentialsSubmit(e: React.FormEvent) {

@@ -191,6 +191,8 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
       setNotice({ tone: "danger", text: NETWORK_ERROR_MESSAGE });
       return;
     }
+    // Sandbox fora do ar: o servidor salvou o rascunho antes de recusar a submissão.
+    if (result.error?.code === "SANDBOX_UNAVAILABLE") setSaveState("saved");
     await refresh();
     setNotice({ tone: result.error?.code === "ALREADY_SUBMITTED" || result.error?.code === "TIME_EXPIRED" ? "info" : "danger", text: result.error?.message ?? "Não foi possível submeter." });
   }

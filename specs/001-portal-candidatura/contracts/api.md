@@ -70,16 +70,29 @@ ocorreu ou falhou — o cliente exibe "Indisponível" (FR-012).
 ### `POST /api/me/external-accounts`
 **Body**: `{ provider: "GITHUB"|"LINKEDIN"|"LATTES", url? }` (FR-010).
 
-**202**: `{ status: "PENDING" }` — a coleta roda fora do request (R6). O cliente faz poll
-do `GET /api/me/profile`.
+GitHub e LinkedIn exigem posse da conta comprovada por OAuth: a tela chama
+`signIn("github"|"linkedin")` com o candidato logado, o Auth.js grava o vínculo em `Account`
+e volta para `/perfil?conectar=<PROVEDOR>`. Sem esse vínculo → **422 `OAUTH_REQUIRED`**.
+- GitHub: `url` é ignorada; o usuário sai do ID da conta autorizada (`GET /user/{id}`).
+- LinkedIn: `url` obrigatória (link público `linkedin.com/in/…`, que o OIDC não devolve).
+- Lattes: `url` obrigatória, sem OAuth (fica "não verificado").
+
+**400** se o link for inválido. O vínculo grava `verifiedAt` (OAuth) e `verifiedName` (nome
+devolvido pelo provedor), exibidos ao recrutador.
+
+**202**: GitHub → `{ status: "PENDING" }` — a coleta da API pública roda fora do request
+(R6) e o cliente faz poll do `GET /api/me/profile`. LinkedIn e Lattes → `{ status: "CONNECTED" }`:
+sem API aberta de leitura de perfil, o vínculo guarda o link validado (exibido ao recrutador).
 **Nunca retorna 5xx por falha do provedor externo**: a falha vira `status: "UNAVAILABLE"`
 com motivo (FR-012).
 
 ### `DELETE /api/me/external-accounts/{provider}`
-**204**. Vínculo passa a `DISCONNECTED` e os dados coletados deixam de ser exibidos.
+**204**. Vínculo passa a `DISCONNECTED`; no GitHub, o snapshot coletado é apagado e o match
+recalculado.
 
 ### `POST /api/me/external-accounts/{provider}/sync`
-Nova tentativa de coleta para um vínculo `UNAVAILABLE` (FR-013). **202** `{ status: "PENDING" }`.
+Nova tentativa de coleta para um vínculo `UNAVAILABLE` (FR-013). **202** com `{ status }`:
+`PENDING` (GitHub), `CONNECTED` (LinkedIn/Lattes) ou `UNAVAILABLE` (vínculo sem usuário salvo).
 
 ### `POST /api/me/resume`
 `multipart/form-data`, campo `file` (FR-014).

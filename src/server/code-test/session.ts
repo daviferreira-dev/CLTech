@@ -7,7 +7,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError, Errors } from "@/lib/errors";
 import { decrypt, encrypt } from "@/server/crypto";
-import { SandboxUnavailableError } from "@/server/sandbox";
+import { canGrade, SandboxUnavailableError } from "@/server/sandbox";
 import {
   DEFAULT_TIME_LIMIT_MINUTES,
   MAX_TEST_RUNS,
@@ -320,6 +320,16 @@ export async function submitChallenge(
   const ctx = await loadContext(userId, applicationId);
   await assertWritable(ctx, now);
   await writeDraft(ctx, input);
+  // Sem sandbox capaz de corrigir, a submissão só terminaria em ERROR: recusa e mantém o
+  // rascunho salvo. Se o prazo vencer antes, a submissão automática (TIME_EXPIRED) ainda
+  // acontece e é corrigida quando o sandbox voltar (resumeIfStale).
+  if (!canGrade(input.language)) {
+    throw new ApiError(
+      503,
+      "SANDBOX_UNAVAILABLE",
+      "O ambiente de correção está indisponível no momento. Seu código foi salvo; tente submeter de novo em instantes.",
+    );
+  }
   await createSubmission(ctx, "CANDIDATE");
   return buildView(ctx, now);
 }

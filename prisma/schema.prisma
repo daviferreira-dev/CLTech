@@ -31,10 +31,10 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts  Account[]
-  sessions  Session[]
-  candidate Candidate?
-  jobsCreated Job[] @relation("JobCreatedBy")
+  accounts       Account[]
+  sessions       Session[]
+  candidate      Candidate?
+  jobsCreated    Job[]                     @relation("JobCreatedBy")
   stageDecisions ApplicationStageHistory[] @relation("StageDecidedBy")
 
   @@map("User")
@@ -88,20 +88,20 @@ model VerificationToken {
 
 /// 🟢 Dados pessoais/profissionais de quem se candidata. 1:1 com User.
 model Candidate {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  phone     String? // cifrado AES-256-GCM (R4) — ver src/server/crypto.ts
-  city      String?
-  state     String?
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  phone        String? // cifrado AES-256-GCM (R4) — ver src/server/crypto.ts
+  city         String?
+  state        String?
   // Perfil profissional (spec 007, FR-701) — digitado ou pré-preenchido pelo currículo.
   headline     String? // título, ex.: "Dev Backend Pleno"
   summary      String?
   technologies String[] @default([]) // entram no match junto com o texto do currículo (FR-708)
   softSkills   String[] @default([])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   externalAccounts ExternalAccount[]
   githubProfile    GithubProfile?
   resumes          Resume[]
@@ -214,16 +214,21 @@ enum ExternalAccountStatus {
 
 /// 🟢 Vínculo de COLETA de portfólio — distinto de Account (que é autenticação).
 model ExternalAccount {
-  id                String                 @id @default(uuid())
+  id                String                @id @default(uuid())
   candidateId       String
   provider          ExternalProvider
   externalUsername  String?
-  url               String? // usado pelo Lattes (link manual)
-  status            ExternalAccountStatus  @default(PENDING)
+  url               String? // link público do perfil (LinkedIn/Lattes informados; GitHub derivado do login)
+  /// Quando o candidato provou ser dono da conta via OAuth. Null = não verificado (vínculo
+  /// antigo por link digitado, ou Lattes, que não tem OAuth).
+  verifiedAt        DateTime?
+  /// Nome devolvido pelo provedor no OAuth (ex.: nome no LinkedIn), mostrado ao recrutador.
+  verifiedName      String?
+  status            ExternalAccountStatus @default(PENDING)
   unavailableReason String?
   lastSyncedAt      DateTime?
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 
   candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
@@ -233,13 +238,13 @@ model ExternalAccount {
 
 /// 🟢 Snapshot da coleta do GitHub (R6). Substituído inteiro a cada sincronização.
 model GithubProfile {
-  id                  String   @id @default(uuid())
-  candidateId         String   @unique
-  publicRepoCount     Int      @default(0)
-  languages           Json // [{ name, bytes, share }]
-  activityLast90Days  Int      @default(0)
-  followers           Int      @default(0)
-  collectedAt         DateTime
+  id                 String   @id @default(uuid())
+  candidateId        String   @unique
+  publicRepoCount    Int      @default(0)
+  languages          Json // [{ name, bytes, share }]
+  activityLast90Days Int      @default(0)
+  followers          Int      @default(0)
+  collectedAt        DateTime
 
   candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
@@ -297,22 +302,22 @@ enum JobStatus {
 
 /// 🟢 Vaga publicada pela 3aq. RN002: só publica com technologies + minimumRequirements.
 model Job {
-  id                   String     @id @default(uuid())
-  title                String
-  description          String
-  company              String
-  location             String
-  workMode             WorkMode
-  seniority            Seniority
-  technologies         String[]
-  minimumRequirements  String
-  status               JobStatus  @default(DRAFT)
-  createdById          String
-  publishedAt          DateTime?
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
+  id                  String    @id @default(uuid())
+  title               String
+  description         String
+  company             String
+  location            String
+  workMode            WorkMode
+  seniority           Seniority
+  technologies        String[]
+  minimumRequirements String
+  status              JobStatus @default(DRAFT)
+  createdById         String
+  publishedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  createdBy    User          @relation("JobCreatedBy", fields: [createdById], references: [id])
+  createdBy    User           @relation("JobCreatedBy", fields: [createdById], references: [id])
   stages       ProcessStage[]
   applications Application[]
   jobMatches   JobMatch[]
@@ -337,10 +342,10 @@ model ProcessStage {
   order  Int
   config Json             @default("{}")
 
-  job                Job                        @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  applicationsAt     Application[]
-  stageHistoryAt     ApplicationStageHistory[]
-  codeDrafts         CodeDraft[]
+  job            Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicationsAt Application[]
+  stageHistoryAt ApplicationStageHistory[]
+  codeDrafts     CodeDraft[]
 
   @@unique([jobId, order])
   @@map("ProcessStage")
@@ -374,14 +379,14 @@ model Application {
   appliedAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
-  candidate     Candidate                  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  job           Job                        @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  resume        Resume                     @relation(fields: [resumeId], references: [id])
-  currentStage  ProcessStage               @relation(fields: [currentStageId], references: [id])
-  stageHistory  ApplicationStageHistory[]
-  evaluations   Evaluation[]
+  candidate       Candidate                 @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job             Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resume          Resume                    @relation(fields: [resumeId], references: [id])
+  currentStage    ProcessStage              @relation(fields: [currentStageId], references: [id])
+  stageHistory    ApplicationStageHistory[]
+  evaluations     Evaluation[]
   codeSubmissions CodeSubmission[]
-  codeDrafts    CodeDraft[]
+  codeDrafts      CodeDraft[]
 
   @@unique([candidateId, jobId])
   @@map("Application")
@@ -406,13 +411,13 @@ model ApplicationStageHistory {
 /// 🟡 Compatibilidade pré-calculada candidato×vaga, exibida na listagem (RF03).
 /// Nunca calculada no caminho da requisição (RNF03) — vazia na Sprint 1 (FR-026).
 model JobMatch {
-  id             String    @id @default(uuid())
-  candidateId    String
-  jobId          String
-  score          Int
-  justification  Json
-  computedAt     DateTime  @default(now())
-  staleSince     DateTime?
+  id            String    @id @default(uuid())
+  candidateId   String
+  jobId         String
+  score         Int
+  justification Json
+  computedAt    DateTime  @default(now())
+  staleSince    DateTime?
 
   candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
@@ -485,7 +490,7 @@ model Evaluation {
   version       Int            @default(1)
   createdAt     DateTime       @default(now())
 
-  application     Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  application     Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   codeSubmissions CodeSubmission[]
 
   @@map("Evaluation")
@@ -507,20 +512,21 @@ enum CodeSubmittedBy {
 
 /// 🟡 Submissão do teste técnico. Único por (applicationId, challengeId) = RN006 no banco.
 model CodeSubmission {
-  id              String              @id @default(uuid())
-  applicationId   String
-  challengeId     String
-  language        String
-  sourceCode      String // cifrado em repouso
-  submittedAt     DateTime            @default(now())
-  executionStatus CodeExecutionStatus @default(QUEUED)
-  retryCount      Int                 @default(0) // máximo 1 — RF06-E1
-  submittedBy     CodeSubmittedBy     @default(CANDIDATE)
-  evaluationId    String?
+  id               String              @id @default(uuid())
+  applicationId    String
+  challengeId      String
+  language         String
+  sourceCode       String // cifrado em repouso
+  submittedAt      DateTime            @default(now())
+  executionStatus  CodeExecutionStatus @default(QUEUED)
+  retryCount       Int                 @default(0) // máximo 1 — RF06-E1
+  gradingStartedAt DateTime? // última vez que a correção começou (QUEUED → RUNNING)
+  submittedBy      CodeSubmittedBy     @default(CANDIDATE)
+  evaluationId     String?
 
-  application Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  challenge   Challenge    @relation(fields: [challengeId], references: [id])
-  evaluation  Evaluation?  @relation(fields: [evaluationId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  challenge   Challenge   @relation(fields: [challengeId], references: [id])
+  evaluation  Evaluation? @relation(fields: [evaluationId], references: [id])
 
   @@unique([applicationId, challengeId])
   @@map("CodeSubmission")

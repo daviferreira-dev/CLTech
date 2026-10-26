@@ -8,10 +8,25 @@ if not exist .env (
 
 if not exist node_modules (
     echo Instalando dependencias...
-    call pnpm install
+    call pnpm install || goto :erro
 )
 
-call pnpm prisma generate
-call pnpm build && pnpm start
+rem Confere o .env antes de tudo: sem isso a aplicacao sobe e quebra no login/upload.
+node scripts\check-env.mjs || goto :erro
 
+call pnpm prisma generate || goto :erro
+rem Aplica migracoes pendentes e o seed (idempotente: rodar de novo nao duplica nada).
+call pnpm prisma migrate deploy || goto :erro
+call pnpm db:seed || goto :erro
+call pnpm build || goto :erro
+call pnpm start
+goto :fim
+
+:erro
+echo.
+echo Falhou. Corrija o problema acima e rode run.bat de novo.
+pause
+exit /b 1
+
+:fim
 endlocal

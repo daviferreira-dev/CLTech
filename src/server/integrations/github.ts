@@ -60,6 +60,16 @@ export async function collectGithubProfile(
 
     const languages = aggregateLanguagesByBytes(repos);
 
+    // A coleta leva alguns segundos: se nesse meio-tempo o candidato desconectou ou trocou
+    // de usuário, o resultado é descartado em vez de ressuscitar o vínculo.
+    const current = await prisma.externalAccount.findUnique({
+      where: { candidateId_provider: { candidateId, provider: "GITHUB" } },
+      select: { status: true, externalUsername: true },
+    });
+    if (!current || current.status === "DISCONNECTED" || current.externalUsername !== username) {
+      return { ok: false, reason: "Vínculo alterado durante a coleta" };
+    }
+
     await prisma.githubProfile.upsert({
       where: { candidateId },
       create: {
@@ -100,9 +110,30 @@ export async function collectGithubProfile(
   }
 }
 
+/**
+ * Login do GitHub a partir do ID numérico salvo pelo OAuth (Account.providerAccountId).
+ * GET /user/{id} é público — não precisa do access_token, que o adapter descarta (L1).
+ */
+export async function resolveGithubLogin(githubUserId: string): Promise<string | null> {
+  if (!/^\d+$/.test(githubUserId)) return null;
+  try {
+    const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+    const token = process.env.GITHUB_COLLECTION_TOKEN;
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetchWithTimeout(`${GITHUB_API}/user/${githubUserId}`, headers);
+    if (!res.ok) return null;
+    const { login } = (await res.json()) as { login?: string };
+    return login ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function fail(candidateId: string, reason: string): Promise<CollectResult> {
-  await prisma.externalAccount.update({
-    where: { candidateId_provider: { candidateId, provider: "GITHUB" } },
+  // updateMany: se o vínculo sumiu durante a coleta (conta excluída), não há o que marcar
+  // e a promise solta (fire-and-forget) não pode rejeitar.
+  await prisma.externalAccount.updateMany({
+    where: { candidateId, provider: "GITHUB" },
     data: { status: "UNAVAILABLE", unavailableReason: reason },
   });
   return { ok: false, reason };

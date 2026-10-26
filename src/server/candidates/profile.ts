@@ -20,6 +20,9 @@ export interface ProfileView {
     provider: "GITHUB" | "LINKEDIN" | "LATTES";
     status: "PENDING" | "CONNECTED" | "UNAVAILABLE" | "DISCONNECTED";
     externalUsername: string | null;
+    url: string | null;
+    verifiedAt: Date | null;
+    verifiedName: string | null;
     unavailableReason: string | null;
     lastSyncedAt: Date | null;
   }>;
@@ -67,6 +70,9 @@ export async function getProfile(userId: string): Promise<ProfileView> {
       provider: acc.provider,
       status: acc.status,
       externalUsername: acc.externalUsername,
+      url: acc.url,
+      verifiedAt: acc.verifiedAt,
+      verifiedName: acc.verifiedName,
       unavailableReason: acc.unavailableReason,
       lastSyncedAt: acc.lastSyncedAt,
     })),

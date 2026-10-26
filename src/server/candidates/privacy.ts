@@ -67,6 +67,8 @@ export async function exportMyData(userId: string) {
       provider: a.provider,
       username: a.externalUsername,
       url: a.url,
+      verifiedAt: a.verifiedAt,
+      verifiedName: a.verifiedName,
       status: a.status,
       lastSyncedAt: a.lastSyncedAt,
     })),

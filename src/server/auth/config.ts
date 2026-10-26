@@ -21,6 +21,7 @@ import LinkedIn from "next-auth/providers/linkedin";
 import * as argon2 from "argon2";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validation/auth";
+import { recordOAuthIdentity } from "@/server/candidates/external-accounts";
 
 const providers: NextAuthConfig["providers"] = [
   Credentials({
@@ -48,6 +49,10 @@ const providers: NextAuthConfig["providers"] = [
   GitHub({
     clientId: process.env.GITHUB_ID,
     clientSecret: process.env.GITHUB_SECRET,
+    // O GitHub passou a devolver `iss` no callback (RFC 9207). Sem issuer declarado, o
+    // @auth/core 0.37 compara com o placeholder "https://authjs.dev" e recusa o login
+    // ("unexpected iss response parameter value" → /api/auth/error?error=Configuration).
+    issuer: "https://github.com/login/oauth",
     // FR-003: vincula à conta existente pelo e-mail em vez de bloquear com
     // OAuthAccountNotLinked. Seguro aqui porque o GitHub verifica o e-mail.
     allowDangerousEmailAccountLinking: true,
@@ -89,10 +94,16 @@ export const authConfig: NextAuthConfig = {
     // Estratégia "jwt": o papel precisa ser carregado no token no login e
     // propagado para a sessão a cada leitura — não há mais `user` vindo do banco
     // em toda chamada de session().
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: "CANDIDATE" | "RECRUITER" | "ADMIN" }).role ?? "CANDIDATE";
+      }
+      // Login ou vínculo OAuth (com sessão ativa, o Auth.js vincula o provedor ao usuário
+      // logado): guarda o nome verificado pelo provedor para "Conecte suas contas".
+      if (user?.id && account && (account.type === "oauth" || account.type === "oidc")) {
+        const name = (profile?.name as string | null | undefined) ?? (profile?.login as string | undefined);
+        await recordOAuthIdentity(user.id, account.provider, name).catch(() => {});
       }
       return token;
     },

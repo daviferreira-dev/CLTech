@@ -8,7 +8,7 @@ import { encrypt } from "@/server/crypto";
 import { createJob, publishJob, setStages } from "@/server/jobs/builder";
 import { createChallenge, listChallenges, updateChallenge } from "@/server/code-test/challenges";
 import { openChallenge, runVisibleTests, saveDraft, submitChallenge } from "@/server/code-test/session";
-import { gradeSubmission, waitForPendingGradings } from "@/server/code-test/grading";
+import { ERROR_RETRY_MS, gradeSubmission, waitForPendingGradings } from "@/server/code-test/grading";
 import { getApplicationDetail } from "@/server/applications/detail";
 import { setSandboxForTesting, SandboxUnavailableError, type Sandbox, type SandboxRunInput } from "@/server/sandbox";
 import { MAX_TEST_RUNS } from "@/lib/codeTest";
@@ -22,10 +22,16 @@ const HIDDEN_MARKER = "SEGREDO_OCULTO_7f3a";
  */
 class FakeSandbox implements Sandbox {
   calls = 0;
+  /** Simula o sandbox inteiro fora do ar, para qualquer programa. */
+  down = false;
+  unsupported = new Set<string>();
+  supports(language: string) {
+    return !this.unsupported.has(language);
+  }
   async run({ sourceCode, stdin }: SandboxRunInput) {
     this.calls += 1;
     const program = sourceCode.trim();
-    if (program === "INFRA") throw new SandboxUnavailableError("fake fora do ar");
+    if (program === "INFRA" || this.down) throw new SandboxUnavailableError("fake fora do ar");
     if (program === "BROKEN") return { outcome: "COMPILE_ERROR" as const, stdout: "", diagnostics: "SyntaxError" };
     if (program === "SLOW") await new Promise((resolve) => setTimeout(resolve, 400));
     if (program === "SUM") {
@@ -306,6 +312,83 @@ describe("correção automática (US3, SC-201, SC-205)", () => {
 
     const report = (await getApplicationDetail(application.id)).codeTest;
     expect(report.status).toBe("FAILED");
+  });
+
+  it("ERROR volta para a fila quando o sandbox volta, depois do intervalo", async () => {
+    const { user, application, challenge } = await setup();
+    const key = { applicationId_challengeId: { applicationId: application.id, challengeId: challenge.id } };
+    await openChallenge(user.id, application.id);
+    sandbox.down = true;
+    await submitChallenge(user.id, application.id, { language: "python", sourceCode: "SUM" });
+    await waitForPendingGradings();
+    expect((await prisma.codeSubmission.findUniqueOrThrow({ where: key })).executionStatus).toBe("ERROR");
+
+    // Sandbox de volta, mas ainda dentro do intervalo: não tenta de novo.
+    sandbox.down = false;
+    const callsBefore = sandbox.calls;
+    expect((await getApplicationDetail(application.id)).codeTest.status).toBe("FAILED");
+    await waitForPendingGradings();
+    expect(sandbox.calls).toBe(callsBefore);
+
+    await prisma.codeSubmission.update({ where: key, data: { gradingStartedAt: new Date(Date.now() - ERROR_RETRY_MS - 1000) } });
+    await getApplicationDetail(application.id);
+    await waitForPendingGradings();
+
+    const report = (await getApplicationDetail(application.id)).codeTest;
+    expect(report.status).toBe("COMPLETED");
+    expect(await prisma.evaluation.count({ where: { applicationId: application.id, type: "CODE_TEST" } })).toBe(1);
+  });
+
+  it("ERROR não volta para a fila se o sandbox não roda a linguagem", async () => {
+    const { user, application, challenge } = await setup();
+    const key = { applicationId_challengeId: { applicationId: application.id, challengeId: challenge.id } };
+    await openChallenge(user.id, application.id);
+    sandbox.down = true;
+    await submitChallenge(user.id, application.id, { language: "python", sourceCode: "SUM" });
+    await waitForPendingGradings();
+
+    sandbox.down = false;
+    sandbox.unsupported.add("python");
+    await prisma.codeSubmission.update({ where: key, data: { gradingStartedAt: new Date(Date.now() - ERROR_RETRY_MS - 1000) } });
+    const callsBefore = sandbox.calls;
+    await getApplicationDetail(application.id);
+    await waitForPendingGradings();
+
+    expect(sandbox.calls).toBe(callsBefore);
+    expect((await prisma.codeSubmission.findUniqueOrThrow({ where: key })).executionStatus).toBe("ERROR");
+  });
+
+  it("RUNNING esquecida (processo morreu no meio) volta para a fila", async () => {
+    const { user, application, challenge } = await setup();
+    const key = { applicationId_challengeId: { applicationId: application.id, challengeId: challenge.id } };
+    await openChallenge(user.id, application.id);
+    sandbox.down = true;
+    await submitChallenge(user.id, application.id, { language: "python", sourceCode: "SUM" });
+    await waitForPendingGradings();
+
+    sandbox.down = false;
+    await prisma.codeSubmission.update({
+      where: key,
+      data: { executionStatus: "RUNNING", gradingStartedAt: new Date(Date.now() - 20 * 60_000) },
+    });
+    await openChallenge(user.id, application.id);
+    await waitForPendingGradings();
+
+    expect((await prisma.codeSubmission.findUniqueOrThrow({ where: key })).executionStatus).toBe("COMPLETED");
+  });
+
+  it("submeter sem sandbox capaz de corrigir é recusado e mantém o rascunho", async () => {
+    const { user, application, challenge } = await setup();
+    await openChallenge(user.id, application.id);
+    sandbox.unsupported.add("python");
+
+    await expectApiError(submitChallenge(user.id, application.id, { language: "python", sourceCode: "SUM" }), "SANDBOX_UNAVAILABLE");
+
+    const key = { applicationId_challengeId: { applicationId: application.id, challengeId: challenge.id } };
+    expect(await prisma.codeSubmission.findUnique({ where: key })).toBeNull();
+    const view = await openChallenge(user.id, application.id);
+    expect(view.draft.sourceCode).toBe("SUM");
+    expect(view.submission).toBeNull();
   });
 
   it("erro de compilação do candidato vira nota, sem consumir retentativa", async () => {

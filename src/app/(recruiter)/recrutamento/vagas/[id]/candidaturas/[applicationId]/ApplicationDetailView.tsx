@@ -42,7 +42,14 @@ interface ApplicationDetailData {
   currentStage: { type: string; order: number };
   status: "IN_PROGRESS" | "APPROVED" | "REJECTED" | "WITHDRAWN";
   evaluations: EvaluationView[];
-  externalAccounts: Array<{ provider: string; status: string }>;
+  externalAccounts: Array<{
+    provider: string;
+    status: string;
+    externalUsername: string | null;
+    url: string | null;
+    verified: boolean;
+    verifiedName: string | null;
+  }>;
   resume: { id: string; originalFilename: string } | null;
   codeTest: CodeTestReport;
 }
@@ -278,10 +285,31 @@ export function ApplicationDetailView({
                 <ul className="space-y-2">
                   {data.externalAccounts.map((account) => (
                     <li key={account.provider} className="flex items-center justify-between gap-2 text-body text-ink-900">
-                      <span>{PROVIDER_LABEL[account.provider] ?? account.provider}</span>
-                      <Badge variant={account.status === "CONNECTED" ? "success" : account.status === "UNAVAILABLE" ? "warning" : "muted"}>
-                        {ACCOUNT_STATUS_LABEL[account.status] ?? account.status}
-                      </Badge>
+                      <span className="min-w-0 break-all">
+                        {PROVIDER_LABEL[account.provider] ?? account.provider}
+                        {/* Vínculo desfeito pelo candidato não expõe mais o perfil. */}
+                        {account.status !== "DISCONNECTED" && account.url && (
+                          <>
+                            {" · "}
+                            <a href={account.url} target="_blank" rel="noopener noreferrer" className={textLinkClasses}>
+                              {account.externalUsername ?? "ver perfil"}
+                            </a>
+                          </>
+                        )}
+                        {account.status !== "DISCONNECTED" && (
+                          <span className="block text-label text-ink-600">
+                            {account.verified
+                              ? `Conta ${account.verifiedName ? `de ${account.verifiedName} ` : ""}confirmada por login no ${PROVIDER_LABEL[account.provider] ?? account.provider}.`
+                              : "Link informado pelo candidato, sem verificação."}
+                          </span>
+                        )}
+                      </span>
+                      <span className="flex shrink-0 gap-2">
+                        {account.status !== "DISCONNECTED" && account.verified && <Badge variant="success">Verificado</Badge>}
+                        <Badge variant={account.status === "CONNECTED" ? "success" : account.status === "UNAVAILABLE" ? "warning" : "muted"}>
+                          {ACCOUNT_STATUS_LABEL[account.status] ?? account.status}
+                        </Badge>
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -395,8 +423,9 @@ function CodeTestCard({ report }: { report: CodeTestReport }) {
       // NFR-202: falha persistente do sandbox fica visível ao recrutador, sem quebrar a tela.
       body = (
         <Notice tone="warning" title="Correção automática falhou">
-          O ambiente de execução falhou duas vezes nesta submissão e a equipe técnica foi notificada. O código está guardado e
-          será corrigido quando o ambiente voltar.
+          O ambiente de execução falhou nesta submissão. O código está guardado e a correção é tentada de novo
+          automaticamente (no máximo a cada 5 minutos) sempre que esta página ou a do candidato é aberta com o ambiente
+          disponível.
         </Notice>
       );
       break;

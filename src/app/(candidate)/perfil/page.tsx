@@ -23,6 +23,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <ProfileForm
         next={safeInternalPath(params.next)}
         resumeParse={currentResume ? { resumeId: currentResume.id, parseStatus: currentResume.parseStatus } : null}
+        returningFrom={params.conectar === "GITHUB" || params.conectar === "LINKEDIN" ? params.conectar : null}
+        linkedInEnabled={Boolean(process.env.LINKEDIN_ID && process.env.LINKEDIN_SECRET)}
       />
       <div className="mt-6">
         <PrivacyCard />

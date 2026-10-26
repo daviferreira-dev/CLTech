@@ -75,7 +75,9 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 // RF02 / FR-010
 export const connectExternalAccountSchema = z.object({
   provider: z.enum(["GITHUB", "LINKEDIN", "LATTES"]),
-  url: z.string().url().optional(), // usado pelo Lattes, que é link manual
+  // Link do perfil ou só o usuário — normalizado por lib/external-profiles.ts. Opcional só
+  // no GitHub, que cai no login OAuth quando vazio.
+  url: z.string().trim().max(300).optional(),
 });
 
 export type ConnectExternalAccountInput = z.infer<typeof connectExternalAccountSchema>;
