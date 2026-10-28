@@ -148,7 +148,7 @@ function ChallengeForm({ onCancel, onCreated }: { onCancel: () => void; onCreate
                     type="checkbox"
                     checked={languages.includes(language)}
                     onChange={(e) => setLanguages((prev) => (e.target.checked ? [...prev, language] : prev.filter((l) => l !== language)))}
-                    className="h-4 w-4 accent-brand-900"
+                    className="h-4 w-4 accent-primary-600"
                   />
                   {LANGUAGE_LABEL[language]}
                 </label>
@@ -164,7 +164,7 @@ function ChallengeForm({ onCancel, onCreated }: { onCancel: () => void; onCreate
                   <p className="text-body font-medium text-ink-900">Caso {index + 1}</p>
                   <div className="flex items-center gap-3">
                     <label className="flex items-center gap-2 text-body text-ink-900">
-                      <input type="checkbox" checked={c.hidden} onChange={(e) => updateCase(index, { hidden: e.target.checked })} className="h-4 w-4 accent-brand-900" />
+                      <input type="checkbox" checked={c.hidden} onChange={(e) => updateCase(index, { hidden: e.target.checked })} className="h-4 w-4 accent-primary-600" />
                       Oculto
                     </label>
                     <Button variant="ghost" size="sm" onClick={() => setCases((prev) => prev.filter((_, i) => i !== index))} disabled={cases.length <= 1}>

@@ -105,7 +105,7 @@ export function ExperienceEditor({ items, onChange }: { items: ExperienceForm[];
                 type="checkbox"
                 checked={item.isCurrent}
                 onChange={(e) => set({ isCurrent: e.target.checked, endDate: e.target.checked ? "" : item.endDate })}
-                className="h-4 w-4 accent-brand-900"
+                className="h-4 w-4 accent-primary-600"
               />
               Trabalho aqui atualmente
             </label>
@@ -162,7 +162,7 @@ export function EducationEditor({ items, onChange }: { items: EducationForm[]; o
                 type="checkbox"
                 checked={item.inProgress}
                 onChange={(e) => set({ inProgress: e.target.checked })}
-                className="h-4 w-4 accent-brand-900"
+                className="h-4 w-4 accent-primary-600"
               />
               Em andamento
             </label>

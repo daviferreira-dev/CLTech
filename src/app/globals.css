@@ -11,23 +11,29 @@
 :root {
   color-scheme: light;
 
-  --brand-900: 15 23 42; /* #0F172A */
-  --brand-700: 30 41 59; /* #1E293B */
-  --brand-100: 226 232 240; /* #E2E8F0 */
-  --accent-600: 5 150 105; /* #059669 */
-  --accent-100: 209 250 229; /* #D1FAE5 */
+  /* Identidade CLTech v2 (DESIGN.md): navy + azul royal + verde-água do logo. */
+  --brand-900: 15 31 57; /* #0F1F39 navy — marca, títulos, painel escuro */
+  --brand-700: 27 45 79; /* #1B2D4F */
+  --brand-100: 227 232 239; /* #E3E8EF bordas e divisores */
+  --primary-600: 59 104 247; /* #3B68F7 azul royal — ação primária (4.7:1 com branco) */
+  --primary-700: 44 90 233; /* #2C5AE9 hover, links (5.6:1 em branco) */
+  --primary-100: 232 238 254; /* #E8EEFE fundo de seleção */
+  --accent-600: 57 201 165; /* #39C9A5 verde-água — só marcas (barra, ponto, check) */
+  --accent-700: 17 128 106; /* #11806A texto de aprovado (4.9:1) */
+  --accent-100: 227 247 241; /* #E3F7F1 fundo de selo positivo */
+  --accent-900: 11 85 69; /* #0B5545 texto sobre accent-100 */
   --surface: 255 255 255; /* #FFFFFF */
-  --canvas: 248 250 252; /* #F8FAFC */
-  --ink-900: 15 23 42; /* #0F172A */
-  --ink-600: 71 85 105; /* #475569 */
-  --ink-400: 148 163 184; /* #94A3B8 */
-  --danger-600: 220 38 38; /* #DC2626 */
-  --warning-500: 217 119 6; /* #D97706 */
+  --canvas: 238 243 249; /* #EEF3F9 fundo azulado da moldura */
+  --ink-900: 15 31 57; /* #0F1F39 */
+  --ink-600: 91 101 119; /* #5B6577 (5.9:1) */
+  --ink-400: 105 114 131; /* #697283 (4.8:1) */
+  --danger-600: 209 52 58; /* #D1343A */
+  --warning-500: 154 90 0; /* #9A5A00 (texto, 5.3:1) */
 
-  --radius-field: 8px;
-  --radius-card: 12px;
-  --shadow-header: 0 1px 2px rgb(15 23 42 / 0.06);
-  --shadow-popover: 0 8px 24px rgb(15 23 42 / 0.12);
+  --radius-field: 10px;
+  --radius-card: 14px;
+  --shadow-header: 0 1px 0 rgb(15 31 57 / 0.06);
+  --shadow-popover: 0 12px 32px rgb(15 31 57 / 0.14);
 }
 
 body {
@@ -46,5 +52,5 @@ body {
 }
 
 dialog::backdrop {
-  background: rgb(var(--brand-900) / 0.4);
+  background: rgb(var(--brand-900) / 0.5);
 }

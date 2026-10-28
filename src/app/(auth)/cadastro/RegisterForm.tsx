@@ -6,7 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { registerSchema } from "@/lib/validation/auth";
 import { safeInternalPath } from "@/lib/safe-path";
 import { NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
-import { Button, Field, Input, textLinkClasses } from "@/components/ui";
+import { signIn } from "next-auth/react";
+import { cn } from "@/lib/cn";
+import { Button, Field, GitHubIcon, Input, focusRing, textLinkClasses } from "@/components/ui";
 
 type FieldName = "name" | "email" | "password";
 
@@ -77,9 +79,27 @@ export function RegisterForm() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1 text-center">
-        <h1 className="text-h2 text-ink-900">Criar conta</h1>
+      <div className="space-y-1">
+        <h1 className="font-display text-display text-ink-900">Criar conta</h1>
         <p className="text-body text-ink-600">Candidate-se a vagas e acompanhe cada etapa do processo.</p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => signIn("github", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}
+        className={cn(
+          "flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-[#181717] text-body font-semibold text-surface transition-colors hover:bg-black",
+          focusRing,
+        )}
+      >
+        <GitHubIcon />
+        Criar conta com GitHub
+      </button>
+
+      <div className="flex items-center gap-3 text-label font-normal text-ink-600">
+        <span className="h-px flex-1 bg-brand-100" />
+        ou com e-mail
+        <span className="h-px flex-1 bg-brand-100" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>

@@ -467,7 +467,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                         <span className="flex min-w-0 items-center gap-3">
                           <span
                             aria-hidden="true"
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-900 text-label text-surface"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-600 text-label text-surface"
                           >
                             {index + 1}
                           </span>
@@ -700,7 +700,7 @@ function CodeTestConfigPanel({
                   onChange={(e) =>
                     setLanguages((prev) => (e.target.checked ? [...prev, language] : prev.filter((l) => l !== language)))
                   }
-                  className="h-4 w-4 accent-brand-900"
+                  className="h-4 w-4 accent-primary-600"
                 />
                 {LANGUAGE_LABEL[language] ?? language}
               </label>

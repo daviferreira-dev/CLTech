@@ -60,7 +60,7 @@ export function FileDropzone({
         }}
         className={cn(
           "flex cursor-pointer flex-col items-center justify-center gap-1 rounded-card border-2 border-dashed px-4 py-8 text-center transition-colors",
-          dragging ? "border-brand-900 bg-canvas" : "border-brand-100 bg-surface hover:border-ink-400",
+          dragging ? "border-primary-600 bg-primary-100" : "border-brand-100 bg-surface hover:border-ink-400",
           error && "border-danger-600/60",
           (disabled || busy) && "cursor-not-allowed opacity-50",
           focusRing,

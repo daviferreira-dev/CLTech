@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
 import { PROVIDER_LABEL } from "@/lib/labels";
+import { cn } from "@/lib/cn";
 import { parseLattesProfile, parseLinkedinProfile } from "@/lib/external-profiles";
 import { signIn } from "next-auth/react";
 import type { ProfileDetails } from "@/lib/profile-details";
 import type { ProfileDraft } from "@/lib/profile-form";
 import { ProfileDetailsForm } from "./ProfileDetailsForm";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ProviderIcon } from "@/components/ui/BrandIcons";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import {
   Avatar,
@@ -383,8 +385,14 @@ export function ProfileForm({
               return (
                 <li key={provider} className="flex flex-col gap-3 rounded-card border border-brand-100 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-field bg-canvas text-body font-bold text-ink-900">
-                      {PROVIDER_LABEL[provider]?.[0]}
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-field text-body font-bold",
+                        provider === "GITHUB" ? "bg-[#181717] text-surface" : "bg-canvas text-ink-900",
+                      )}
+                    >
+                      {provider === "LATTES" ? PROVIDER_LABEL[provider]?.[0] : <ProviderIcon provider={provider} />}
                     </span>
                     <div className="min-w-0 space-y-1">
                       <p className="text-body font-medium text-ink-900">

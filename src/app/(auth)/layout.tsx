@@ -1,21 +1,48 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { focusRing } from "@/components/ui";
+import { Logo, focusRing } from "@/components/ui";
 
-// Telas de autenticação: painel centralizado com a marca no topo (spec 003 US6).
+// Telas de autenticação: painel da marca (navy) à esquerda e formulário à direita.
+// No celular o painel some e a marca fica acima do formulário (DESIGN.md, "Acesso").
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main id="conteudo" className="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
-      <Link href="/" className={cn("mb-6 flex items-center gap-2 rounded-field", focusRing)}>
-        <span
-          aria-hidden="true"
-          className="flex h-10 w-10 items-center justify-center rounded-field bg-brand-900 text-body font-bold text-surface"
-        >
-          CL
-        </span>
-        <span className="text-h2 font-bold text-brand-900">CLTech</span>
-      </Link>
-      <div className="w-full max-w-sm rounded-card border border-brand-100 bg-surface p-6 sm:p-8">{children}</div>
+    <main id="conteudo" className="flex min-h-dvh bg-canvas">
+      <section
+        aria-label="Sobre a CLTech"
+        className="m-2 hidden flex-1 flex-col justify-between gap-10 rounded-card bg-brand-900 p-10 text-surface lg:flex xl:p-14"
+      >
+        <Link href="/" className={cn("self-start rounded-field", focusRing)}>
+          <Logo size={32} tone="light" />
+        </Link>
+        <div className="max-w-lg space-y-4">
+          <p className="font-display text-[44px] font-semibold leading-[48px] tracking-tight">
+            Contrate pelo código, não pelo currículo bonito.
+          </p>
+          <p className="text-[16px] leading-6 text-brand-100">
+            Triagem automática do currículo, teste de código corrigido na hora e análise do GitHub. A decisão de quem avança
+            continua com a equipe.
+          </p>
+        </div>
+        <ul className="grid max-w-lg grid-cols-3 gap-3 text-label" aria-label="Como a seleção funciona">
+          {[
+            ["Currículo", "match com a vaga"],
+            ["Código", "corrigido na hora"],
+            ["GitHub", "portfólio verificado"],
+          ].map(([title, text]) => (
+            <li key={title} className="rounded-field bg-brand-700 p-3">
+              <span className="block font-display text-h3 text-surface">{title}</span>
+              <span className="font-normal text-brand-100">{text}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
+        <Link href="/" className={cn("mb-8 rounded-field lg:hidden", focusRing)}>
+          <Logo size={36} />
+        </Link>
+        <div className="w-full max-w-sm">{children}</div>
+      </div>
     </main>
   );
 }

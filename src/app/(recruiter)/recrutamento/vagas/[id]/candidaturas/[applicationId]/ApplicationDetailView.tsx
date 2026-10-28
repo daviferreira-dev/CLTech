@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { ProfileDetails } from "@/lib/profile-details";
 import { ProfessionalProfileCard } from "./ProfessionalProfileCard";
 import { MeetingDialog } from "./MeetingDialog";
+import { ProviderIcon } from "@/components/ui/BrandIcons";
 import {
   Badge,
   Breadcrumb,
@@ -340,7 +341,11 @@ export function ApplicationDetailView({
                 <ul className="space-y-2">
                   {data.externalAccounts.map((account) => (
                     <li key={account.provider} className="flex items-center justify-between gap-2 text-body text-ink-900">
-                      <span className="min-w-0 break-all">
+                      <span className="flex min-w-0 items-start gap-3 break-all">
+                        <span aria-hidden="true" className={account.provider === "GITHUB" ? "mt-0.5 shrink-0 text-ink-900" : "mt-0.5 shrink-0"}>
+                          <ProviderIcon provider={account.provider} />
+                        </span>
+                        <span className="min-w-0">
                         {PROVIDER_LABEL[account.provider] ?? account.provider}
                         {/* Vínculo desfeito pelo candidato não expõe mais o perfil. */}
                         {account.status !== "DISCONNECTED" && account.url && (
@@ -358,6 +363,7 @@ export function ApplicationDetailView({
                               : "Link informado pelo candidato, sem verificação."}
                           </span>
                         )}
+                        </span>
                       </span>
                       <span className="flex shrink-0 gap-2">
                         {account.status !== "DISCONNECTED" && account.verified && <Badge variant="success">Verificado</Badge>}

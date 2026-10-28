@@ -12,3 +12,4 @@ export { Avatar } from "./Avatar";
 export { EmptyState, ErrorState, Skeleton, CardListSkeleton, Notice } from "./States";
 export { Breadcrumb, Pagination, StageTrail } from "./Navigation";
 export type { Crumb, StageTrailItem } from "./Navigation";
+export { GitHubIcon, LinkedInIcon, ProviderIcon, Logo } from "./BrandIcons";

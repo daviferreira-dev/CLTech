@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/cn";
-import { Avatar, ButtonLink, focusRing } from "@/components/ui";
+import { Avatar, ButtonLink, Logo, focusRing } from "@/components/ui";
 import type { HeaderRole, HeaderUser, NavItem } from "./nav";
 
 const ROLE_LABEL: Record<HeaderRole, string> = {
@@ -63,8 +63,7 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
             aria-current={active ? "page" : undefined}
             className={cn(
               "block rounded-field px-3 py-2 text-body font-medium transition-colors",
-              active ? "bg-brand-100/70 text-ink-900" : "text-ink-600 hover:bg-canvas hover:text-ink-900",
-              layout === "row" && active && "shadow-[inset_0_-2px_0] shadow-brand-900",
+              active ? "bg-primary-100 text-primary-700" : "text-ink-600 hover:bg-canvas hover:text-ink-900",
               focusRing,
             )}
           >
@@ -78,10 +77,7 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
     <header className="sticky top-0 z-30 border-b border-brand-100 bg-surface shadow-header">
       <div className="mx-auto flex h-16 max-w-content items-center gap-4 px-4 sm:px-6">
         <Link href={homeHref} className={cn("flex shrink-0 items-center gap-2 rounded-field", focusRing)}>
-          <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-field bg-brand-900 text-label font-bold text-surface">
-            CL
-          </span>
-          <span className="text-h3 font-bold text-brand-900">CLTech</span>
+          <Logo size={30} />
         </Link>
 
         <nav aria-label="Navegação principal" className="hidden md:block">
@@ -100,7 +96,7 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
                 type="search"
                 placeholder="Buscar vagas…"
                 className={cn(
-                  "h-9 w-56 rounded-field border border-brand-100 bg-canvas px-3 text-body text-ink-900 placeholder:text-ink-400",
+                  "h-9 w-56 rounded-full border border-brand-100 bg-canvas px-4 text-body text-ink-900 placeholder:text-ink-400",
                   focusRing,
                   "focus-visible:ring-offset-0",
                 )}

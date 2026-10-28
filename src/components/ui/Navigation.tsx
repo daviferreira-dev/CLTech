@@ -151,8 +151,8 @@ export function StageTrail({
             <span
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-label",
-                state === "done" && "border-accent-600/40 bg-accent-100 text-ink-900",
-                state === "current" && "border-brand-900 bg-brand-900 text-surface",
+                state === "done" && "border-accent-600/50 bg-accent-100 text-accent-900",
+                state === "current" && "border-primary-600 bg-primary-600 text-surface",
                 state === "todo" && "border-brand-100 bg-surface text-ink-600",
                 state === "neutral" && "border-brand-100 bg-canvas text-ink-900",
               )}

@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { safeInternalPath } from "@/lib/safe-path";
-import { Button, Field, Input, textLinkClasses } from "@/components/ui";
+import { cn } from "@/lib/cn";
+import { Button, Field, GitHubIcon, Input, LinkedInIcon, focusRing, textLinkClasses } from "@/components/ui";
+
+const oauthClasses = cn(
+  "flex h-11 w-full items-center justify-center gap-2.5 rounded-full text-body font-semibold transition-colors",
+  focusRing,
+);
 
 const OAUTH_ERROR: Record<string, string> = {
   AccountNotLinked: "Essa conta do GitHub/LinkedIn já está vinculada a outro usuário da CLTech.",
@@ -55,11 +61,41 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1 text-center">
-        <h1 className="text-h2 text-ink-900">Entrar</h1>
+      <div className="space-y-1">
+        <h1 className="font-display text-display text-ink-900">Entrar</h1>
         <p className="text-body text-ink-600">
           {callbackUrl ? "Entre para continuar de onde parou." : "Acesse sua conta para acompanhar seus processos."}
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => signIn("github", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}
+          className={cn(oauthClasses, "bg-[#181717] text-surface hover:bg-black")}
+        >
+          <GitHubIcon />
+          Entrar com GitHub
+        </button>
+        {linkedInEnabled && (
+          <button
+            type="button"
+            onClick={() => signIn("linkedin", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}
+            className={cn(oauthClasses, "border border-ink-400/50 bg-surface text-ink-900 hover:bg-canvas")}
+          >
+            <LinkedInIcon className="text-[#0A66C2]" />
+            Entrar com LinkedIn
+          </button>
+        )}
+        <p className="pt-1 text-center text-label font-normal text-ink-600">
+          Entrando pelo GitHub, seu portfólio já chega verificado para o recrutador.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3 text-label font-normal text-ink-600">
+        <span className="h-px flex-1 bg-brand-100" />
+        ou com e-mail
+        <span className="h-px flex-1 bg-brand-100" />
       </div>
 
       <form onSubmit={handleCredentialsSubmit} className="space-y-4">
@@ -76,27 +112,10 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
           </p>
         )}
 
-        <Button type="submit" loading={loading} className="w-full">
+        <Button type="submit" loading={loading} className="h-11 w-full">
           {loading ? "Entrando…" : "Entrar"}
         </Button>
       </form>
-
-      <div className="flex items-center gap-3 text-label font-normal text-ink-600">
-        <span className="h-px flex-1 bg-brand-100" />
-        ou
-        <span className="h-px flex-1 bg-brand-100" />
-      </div>
-
-      <div className="space-y-2">
-        <Button variant="secondary" className="w-full" onClick={() => signIn("github", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}>
-          Entrar com GitHub
-        </Button>
-        {linkedInEnabled && (
-          <Button variant="secondary" className="w-full" onClick={() => signIn("linkedin", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}>
-            Entrar com LinkedIn
-          </Button>
-        )}
-      </div>
 
       <p className="text-center text-body text-ink-600">
         Ainda não tem conta?{" "}

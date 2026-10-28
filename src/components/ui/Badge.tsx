@@ -7,8 +7,8 @@ export type BadgeVariant = "match" | "success" | "warning" | "neutral" | "danger
 // Texto sempre em ink-900 sobre fundo claro: accent-600 e warning-500 não atingem 4.5:1 em
 // 12px sobre branco, então a cor do sinal vai no fundo/borda/ponto, não no texto (AA).
 const VARIANT: Record<BadgeVariant, string> = {
-  match: "border-accent-600/40 bg-accent-100 text-ink-900",
-  success: "border-accent-600/40 bg-accent-100 text-ink-900",
+  match: "border-accent-600/50 bg-accent-100 text-accent-900",
+  success: "border-accent-600/50 bg-accent-100 text-accent-900",
   warning: "border-warning-500/50 bg-warning-500/10 text-ink-900",
   neutral: "border-brand-100 bg-canvas text-ink-900",
   danger: "border-danger-600/40 bg-danger-600/10 text-ink-900",
@@ -35,7 +35,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-label",
+        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-label font-semibold",
         VARIANT[variant],
         className,
       )}

@@ -58,7 +58,7 @@ export function Tabs({
               }}
               className={cn(
                 "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-body font-medium transition-colors",
-                selected ? "border-brand-900 text-ink-900" : "border-transparent text-ink-600 hover:text-ink-900",
+                selected ? "border-primary-600 text-ink-900" : "border-transparent text-ink-600 hover:text-ink-900",
                 focusRing,
               )}
             >
