@@ -9,7 +9,7 @@ const display = Outfit({ subsets: ["latin"], weight: ["500", "600", "700"], vari
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "CLTech — Portal de Recrutamento",
+  title: "CLTech | Portal de Recrutamento",
   description: "Plataforma de Seleção Automatizada e Inteligente de Talentos da 3aq Tecnologia.",
 };
 
