@@ -77,6 +77,18 @@ export class Judge0Sandbox implements Sandbox {
     return language in JUDGE0_LANGUAGE_ID;
   }
 
+  /**
+   * Judge0 próprio autentica por X-Auth-Token; o Judge0 CE hospedado no RapidAPI
+   * (judge0-ce.p.rapidapi.com) usa a chave da conta RapidAPI e o host nos cabeçalhos dele.
+   */
+  private authHeaders(): Record<string, string> {
+    if (!this.token) return {};
+    const host = new URL(this.baseUrl).host;
+    return host.endsWith(".rapidapi.com")
+      ? { "X-RapidAPI-Key": this.token, "X-RapidAPI-Host": host }
+      : { "X-Auth-Token": this.token };
+  }
+
   async run(input: SandboxRunInput): Promise<SandboxRunResult> {
     const languageId = JUDGE0_LANGUAGE_ID[input.language];
     if (!languageId) throw new SandboxUnavailableError(`Linguagem não suportada pelo sandbox: ${input.language}`);
@@ -86,10 +98,7 @@ export class Judge0Sandbox implements Sandbox {
     try {
       res = await fetch(`${this.baseUrl.replace(/\/$/, "")}/submissions?base64_encoded=true&wait=true`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(this.token ? { "X-Auth-Token": this.token } : {}),
-        },
+        headers: { "Content-Type": "application/json", ...this.authHeaders() },
         body: JSON.stringify({
           language_id: languageId,
           source_code: Buffer.from(input.sourceCode, "utf8").toString("base64"),
