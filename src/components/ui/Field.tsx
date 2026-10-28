@@ -19,6 +19,30 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
   return <input ref={ref} className={cn(controlBase, "h-10", className)} {...props} />;
 });
 
+/** Campo de busca com lupa à esquerda; repassa id/aria para o input (funciona dentro de Field). */
+export const SearchInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(function SearchInput(
+  { className, ...props },
+  ref,
+) {
+  return (
+    <div className="relative">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 20 20"
+        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
+        <circle cx="9" cy="9" r="6" />
+        <path d="m17 17-3.5-3.5" />
+      </svg>
+      <input ref={ref} type="search" className={cn(controlBase, "h-10 pl-10", className)} {...props} />
+    </div>
+  );
+});
+
 // Lista suspensa própria (SelectMenu): mesmo contrato do <select> controlado, visual da marca.
 export const Select = SelectMenu;
 

@@ -3,7 +3,7 @@
 export { Button, ButtonLink, buttonClasses, focusRing, textLinkClasses } from "./Button";
 export type { ButtonVariant, ButtonSize } from "./Button";
 export { Card, CardHeader, CardBody } from "./Card";
-export { Input, Select, Textarea, Field } from "./Field";
+export { Input, SearchInput, Select, Textarea, Field } from "./Field";
 export { Chip, ChipList } from "./Chip";
 export { TagInput } from "./TagInput";
 export { Badge, MatchBadge, matchVariant } from "./Badge";

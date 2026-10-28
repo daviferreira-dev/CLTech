@@ -17,7 +17,7 @@ import {
   EmptyState,
   ErrorState,
   Field,
-  Input,
+  SearchInput,
   MatchBadge,
   Pagination,
   Select,
@@ -69,22 +69,29 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  // Campos de texto só vão para a URL ao enviar a busca; até lá, ficam no rascunho local.
+  // Busca enquanto digita: o rascunho vai para a URL 350ms depois da última tecla.
   const [qDraft, setQDraft] = useState(searchParams.get("q") ?? "");
   const [techDraft, setTechDraft] = useState(searchParams.get("technology") ?? "");
+  const urlQ = searchParams.get("q") ?? "";
+  const urlTech = searchParams.get("technology") ?? "";
+  // A URL mudou por fora (voltar, limpar filtros): o rascunho acompanha. Quando foi o próprio
+  // rascunho que a mudou, ele já bate (ignorando espaços nas pontas) e não é sobrescrito.
   useEffect(() => {
-    setQDraft(searchParams.get("q") ?? "");
-    setTechDraft(searchParams.get("technology") ?? "");
-  }, [searchParams]);
+    setQDraft((draft) => (draft.trim() === urlQ ? draft : urlQ));
+    setTechDraft((draft) => (draft.trim() === urlTech ? draft : urlTech));
+  }, [urlQ, urlTech]);
 
   // A URL é a única fonte da verdade do recorte: o efeito depende só da query string, então
   // reescrever a URL com o mesmo conteúdo não refaz a busca (sem laço — risco da spec 004).
   useEffect(() => {
     let cancelled = false;
-    setData(null);
+    // Mantém os resultados anteriores na tela enquanto a nova busca chega: sem piscar o
+    // esqueleto a cada tecla.
+    setLoading(true);
     setFailed(false);
     apiFetch<JobListResponse>(`/api/jobs?${queryString}`).then((result) => {
       if (cancelled) return;
+      setLoading(false);
       // Uma resposta de erro não tem `items`: sem esta guarda o `.length` derrubava a página.
       if (result.ok && Array.isArray(result.data?.items)) {
         setData(result.data);
@@ -97,6 +104,7 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
     };
   }, [queryString, reloadKey]);
 
+  const [loading, setLoading] = useState(true);
   const updateQuery = useCallback(
     (changes: Partial<Record<(typeof FILTER_KEYS)[number], string>>) => {
       const next = new URLSearchParams(queryString);
@@ -111,6 +119,12 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
     },
     [pathname, queryString, router],
   );
+
+  useEffect(() => {
+    if (qDraft.trim() === urlQ && techDraft.trim() === urlTech) return;
+    const timer = setTimeout(() => updateQuery({ q: qDraft, technology: techDraft }), 350);
+    return () => clearTimeout(timer);
+  }, [qDraft, techDraft, urlQ, urlTech, updateQuery]);
 
   const hrefForPage = useCallback(
     (page: number) => {
@@ -128,8 +142,8 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
 
   const subtitle = failed
     ? "Encontre a vaga certa e acompanhe seu processo pela plataforma."
-    : data === null
-      ? "Carregando vagas…"
+    : data === null || loading
+      ? "Buscando vagas…"
       : `${data.total} ${data.total === 1 ? "vaga ativa" : "vagas ativas"}${hasFilters ? " com os filtros aplicados" : ""}.`;
 
   return (
@@ -143,15 +157,18 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
           e.preventDefault();
           updateQuery({ q: qDraft, technology: techDraft });
         }}
-        className="mb-6 grid gap-3 rounded-card border border-brand-100 bg-surface p-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] sm:items-end sm:p-6"
+        className="mb-6 grid gap-3 rounded-card border border-brand-100 bg-surface p-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-end sm:p-6"
       >
         <Field id="busca-q" label="Cargo ou palavra-chave">
-          <Input type="search" value={qDraft} onChange={(e) => setQDraft(e.target.value)} placeholder="Ex.: Frontend, Dados…" />
+          <SearchInput value={qDraft} onChange={(e) => setQDraft(e.target.value)} placeholder="Ex.: Frontend, Dados…" />
         </Field>
         <Field id="busca-tecnologia" label="Tecnologia">
-          <Input value={techDraft} onChange={(e) => setTechDraft(e.target.value)} placeholder="Ex.: React" />
+          <SearchInput value={techDraft} onChange={(e) => setTechDraft(e.target.value)} placeholder="Ex.: React, Python" />
         </Field>
-        <Button type="submit">Buscar</Button>
+        {/* Enter ainda funciona: envia na hora, sem esperar a pausa na digitação. */}
+        <button type="submit" className="sr-only">
+          Buscar
+        </button>
       </form>
 
       <WithSidebar
@@ -212,7 +229,7 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
         )}
 
         {data && data.items.length > 0 && (
-          <div className="space-y-6">
+          <div className={cn("space-y-6 transition-opacity duration-200", loading && "opacity-60")} aria-busy={loading}>
             <Reveal as="ul" onScroll={false} stagger={0.06} className="space-y-4">
               {data.items.map((job) => {
                 const match = matchStateFor(job, viewer);

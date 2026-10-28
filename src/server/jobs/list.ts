@@ -24,12 +24,31 @@ export interface JobListResult {
   total: number;
 }
 
+/**
+ * Tecnologias das vagas publicadas que contêm o termo digitado, sem diferenciar maiúsculas
+ * ("rea" → "React", "node" → "Node.js"). Permite a busca enquanto se digita: o filtro antigo
+ * exigia o nome exato. Curingas do LIKE no termo são escapados.
+ */
+async function technologiesMatching(term: string): Promise<string[]> {
+  const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const rows = await prisma.$queryRaw<Array<{ tech: string }>>`
+    SELECT DISTINCT t AS tech
+    FROM "Job" j, unnest(j."technologies") AS t
+    WHERE j."status" = 'PUBLISHED' AND t ILIKE ${pattern}
+  `;
+  return rows.map((row: { tech: string }) => row.tech);
+}
+
 export async function listPublishedJobs(query: JobListQuery, requesterUserId?: string | null): Promise<JobListResult> {
+  const technologies = query.technology ? await technologiesMatching(query.technology) : null;
+  if (technologies && technologies.length === 0) {
+    return { items: [], page: query.page, pageSize: query.pageSize, total: 0 };
+  }
   const where = {
     status: "PUBLISHED" as const,
     ...(query.workMode ? { workMode: query.workMode } : {}),
     ...(query.seniority ? { seniority: query.seniority } : {}),
-    ...(query.technology ? { technologies: { has: query.technology } } : {}),
+    ...(technologies ? { technologies: { hasSome: technologies } } : {}),
     ...(query.q
       ? {
           OR: [
