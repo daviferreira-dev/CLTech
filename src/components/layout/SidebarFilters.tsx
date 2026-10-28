@@ -14,7 +14,7 @@ export function SidebarFilters({
 }) {
   return (
     <aside aria-label={title} className={cn("rounded-card border border-brand-100 bg-surface p-4 sm:p-6", className)}>
-      <h2 className="mb-4 text-h3 text-ink-900">{title}</h2>
+      <h2 className="mb-4 font-display text-h2 text-brand-900">{title}</h2>
       <div className="space-y-4">{children}</div>
       {footer && <div className="mt-4 border-t border-brand-100 pt-4">{footer}</div>}
     </aside>

@@ -54,3 +54,15 @@ body {
 dialog::backdrop {
   background: rgb(var(--brand-900) / 0.5);
 }
+
+/* Abertura de listas suspensas e popovers (SelectMenu). */
+@keyframes cl-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

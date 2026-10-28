@@ -1,9 +1,10 @@
 import { Children, cloneElement, forwardRef, isValidElement } from "react";
 import { cn } from "@/lib/cn";
 import { focusRing } from "./Button";
+import { SelectMenu } from "./SelectMenu";
 
 const controlBase = cn(
-  "w-full min-w-0 rounded-field border border-brand-100 bg-surface px-3 text-body text-ink-900",
+  "w-full min-w-0 rounded-field border border-ink-400/40 bg-surface px-3 text-body text-ink-900",
   "placeholder:text-ink-400 transition-colors hover:border-ink-400",
   "disabled:cursor-not-allowed disabled:bg-canvas disabled:text-ink-600 disabled:opacity-70",
   "aria-[invalid=true]:border-danger-600",
@@ -18,16 +19,8 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
   return <input ref={ref} className={cn(controlBase, "h-10", className)} {...props} />;
 });
 
-export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(function Select(
-  { className, children, ...props },
-  ref,
-) {
-  return (
-    <select ref={ref} className={cn(controlBase, "h-10 pr-8", className)} {...props}>
-      {children}
-    </select>
-  );
-});
+// Lista suspensa própria (SelectMenu): mesmo contrato do <select> controlado, visual da marca.
+export const Select = SelectMenu;
 
 export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
   function Textarea({ className, ...props }, ref) {

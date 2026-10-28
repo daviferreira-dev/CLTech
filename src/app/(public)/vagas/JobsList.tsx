@@ -1,5 +1,6 @@
 "use client";
 
+import { Reveal } from "@/components/motion/Reveal";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -133,7 +134,7 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
 
   return (
     <>
-      <PageHeader title="Oportunidades Abertas na CLTech" subtitle={<span aria-live="polite">{subtitle}</span>} />
+      <PageHeader title="Vagas abertas" subtitle={<span aria-live="polite">{subtitle}</span>} />
 
       <form
         role="search"
@@ -158,9 +159,18 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
           <SidebarFilters
             title="Refinar"
             footer={
-              <Button variant="ghost" size="sm" onClick={clearFilters} disabled={!hasFilters}>
-                Limpar filtros
-              </Button>
+              hasFilters ? (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className={cn("inline-flex items-center gap-1.5 rounded-full text-body font-semibold text-primary-700 hover:text-brand-900", focusRing)}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="m4 4 8 8M12 4l-8 8" />
+                  </svg>
+                  Limpar filtros
+                </button>
+              ) : undefined
             }
           >
             <Field id="filtro-modalidade" label="Modalidade">
@@ -203,17 +213,17 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
 
         {data && data.items.length > 0 && (
           <div className="space-y-6">
-            <ul className="space-y-4">
+            <Reveal as="ul" onScroll={false} stagger={0.06} className="space-y-4">
               {data.items.map((job) => {
                 const match = matchStateFor(job, viewer);
                 return (
-                  <Card as="li" key={job.id} className="p-4 transition-colors hover:border-ink-400 sm:p-6">
+                  <Card as="li" key={job.id} data-reveal className="relative p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-600/40 hover:shadow-popover sm:p-6">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
-                        <h2 className="text-h3">
+                        <h2 className="font-display text-[19px] font-semibold leading-7">
                           <Link
                             href={`/vagas/${job.id}`}
-                            className={cn("break-words rounded-sm text-ink-900 hover:underline", focusRing)}
+                            className={cn("break-words rounded-sm text-brand-900 after:absolute after:inset-0 hover:text-primary-700", focusRing)}
                           >
                             {job.title}
                           </Link>
@@ -228,14 +238,14 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
                       <ChipList items={job.technologies} label={`Tecnologias de ${job.title}`} />
                     </div>
                     {match?.status === "NEEDS_RESUME" && (
-                      <div className="mt-3">
+                      <div className="relative z-10 mt-3">
                         <MatchBadge match={match} />
                       </div>
                     )}
                   </Card>
                 );
               })}
-            </ul>
+            </Reveal>
             <Pagination page={data.page} pageSize={data.pageSize} total={data.total} hrefFor={hrefForPage} />
           </div>
         )}
