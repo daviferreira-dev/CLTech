@@ -286,6 +286,7 @@ export async function runVisibleTests(
       } catch (err) {
         // Falha da infraestrutura não consome execução do candidato.
         if (err instanceof SandboxUnavailableError) {
+          console.error(`[code-test] Sandbox indisponível ao executar testes: ${err.message}`);
           throw new ApiError(503, "SANDBOX_UNAVAILABLE", "O ambiente de execução está indisponível no momento. Seu código foi salvo; tente executar de novo em instantes.");
         }
         throw err;
@@ -324,6 +325,7 @@ export async function submitChallenge(
   // rascunho salvo. Se o prazo vencer antes, a submissão automática (TIME_EXPIRED) ainda
   // acontece e é corrigida quando o sandbox voltar (resumeIfStale).
   if (!canGrade(input.language)) {
+    console.error(`[code-test] Sandbox não corrige ${input.language}: SANDBOX_URL ausente ou linguagem fora do sandbox.`);
     throw new ApiError(
       503,
       "SANDBOX_UNAVAILABLE",
