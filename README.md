@@ -247,7 +247,7 @@ O motor de triagem também roda dentro do Next.js (D11); `services/ai/` não é 
 ### Testes
 
 ```bash
-pnpm test          # Vitest — unidade e integração; TRUNCATE total antes de cada teste
+pnpm test          # Vitest — unidade e integração, num Postgres só de teste (ver docs/manual-execucao.md §7)
 pnpm test:e2e      # Playwright — fluxos P1 em 360 px e 1280 px, contra `pnpm build && pnpm start`
 ```
 

@@ -1,5 +1,5 @@
-// DATABASE_URL de teste (.env.test) — TRUNCATE total antes de cada teste garante isolamento
-// mesmo sem banco efêmero dedicado (research.md R8).
+// DATABASE_URL de teste (carregado por env.ts) — TRUNCATE total antes de cada teste garante
+// isolamento mesmo sem banco efêmero dedicado (research.md R8).
 
 import { beforeEach } from "vitest";
 import { prisma } from "@/lib/prisma";

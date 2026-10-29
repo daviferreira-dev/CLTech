@@ -57,3 +57,4 @@ Thumbs.db
 
 # Currículos de exemplo para testar a leitura (dados pessoais: nunca versionar)
 curriculos-teste/
+.tmp_ers/

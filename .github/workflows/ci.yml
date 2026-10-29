@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Banco descartável só para a suíte de integração (TRUNCATE antes de cada teste).
+    # Os valores batem com o DATABASE_URL do .env.test.example.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cltech
+          POSTGRES_PASSWORD: cltech
+          POSTGRES_DB: cltech_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cltech"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://cltech:cltech@localhost:5432/cltech_test
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prisma generate
+      - run: pnpm lint
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm exec prisma migrate deploy
+      - run: pnpm test
+      - name: Build
+        run: pnpm build
+        env:
+          AUTH_SECRET: ci-build-only
