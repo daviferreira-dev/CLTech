@@ -36,12 +36,12 @@ export function JobsManagerList() {
   return (
     <>
       <PageHeader
-        title="Minhas Vagas"
+        title="Minhas vagas"
         subtitle={items ? `${items.length} ${items.length === 1 ? "vaga" : "vagas"}` : undefined}
-        actions={<ButtonLink href="/recrutamento/vagas/nova">Criar Vaga</ButtonLink>}
+        actions={<ButtonLink href="/recrutamento/vagas/nova">Criar vaga</ButtonLink>}
       />
 
-      {failed && <ErrorState title="Não foi possível carregar suas vagas." onRetry={load} />}
+      {failed && <ErrorState title="Não conseguimos carregar suas vagas." onRetry={load} action={<ButtonLink href="/recrutamento" variant="ghost">Voltar ao painel</ButtonLink>} />}
       {!failed && items === null && <CardListSkeleton label="Carregando vagas…" />}
       {items !== null && items.length === 0 && (
         <EmptyState
@@ -58,13 +58,13 @@ export function JobsManagerList() {
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="min-w-0 text-h3">
-                    <Link href={`/recrutamento/vagas/${job.id}`} className={cn("break-words rounded-sm text-ink-900 hover:underline", focusRing)}>
+                    <Link href={`/recrutamento/vagas/${job.id}`} className={cn("inline-flex min-h-6 items-center break-words rounded-sm text-fg hover:underline", focusRing)}>
                       {job.title}
                     </Link>
                   </h2>
                   <Badge variant={JOB_STATUS_BADGE[job.status]}>{JOB_STATUS_LABEL[job.status]}</Badge>
                 </div>
-                <p className="text-body text-ink-600">
+                <p className="text-body text-fg-muted">
                   {job.candidateCount} {job.candidateCount === 1 ? "candidatura" : "candidaturas"} · criada em{" "}
                   {new Date(job.createdAt).toLocaleDateString("pt-BR")}
                 </p>

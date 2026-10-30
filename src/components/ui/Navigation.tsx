@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { buttonClasses, focusRing } from "./Button";
+import { Icon } from "./Icon";
 
 export interface Crumb {
   label: string;
@@ -11,7 +12,7 @@ export interface Crumb {
 export function Breadcrumb({ items, className }: { items: Crumb[]; className?: string }) {
   return (
     <nav aria-label="Caminho de navegação" className={cn("min-w-0", className)}>
-      <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-body text-ink-600">
+      <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-body text-fg-muted">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           return (
@@ -19,19 +20,17 @@ export function Breadcrumb({ items, className }: { items: Crumb[]; className?: s
               {item.href && !isLast ? (
                 <Link
                   href={item.href}
-                  className={cn("rounded-sm break-words hover:text-ink-900 hover:underline", focusRing)}
+                  className={cn("inline-flex min-h-6 items-center rounded-sm break-words hover:text-fg hover:underline", focusRing)}
                 >
                   {item.label}
                 </Link>
               ) : (
-                <span aria-current={isLast ? "page" : undefined} className="break-words font-medium text-ink-900">
+                <span aria-current={isLast ? "page" : undefined} className="break-words font-medium text-fg">
                   {item.label}
                 </span>
               )}
               {!isLast && (
-                <span aria-hidden="true" className="text-ink-400">
-                  ›
-                </span>
+                <Icon name="chevronRight" className="h-3.5 w-3.5 text-fg-subtle" />
               )}
             </li>
           );
@@ -64,7 +63,7 @@ export function Pagination({
 
   return (
     <nav aria-label="Paginação" className="flex flex-wrap items-center justify-between gap-3">
-      <p className="text-body text-ink-600">
+      <p className="text-body text-fg-muted">
         Página {page} de {totalPages}
       </p>
       <ul className="flex flex-wrap items-center gap-1">
@@ -82,7 +81,7 @@ export function Pagination({
         {visible.map((p, i) => (
           <li key={p} className="flex items-center gap-1">
             {i > 0 && p - (visible[i - 1] as number) > 1 && (
-              <span aria-hidden="true" className="px-1 text-ink-400">
+              <span aria-hidden="true" className="px-1 text-fg-subtle">
                 …
               </span>
             )}
@@ -151,22 +150,24 @@ export function StageTrail({
             <span
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-label",
-                state === "done" && "border-accent-600/50 bg-accent-100 text-accent-900",
-                state === "current" && "border-primary-600 bg-primary-600 text-surface",
-                state === "todo" && "border-brand-100 bg-surface text-ink-600",
-                state === "neutral" && "border-brand-100 bg-canvas text-ink-900",
+                state === "done" && "border-success/50 bg-success-soft text-success-ink",
+                state === "current" && "border-action bg-action text-on-color",
+                state === "todo" && "border-line bg-surface text-fg-muted",
+                state === "neutral" && "border-line bg-page text-fg",
               )}
             >
-              <span aria-hidden="true" className="tabular-nums">
-                {state === "done" ? "✓" : index + 1}
-              </span>
+              {state === "done" ? (
+                <Icon name="check" className="h-3 w-3" />
+              ) : (
+                <span aria-hidden="true" className="tabular-nums">
+                  {index + 1}
+                </span>
+              )}
               {stage.label}
               {state === "current" && <span className="sr-only">(etapa atual)</span>}
             </span>
             {index < stages.length - 1 && (
-              <span aria-hidden="true" className="text-ink-400">
-                →
-              </span>
+              <Icon name="arrowRight" className="h-3.5 w-3.5 text-fg-subtle" />
             )}
           </li>
         );

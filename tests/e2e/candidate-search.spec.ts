@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function loginAsRecruiter(page: Page) {
   await page.goto("/entrar");
   await page.getByLabel("E-mail").fill("recrutador@3aq.dev");
-  await page.getByLabel("Senha").fill("Senha123!");
+  await page.getByLabel("Senha", { exact: true }).fill("Senha123!");
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/recrutamento$/);
 }
@@ -21,7 +21,7 @@ test("recrutador busca candidato por e-mail e vê as duas candidaturas agrupadas
   await candidatePage.goto("/cadastro");
   await candidatePage.getByLabel("Nome").fill("Candidato Busca");
   await candidatePage.getByLabel("E-mail").fill(email);
-  await candidatePage.getByLabel("Senha").fill("senhaSegura123");
+  await candidatePage.getByLabel("Senha", { exact: true }).fill("senhaSegura123");
   await candidatePage.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(candidatePage).toHaveURL(/\/vagas$/);
 
@@ -36,11 +36,11 @@ test("recrutador busca candidato por e-mail e vê as duas candidaturas agrupadas
 
   await candidatePage.goto(firstJobHref as string);
   await candidatePage.getByRole("button", { name: "Candidatar-se" }).click();
-  await expect(candidatePage.getByText("Candidatura registrada com sucesso!")).toBeVisible();
+  await expect(candidatePage.getByText("Candidatura enviada.")).toBeVisible();
 
   await candidatePage.goto(secondJobHref as string);
   await candidatePage.getByRole("button", { name: "Candidatar-se" }).click();
-  await expect(candidatePage.getByText("Candidatura registrada com sucesso!")).toBeVisible();
+  await expect(candidatePage.getByText("Candidatura enviada.")).toBeVisible();
 
   await candidateContext.close();
 

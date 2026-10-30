@@ -42,7 +42,7 @@ export function Reveal({
         // congelaria os itens invisíveis; o setTimeout (que roda, mesmo atrasado) a conclui.
         const tween = gsap.from(targets, {
           y: 20,
-          autoAlpha: 0,
+          opacity: 0,
           duration: 0.6,
           ease: "power3.out",
           stagger,

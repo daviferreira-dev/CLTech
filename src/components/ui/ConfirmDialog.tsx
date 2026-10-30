@@ -50,19 +50,19 @@ export function ConfirmDialog({
         e.preventDefault();
         if (!loading) onCancel();
       }}
-      className="w-[calc(100%-2rem)] max-w-md rounded-card border border-brand-100 bg-surface p-0 text-ink-900 shadow-popover"
+      className="w-[calc(100%-2rem)] max-w-md rounded-card border border-line bg-raised p-0 text-fg shadow-popover"
     >
       <div className="space-y-2 p-6">
         <h2 id={titleId} className="text-h2">
           {title}
         </h2>
         {description && (
-          <div id={descriptionId} className="text-body text-ink-600">
+          <div id={descriptionId} className="text-body text-fg-muted">
             {description}
           </div>
         )}
       </div>
-      <div className="flex flex-col-reverse gap-2 border-t border-brand-100 px-6 py-4 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-2 border-t border-line px-6 py-4 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onCancel} disabled={loading} autoFocus>
           {cancelLabel}
         </Button>

@@ -18,7 +18,9 @@ import {
   EmptyState,
   ErrorState,
   Field,
+  Notice,
   Select,
+  textLinkClasses,
   focusRing,
 } from "@/components/ui";
 
@@ -40,10 +42,10 @@ interface DashboardResult {
 
 function MetricCard({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
-    <Card className="p-4 sm:p-6">
-      <p className="text-label text-ink-600">{label}</p>
-      <p className="mt-1 break-words text-display text-ink-900">{value}</p>
-      {hint && <p className="mt-1 text-body text-ink-600">{hint}</p>}
+    <Card className="p-3 sm:p-6">
+      <p className="text-label text-fg-muted">{label}</p>
+      <p className="mt-1 break-words font-display text-[24px] font-semibold leading-8 tabular-nums text-fg sm:text-display">{value}</p>
+      {hint && <p className="mt-1 text-label font-normal text-fg-muted sm:text-body">{hint}</p>}
     </Card>
   );
 }
@@ -88,9 +90,9 @@ export function Dashboard() {
 
   const header = (
     <PageHeader
-      title="Painel de Recrutamento"
+      title="Painel"
       subtitle="Acompanhe suas vagas e onde cada candidato está no funil."
-      actions={<ButtonLink href="/recrutamento/vagas/nova">Criar Vaga</ButtonLink>}
+      actions={<ButtonLink href="/recrutamento/vagas/nova">Criar vaga</ButtonLink>}
     />
   );
 
@@ -98,7 +100,7 @@ export function Dashboard() {
     return (
       <>
         {header}
-        <ErrorState title="Não foi possível carregar o painel." onRetry={load} />
+        <ErrorState title="Não conseguimos carregar o painel." onRetry={load} action={<ButtonLink href="/recrutamento/vagas" variant="ghost">Ir para Minhas vagas</ButtonLink>} />
       </>
     );
   }
@@ -128,6 +130,10 @@ export function Dashboard() {
   const inProgress = data.jobs.reduce((sum, job) => sum + job.candidatesByStage.reduce((s, item) => s + item.count, 0), 0);
   const published = data.jobs.filter((job) => job.status === "PUBLISHED").length;
   const bottleneck = data.funnel.bottleneckStageType;
+  const bottleneckHours = data.funnel.avgTimePerStageHours.find((item) => item.stageType === bottleneck)?.hours;
+  const totalOf = (job: (typeof data.jobs)[number]) => job.candidatesByStage.reduce((sum, item) => sum + item.count, 0);
+  // Vaga com gente na frente; rascunho por último (e mais discreto no cartão).
+  const jobs = [...data.jobs].sort((a, b) => Number(a.status === "DRAFT") - Number(b.status === "DRAFT") || totalOf(b) - totalOf(a));
 
   return (
     <div className="space-y-8">
@@ -146,10 +152,28 @@ export function Dashboard() {
         </Field>
       </div>
 
-      <section aria-label="Indicadores" className="grid gap-4 sm:grid-cols-3">
+      {/* O dado mais acionável do painel lidera: onde os candidatos estão parados. */}
+      {bottleneck && (
+        <Notice
+          tone="warning"
+          title={`Gargalo do funil: ${STAGE_LABEL[bottleneck] ?? bottleneck}`}
+          action={
+            selectedJobId ? (
+              <ButtonLink href={`/recrutamento/vagas/${selectedJobId}/candidaturas?etapa=${bottleneck}`} variant="secondary" size="sm">
+                Ver quem está nesta etapa
+              </ButtonLink>
+            ) : undefined
+          }
+        >
+          É a etapa com maior tempo médio
+          {bottleneckHours !== undefined ? ` (${bottleneckHours < 1 ? "menos de 1 hora" : `${Math.round(bottleneckHours)} horas`})` : ""}.
+          {!selectedJobId && " Recorte por vaga para ver quem está parado nela."}
+        </Notice>
+      )}
+
+      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:gap-4">
         <MetricCard label="Vagas publicadas" value={published} hint={`de ${data.jobs.length} no recorte`} />
         <MetricCard label="Candidaturas em andamento" value={inProgress} />
-        <MetricCard label="Gargalo do funil" value={bottleneck ? (STAGE_LABEL[bottleneck] ?? bottleneck) : "—"} hint={bottleneck ? "Etapa com maior tempo médio" : "Sem movimentação suficiente"} />
       </section>
 
       <section aria-labelledby="vagas-painel" className="space-y-4">
@@ -157,24 +181,31 @@ export function Dashboard() {
           Vagas
         </h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.jobs.map((job) => (
-            <Card key={job.id} className="flex flex-col">
+          {jobs.map((job) => (
+            <Card key={job.id} className={cn("flex flex-col", job.status === "DRAFT" && "border-dashed bg-page")}>
               <div className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-6 sm:pt-6">
                 <h2 className="min-w-0 text-h3">
                   <Link
                     href={`/recrutamento/vagas/${job.id}/candidaturas`}
-                    className={cn("break-words rounded-sm text-ink-900 hover:underline", focusRing)}
+                    className={cn("inline-flex min-h-6 items-center break-words rounded-sm text-fg hover:underline", focusRing)}
                   >
                     {job.title}
                   </Link>
                 </h2>
-                <Badge variant={JOB_STATUS_BADGE[job.status]}>{JOB_STATUS_LABEL[job.status]}</Badge>
+                <span className="flex shrink-0 flex-col items-end gap-1">
+                  <Badge variant={JOB_STATUS_BADGE[job.status]}>{JOB_STATUS_LABEL[job.status]}</Badge>
+                  {job.status !== "DRAFT" && (
+                    <span className="text-label font-normal text-fg-muted">
+                      {totalOf(job)} {totalOf(job) === 1 ? "candidato" : "candidatos"}
+                    </span>
+                  )}
+                </span>
               </div>
               <CardBody className="flex-1">
                 {job.candidatesByStage.length === 0 ? (
-                  <p className="text-body text-ink-600">
+                  <p className="text-body text-fg-muted">
                     Pipeline ainda não configurado.{" "}
-                    <Link href={`/recrutamento/vagas/${job.id}`} className="font-medium text-brand-900 underline">
+                    <Link href={`/recrutamento/vagas/${job.id}`} className={cn(textLinkClasses, "inline-flex min-h-6 items-center")}>
                       Configurar
                     </Link>
                   </p>
@@ -189,12 +220,12 @@ export function Dashboard() {
                             href={`/recrutamento/vagas/${job.id}/candidaturas?etapa=${item.stageType}`}
                             aria-label={`${item.count} em ${label} — ver candidaturas`}
                             className={cn(
-                              "flex items-center justify-between gap-2 rounded-field px-2 py-1.5 text-body text-ink-600 hover:bg-canvas hover:text-ink-900",
+                              "flex items-center justify-between gap-2 rounded-field px-2 py-1.5 text-body text-fg-muted hover:bg-page hover:text-fg",
                               focusRing,
                             )}
                           >
                             <span className="min-w-0 break-words">{label}</span>
-                            <span className="shrink-0 font-semibold tabular-nums text-ink-900">{item.count}</span>
+                            <span className="shrink-0 font-semibold tabular-nums text-fg">{item.count}</span>
                           </Link>
                         </li>
                       );
@@ -211,7 +242,7 @@ export function Dashboard() {
         <CardHeader titleId="metricas-funil" title="Métricas do funil" />
         <CardBody>
           {data.funnel.avgTimePerStageHours.length === 0 ? (
-            <p className="text-body text-ink-600">Ainda sem movimentação suficiente para calcular métricas.</p>
+            <p className="text-body text-fg-muted">Ainda sem movimentação suficiente para calcular métricas.</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {data.funnel.avgTimePerStageHours.map((item) => {
@@ -220,14 +251,14 @@ export function Dashboard() {
                 return (
                   <div
                     key={item.stageType}
-                    className={cn("rounded-card border p-4", isBottleneck ? "border-warning-500/60 bg-warning-500/5" : "border-brand-100")}
+                    className={cn("rounded-card border p-4", isBottleneck ? "border-warning/60 bg-warning/5" : "border-line")}
                   >
-                    <p className="flex items-center justify-between gap-2 text-body font-medium text-ink-900">
+                    <p className="flex items-center justify-between gap-2 text-body font-medium text-fg">
                       {STAGE_LABEL[item.stageType] ?? item.stageType}
                       {isBottleneck && <Badge variant="warning">Gargalo</Badge>}
                     </p>
-                    <p className="mt-1 text-body text-ink-600">Tempo médio: {item.hours}h</p>
-                    {rate && <p className="text-body text-ink-600">Taxa de avanço: {Math.round(rate.rate * 100)}%</p>}
+                    <p className="mt-1 text-body text-fg-muted">Tempo médio: {item.hours}h</p>
+                    {rate && <p className="text-body text-fg-muted">Taxa de avanço: {Math.round(rate.rate * 100)}%</p>}
                   </div>
                 );
               })}

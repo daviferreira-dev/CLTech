@@ -51,13 +51,13 @@ export function MeetingDialog({
         e.preventDefault();
         if (!loading) onCancel();
       }}
-      className="w-[calc(100%-2rem)] max-w-md rounded-card border border-brand-100 bg-surface p-0 text-ink-900 shadow-popover"
+      className="w-[calc(100%-2rem)] max-w-md rounded-card border border-line bg-raised p-0 text-fg shadow-popover"
     >
       <form onSubmit={submit} noValidate>
         <div className="space-y-4 p-6">
           <div className="space-y-2">
             <h2 className="text-h2">{title}</h2>
-            <div className="text-body text-ink-600">{description}</div>
+            <div className="text-body text-fg-muted">{description}</div>
           </div>
           <Field id="reuniao-data" label="Data e hora da reunião" error={submitted ? whenError : undefined}>
             <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
@@ -66,7 +66,7 @@ export function MeetingDialog({
             <Input type="url" inputMode="url" placeholder="https://meet.google.com/…" value={url} onChange={(e) => setUrl(e.target.value)} />
           </Field>
         </div>
-        <div className="flex flex-col-reverse gap-2 border-t border-brand-100 px-6 py-4 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-2 border-t border-line px-6 py-4 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>

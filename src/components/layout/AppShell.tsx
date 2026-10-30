@@ -20,7 +20,7 @@ export async function AppShell({ children, candidateExtraNav = [] }: { children:
       <a
         href="#conteudo"
         className={cn(
-          "sr-only z-50 rounded-field bg-brand-900 px-4 py-2 text-body font-medium text-surface focus:not-sr-only focus:fixed focus:left-4 focus:top-4",
+          "sr-only z-50 rounded-field bg-inverse px-4 py-2 text-body font-medium text-on-color focus:not-sr-only focus:fixed focus:left-4 focus:top-4",
           focusRing,
         )}
       >
@@ -30,11 +30,11 @@ export async function AppShell({ children, candidateExtraNav = [] }: { children:
       <main id="conteudo" tabIndex={-1} className="flex-1 focus:outline-none">
         {children}
       </main>
-      <footer className="border-t border-brand-100 bg-surface">
-        <div className="mx-auto flex w-full max-w-content flex-wrap items-center justify-between gap-2 px-4 py-4 text-label text-ink-600 sm:px-6">
+      <footer className="border-t border-line bg-surface">
+        <div className="mx-auto flex w-full max-w-content flex-wrap items-center justify-between gap-2 px-4 py-4 text-label text-fg-muted sm:px-6">
           <span>CLTech · 3aq Tecnologia</span>
           {/* Spec 006, FR-307 — aviso de privacidade acessível de qualquer tela (LGPD art. 9º). */}
-          <a href="/privacidade" className={cn("underline-offset-2 hover:underline", focusRing)}>
+          <a href="/privacidade" className={cn("inline-flex min-h-6 items-center underline-offset-2 hover:underline", focusRing)}>
             Aviso de privacidade
           </a>
         </div>

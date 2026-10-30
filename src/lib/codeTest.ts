@@ -67,3 +67,9 @@ export const CASE_OUTCOME_LABEL: Record<CaseOutcome, string> = {
   COMPILE_ERROR: "Erro de compilação",
   RUNTIME_ERROR: "Erro de execução",
 };
+
+/** "1 caso visível", "3 casos ocultos": plural de verdade, sem "caso(s)". */
+export function casesLabel(count: number, kind: "visible" | "hidden"): string {
+  if (kind === "visible") return `${count} ${count === 1 ? "caso visível" : "casos visíveis"}`;
+  return `${count} ${count === 1 ? "caso oculto" : "casos ocultos"}`;
+}

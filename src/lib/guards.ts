@@ -35,3 +35,11 @@ export async function requirePageRole(allowed: Role[], path: string) {
   if (!allowed.includes(session.user.role)) redirect(destinationForRole(session.user.role));
   return session.user;
 }
+
+/** `<title>` com dado real (nome da vaga, do candidato) só para quem pode ver a página. */
+export async function recruiterTitle<T>(load: () => Promise<T | null>, fallback: string, format: (value: T) => string) {
+  const session = await auth();
+  if (!session?.user || !RECRUITER_ROLES.includes(session.user.role)) return { title: fallback };
+  const value = await load().catch(() => null);
+  return { title: value ? format(value) : fallback };
+}

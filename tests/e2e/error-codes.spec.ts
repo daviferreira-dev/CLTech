@@ -18,7 +18,7 @@ async function signUpWithResume(page: Page, prefix: string) {
   await page.goto("/cadastro");
   await page.getByLabel("Nome").fill(`Pessoa ${prefix}`);
   await page.getByLabel("E-mail").fill(uniqueEmail(prefix));
-  await page.getByLabel("Senha").fill("senhaSegura123");
+  await page.getByLabel("Senha", { exact: true }).fill("senhaSegura123");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
   await page.goto("/perfil");
@@ -29,7 +29,7 @@ async function signUpWithResume(page: Page, prefix: string) {
 async function loginAsRecruiter(page: Page) {
   await page.goto("/entrar");
   await page.getByLabel("E-mail").fill("recrutador@3aq.dev");
-  await page.getByLabel("Senha").fill("Senha123!");
+  await page.getByLabel("Senha", { exact: true }).fill("Senha123!");
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/recrutamento$/);
 }
@@ -67,7 +67,7 @@ test("RESUME_REQUIRED oferece enviar currículo e voltar à vaga", async ({ page
   await page.goto("/cadastro");
   await page.getByLabel("Nome").fill("Pessoa Sem CV");
   await page.getByLabel("E-mail").fill(uniqueEmail("nocv"));
-  await page.getByLabel("Senha").fill("senhaSegura123");
+  await page.getByLabel("Senha", { exact: true }).fill("senhaSegura123");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 

@@ -8,7 +8,7 @@ function uniqueEmail() {
 
 test("listagem de vagas é visível sem login", async ({ page }) => {
   await page.goto("/vagas");
-  await expect(page.getByRole("heading", { name: "Vagas abertas", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Vagas", exact: true, level: 1 })).toBeVisible();
 });
 
 test("filtrar por modalidade reduz a lista", async ({ page }) => {
@@ -38,7 +38,7 @@ test("candidatar-se deslogado leva ao login e retorna à vaga (FR-023)", async (
   await page.waitForLoadState("networkidle");
   await page.getByLabel("Nome").fill("Pessoa Candidatura");
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill("senhaSegura123");
+  await page.getByLabel("Senha", { exact: true }).fill("senhaSegura123");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
 
   // Spec 004 US2.1: o cadastro preserva o callbackUrl e devolve o candidato à mesma vaga.
@@ -50,7 +50,7 @@ test("candidato sem currículo é orientado a completar o perfil ao tentar se ca
   await page.goto("/cadastro");
   await page.getByLabel("Nome").fill("Pessoa Sem CV");
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill("senhaSegura123");
+  await page.getByLabel("Senha", { exact: true }).fill("senhaSegura123");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 

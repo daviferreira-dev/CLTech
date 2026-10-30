@@ -10,7 +10,7 @@ import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
 import type { ProfileDetails } from "@/lib/profile-details";
 import { PROFILE_LIMITS as L } from "@/lib/profile-details";
 import { fromProfile, mergeDraft, toPayload, type DraftField, type ProfileDraft, type ProfileFormState } from "@/lib/profile-form";
-import { Button, Card, CardBody, CardHeader, Field, Input, Notice, TagInput, Textarea } from "@/components/ui";
+import { Button, Card, CardBody, CardHeader, Field, Icon, Input, Notice, TagInput, Textarea } from "@/components/ui";
 import { EducationEditor, ExperienceEditor, FromResumeBadge, LanguageEditor, LinkEditor } from "./ProfileListEditors";
 
 export interface EditableProfile {
@@ -184,7 +184,7 @@ export function ProfileDetailsForm<P extends EditableProfile>({
         <CardHeader
           titleId="tecnologias"
           title="Tecnologias e Habilidades"
-          description="As tecnologias entram no cálculo do seu match com as vagas."
+          description="As tecnologias entram no cálculo da sua compatibilidade com as vagas."
         />
         <CardBody className="space-y-4">
           <Field id="technologies" label={label("Tecnologias", "technologies")} hint="Digite e tecle Enter ou vírgula. Ex.: React, Java, Docker">
@@ -224,15 +224,15 @@ export function ProfileDetailsForm<P extends EditableProfile>({
         </CardBody>
       </Card>
 
-      <div className="sticky bottom-0 z-10 -mx-4 flex flex-col-reverse gap-3 border-t border-brand-100 bg-surface/95 px-4 py-3 backdrop-blur sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:rounded-card sm:border">
+      <div className="sticky bottom-0 z-10 -mx-4 flex flex-col-reverse gap-3 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:rounded-card sm:border">
         {/* Altura reservada: a mensagem entra e sai sem deslocar o layout (US3.7). */}
         <div className="min-h-5" aria-live="polite">
           {saveResult && (
             <p
               role={saveResult.tone === "danger" ? "alert" : undefined}
-              className={saveResult.tone === "danger" ? "text-body text-danger-600" : "text-body text-ink-900"}
+              className={saveResult.tone === "danger" ? "text-body text-danger" : "text-body text-fg"}
             >
-              {saveResult.tone === "success" && <span aria-hidden="true" className="mr-1 text-accent-600">✓</span>}
+              {saveResult.tone === "success" && <Icon name="check" className="mr-1 inline text-success-strong" />}
               {saveResult.text}
             </p>
           )}

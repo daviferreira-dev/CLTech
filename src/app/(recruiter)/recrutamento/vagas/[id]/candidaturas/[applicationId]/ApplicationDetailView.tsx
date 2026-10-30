@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { INTERVIEW_STAGES, STAGE_LABEL } from "@/lib/processStages";
+import { INTERVIEW_STAGES, RECOMMENDATION_THRESHOLD, STAGE_LABEL } from "@/lib/processStages";
 import { CASE_OUTCOME_LABEL, LANGUAGE_LABEL } from "@/lib/codeTest";
 import type { CodeTestReport } from "@/server/code-test/report";
 import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
@@ -214,7 +214,7 @@ export function ApplicationDetailView({
     );
   }
   if (loadState === "failed" || !data) {
-    return <ErrorState title="Não foi possível carregar o relatório." onRetry={load} />;
+    return <ErrorState title="Não conseguimos abrir o relatório agora." onRetry={load} action={<ButtonLink href={backHref} variant="ghost">Voltar</ButtonLink>} />;
   }
 
   const mainEvaluation = data.evaluations.find((e) => e.type === "RESUME_MATCH");
@@ -236,62 +236,115 @@ export function ApplicationDetailView({
             {data.candidate.email} · {data.job.title}
           </span>
         }
-        actions={<Badge variant={APPLICATION_STATUS_BADGE[data.status]}>{RECRUITER_APPLICATION_STATUS_LABEL[data.status]}</Badge>}
       />
 
       {message && <Notice tone={message.tone}>{message.text}</Notice>}
 
-      <Card as="section" aria-labelledby="etapa-atual">
-        <CardHeader titleId="etapa-atual" title="Processo" description={`Etapa atual: ${currentLabel}`} />
-        <CardBody>
-          {stages && currentIndex >= 0 ? (
-            <StageTrail
-              stages={stages.map((s) => ({ type: s.type, label: STAGE_LABEL[s.type] ?? s.type }))}
-              currentIndex={currentIndex}
-              finished={data.status !== "IN_PROGRESS"}
-            />
+      {/* A tela existe para decidir: compatibilidade, recomendação, etapa e ação lideram; os cartões abaixo são o detalhe. */}
+      <Card as="section" aria-labelledby="decisao" className="border-action/30">
+        <h2 id="decisao" className="sr-only">
+          Decisão
+        </h2>
+        <div className="grid gap-5 p-4 sm:p-6 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center md:gap-8">
+          <div className="flex items-center gap-4 md:block">
+            <p className="font-display text-[40px] font-semibold leading-none text-fg tabular-nums">
+              {mainEvaluation ? `${mainEvaluation.score}%` : "—"}
+            </p>
+            <div className="md:mt-2">
+              <p className="text-body text-fg-muted">compatibilidade geral</p>
+              {mainEvaluation && data.status === "IN_PROGRESS" && (
+                <Badge variant={mainEvaluation.score >= RECOMMENDATION_THRESHOLD ? "success" : "warning"} className="mt-1">
+                  {mainEvaluation.score >= RECOMMENDATION_THRESHOLD ? "Recomendado" : "Não recomendado"}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="min-w-0 space-y-2">
+            <p className="flex flex-wrap items-center gap-2 text-body text-fg">
+              <span>
+                Etapa atual: <span className="font-semibold">{currentLabel}</span>
+              </span>
+              <Badge variant={APPLICATION_STATUS_BADGE[data.status]}>{RECRUITER_APPLICATION_STATUS_LABEL[data.status]}</Badge>
+            </p>
+            {stages && currentIndex >= 0 && (
+              <StageTrail
+                stages={stages.map((s) => ({ type: s.type, label: STAGE_LABEL[s.type] ?? s.type }))}
+                currentIndex={currentIndex}
+                finished={data.status !== "IN_PROGRESS"}
+              />
+            )}
+            {data.status === "IN_PROGRESS" && (
+              <p className="text-label font-normal text-fg-muted">
+                {isLastStage
+                  ? "Esta é a última etapa: avançar aprova o candidato."
+                  : "A decisão é sempre humana — a nota automática nunca move o candidato de etapa."}
+              </p>
+            )}
+          </div>
+
+          {data.status === "IN_PROGRESS" ? (
+            <div className="flex flex-wrap gap-3 md:flex-col md:items-stretch">
+              <Button onClick={() => setPending("ADVANCE")} disabled={saving}>
+                {isLastStage ? "Avançar e aprovar" : "Avançar"}
+              </Button>
+              <Button variant="danger" onClick={() => setPending("REJECT")} disabled={saving}>
+                Reprovar
+              </Button>
+            </div>
           ) : (
-            <p className="text-body text-ink-600">Etapa atual: {currentLabel}</p>
+            <div className="space-y-2 md:text-right">
+              <p className="text-body text-fg">
+                Candidatura {data.status === "APPROVED" ? "aprovada" : data.status === "REJECTED" ? "reprovada" : "retirada"}.
+              </p>
+              <ButtonLink href={backHref} variant="secondary">
+                {origin.kind === "search" ? "Voltar à busca" : "Voltar às candidaturas"}
+              </ButtonLink>
+            </div>
           )}
-        </CardBody>
+        </div>
+        {/* Só aviso: a regra continua deixando a pessoa decidir sem o envio. */}
+        {data.status === "IN_PROGRESS" &&
+          data.currentStage.type === "CODE_TEST" &&
+          (data.codeTest.status === "NOT_STARTED" || data.codeTest.status === "IN_PROGRESS") && (
+            <div className="border-t border-line px-4 py-3 sm:px-6">
+              <Notice tone="warning">O candidato ainda não enviou o teste de código. Avançar agora pula a correção automática.</Notice>
+            </div>
+          )}
       </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card as="section" aria-labelledby="match">
-          <CardHeader titleId="match" title="Compatibilidade" />
+          <CardHeader titleId="match" title="Compatibilidade" description="Tecnologias da vaga encontradas no currículo e no perfil." />
           <CardBody className="space-y-4">
             {mainEvaluation ? (
               <>
-                <div>
-                  <p className="text-display text-ink-900">{mainEvaluation.score}%</p>
-                  <p className="text-body text-ink-600">compatibilidade geral</p>
-                </div>
                 {mainEvaluation.justification?.resumeReadable === false && (
-                  <p className="text-body text-ink-600">
+                  <p className="text-body text-fg-muted">
                     Não foi possível ler o texto do currículo; a nota considera só as tecnologias do perfil.
                   </p>
                 )}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <h3 className="text-label text-ink-600">Encontradas</h3>
+                    <h3 className="text-label text-fg-muted">Encontradas</h3>
                     <ChipList items={mainEvaluation.justification?.matched ?? []} tone="found" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-label text-ink-600">Faltando</h3>
+                    <h3 className="text-label text-fg-muted">Faltando</h3>
                     <ChipList items={mainEvaluation.justification?.missing ?? []} tone="missing" />
                   </div>
                 </div>
               </>
             ) : (
-              <p className="text-body text-ink-600">Sem avaliação de currículo registrada.</p>
+              <p className="text-body text-fg-muted">Sem avaliação de currículo registrada.</p>
             )}
             {otherEvaluations.map((evaluation) => (
-              <div key={evaluation.type} className="rounded-card border border-brand-100 p-3">
-                <p className="text-body font-medium text-ink-900">
+              <div key={evaluation.type} className="rounded-card border border-line p-3">
+                <p className="text-body font-medium text-fg">
                   {EVALUATION_LABEL[evaluation.type] ?? evaluation.type}: {evaluation.score}%
                 </p>
                 {evaluation.type === "GITHUB_ANALYSIS" && evaluation.justification && (
-                  <div className="mt-2 space-y-2 text-body text-ink-600">
+                  <div className="mt-2 space-y-2 text-body text-fg-muted">
                     {evaluation.justification.note && <p>{evaluation.justification.note}</p>}
                     <p>
                       {evaluation.justification.publicRepoCount ?? 0} repositórios públicos ·{" "}
@@ -327,7 +380,7 @@ export function ApplicationDetailView({
                   {data.resume.originalFilename}
                 </a>
               ) : (
-                <p className="text-body text-ink-600">Nenhum currículo.</p>
+                <p className="text-body text-fg-muted">Nenhum currículo.</p>
               )}
             </CardBody>
           </Card>
@@ -336,13 +389,13 @@ export function ApplicationDetailView({
             <CardHeader titleId="contas-candidato" title="Contas externas" />
             <CardBody>
               {data.externalAccounts.length === 0 ? (
-                <p className="text-body text-ink-600">Nenhuma conta conectada.</p>
+                <p className="text-body text-fg-muted">Nenhuma conta conectada.</p>
               ) : (
                 <ul className="space-y-2">
                   {data.externalAccounts.map((account) => (
-                    <li key={account.provider} className="flex items-center justify-between gap-2 text-body text-ink-900">
+                    <li key={account.provider} className="flex items-center justify-between gap-2 text-body text-fg">
                       <span className="flex min-w-0 items-start gap-3 break-all">
-                        <span aria-hidden="true" className={account.provider === "GITHUB" ? "mt-0.5 shrink-0 text-ink-900" : "mt-0.5 shrink-0"}>
+                        <span aria-hidden="true" className={account.provider === "GITHUB" ? "mt-0.5 shrink-0 text-fg" : "mt-0.5 shrink-0"}>
                           <ProviderIcon provider={account.provider} />
                         </span>
                         <span className="min-w-0">
@@ -357,7 +410,7 @@ export function ApplicationDetailView({
                           </>
                         )}
                         {account.status !== "DISCONNECTED" && (
-                          <span className="block text-label text-ink-600">
+                          <span className="block text-label text-fg-muted">
                             {account.verified
                               ? `Conta ${account.verifiedName ? `de ${account.verifiedName} ` : ""}confirmada por login no ${PROVIDER_LABEL[account.provider] ?? account.provider}.`
                               : "Link informado pelo candidato, sem verificação."}
@@ -384,47 +437,6 @@ export function ApplicationDetailView({
       <CodeTestCard report={data.codeTest} />
 
       <ProfessionalProfileCard profile={data.professionalProfile} />
-
-      <Card as="section" aria-labelledby="decisao">
-        <CardHeader
-          titleId="decisao"
-          title="Decisão"
-          description={
-            data.status === "IN_PROGRESS"
-              ? isLastStage
-                ? "Esta é a última etapa: avançar aprova o candidato."
-                : "A decisão é sempre humana — a nota automática nunca move o candidato de etapa."
-              : undefined
-          }
-        />
-        <CardBody>
-          {data.status === "IN_PROGRESS" ? (
-            <div className="flex flex-wrap gap-3">
-              {/* Só aviso: a regra continua deixando a pessoa decidir sem o envio. */}
-              {data.currentStage.type === "CODE_TEST" && (data.codeTest.status === "NOT_STARTED" || data.codeTest.status === "IN_PROGRESS") && (
-                <Notice tone="warning" className="basis-full">
-                  O candidato ainda não enviou o teste de código. Avançar agora pula a correção automática.
-                </Notice>
-              )}
-              <Button onClick={() => setPending("ADVANCE")} disabled={saving}>
-                {isLastStage ? "Avançar e aprovar" : "Avançar"}
-              </Button>
-              <Button variant="danger" onClick={() => setPending("REJECT")} disabled={saving}>
-                Reprovar
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-body text-ink-900">
-                Candidatura {data.status === "APPROVED" ? "aprovada" : data.status === "REJECTED" ? "reprovada" : "retirada"}.
-              </p>
-              <ButtonLink href={backHref} variant="secondary">
-                {origin.kind === "search" ? "Voltar à busca" : "Voltar às candidaturas"}
-              </ButtonLink>
-            </div>
-          )}
-        </CardBody>
-      </Card>
 
       <MeetingDialog
         open={pending === "ADVANCE" && nextIsInterview}
@@ -476,13 +488,13 @@ function CaseRow({ item }: { item: CaseItem }) {
   const passed = item.outcome === "PASSED";
   return (
     <li>
-      <details open={!passed} className="rounded-field border border-brand-100 bg-surface">
-        <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-body text-ink-900">
+      <details open={!passed} className="rounded-field border border-line bg-surface">
+        <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-body text-fg">
           <span className="font-medium">Caso {item.index + 1}</span>
-          <span className="text-ink-600">{item.hidden ? "oculto" : "visível ao candidato"}</span>
+          <span className="text-fg-muted">{item.hidden ? "oculto" : "visível ao candidato"}</span>
           <Badge variant={passed ? "success" : "danger"}>{CASE_OUTCOME_LABEL[item.outcome] ?? item.outcome}</Badge>
         </summary>
-        <dl className="grid gap-3 border-t border-brand-100 px-3 py-3 sm:grid-cols-3">
+        <dl className="grid gap-3 border-t border-line px-3 py-3 sm:grid-cols-3">
           <CaseField label="Entrada" value={item.input} />
           <CaseField label="Saída esperada" value={item.expectedOutput} />
           <CaseField
@@ -504,14 +516,14 @@ function CaseRow({ item }: { item: CaseItem }) {
 function CaseField({ label, value, empty = "(vazia)" }: { label: string; value: string | null; empty?: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-label text-ink-600">{label}</dt>
+      <dt className="text-label text-fg-muted">{label}</dt>
       <dd className="mt-1">
         {value ? (
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-field bg-canvas p-2 font-mono text-label font-normal text-ink-900">
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-field bg-page p-2 font-mono text-label font-normal text-fg">
             {value}
           </pre>
         ) : (
-          <span className="text-label font-normal text-ink-600">{empty}</span>
+          <span className="text-label font-normal text-fg-muted">{empty}</span>
         )}
       </dd>
     </div>
@@ -524,18 +536,18 @@ function CodeTestCard({ report }: { report: CodeTestReport }) {
   let body: React.ReactNode;
   switch (report.status) {
     case "NOT_APPLICABLE":
-      body = <p className="text-body text-ink-600">Esta vaga não tem etapa de teste de código.</p>;
+      body = <p className="text-body text-fg-muted">Esta vaga não tem etapa de teste de código.</p>;
       break;
     case "NOT_STARTED":
       body = (
-        <p className="text-body text-ink-600">
+        <p className="text-body text-fg-muted">
           {report.challengeTitle ? `Desafio "${report.challengeTitle}" ainda não iniciado pelo candidato.` : "Etapa sem desafio configurado."}
         </p>
       );
       break;
     case "IN_PROGRESS":
       body = (
-        <p className="text-body text-ink-600">
+        <p className="text-body text-fg-muted">
           Candidato resolvendo &quot;{report.challengeTitle}&quot;. Prazo: {new Date(report.deadline).toLocaleString("pt-BR")}.
         </p>
       );
@@ -558,21 +570,21 @@ function CodeTestCard({ report }: { report: CodeTestReport }) {
         <div className="space-y-4">
           <div className="flex flex-wrap items-end gap-6">
             <div>
-              <p className="text-display text-ink-900">{report.score}%</p>
-              <p className="text-body text-ink-600">
+              <p className="text-display text-fg">{report.score}%</p>
+              <p className="text-body text-fg-muted">
                 {report.passed} de {report.total} casos aprovados
               </p>
             </div>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-body">
-              <dt className="text-ink-600">Linguagem</dt>
-              <dd className="text-ink-900">{LANGUAGE_LABEL[report.language] ?? report.language}</dd>
-              <dt className="text-ink-600">Tempo gasto</dt>
-              <dd className="text-ink-900">{formatDuration(report.timeSpentSeconds)}</dd>
-              <dt className="text-ink-600">Envio</dt>
-              <dd className="text-ink-900">{report.submittedBy === "TIME_EXPIRED" ? "Automático (tempo esgotado)" : "Pelo candidato"}</dd>
+              <dt className="text-fg-muted">Linguagem</dt>
+              <dd className="text-fg">{LANGUAGE_LABEL[report.language] ?? report.language}</dd>
+              <dt className="text-fg-muted">Tempo gasto</dt>
+              <dd className="text-fg">{formatDuration(report.timeSpentSeconds)}</dd>
+              <dt className="text-fg-muted">Envio</dt>
+              <dd className="text-fg">{report.submittedBy === "TIME_EXPIRED" ? "Automático (tempo esgotado)" : "Pelo candidato"}</dd>
             </dl>
           </div>
-          <p className="text-label font-normal text-ink-600">
+          <p className="text-label font-normal text-fg-muted">
             Nota = casos aprovados ÷ total de casos, contando os ocultos (que o candidato não vê). A saída é comparada
             linha a linha, ignorando espaços no fim.
           </p>
@@ -586,12 +598,12 @@ function CodeTestCard({ report }: { report: CodeTestReport }) {
               {showCode ? "Ocultar código" : "Ver código submetido"}
             </Button>
             {showCode && (
-              <pre className="mt-3 max-h-96 overflow-auto rounded-field bg-brand-900 p-3 font-mono text-label font-normal text-surface">
+              <pre className="mt-3 max-h-96 overflow-auto rounded-field bg-inverse p-3 font-mono text-label font-normal text-on-color">
                 {report.sourceCode}
               </pre>
             )}
           </div>
-          <p className="text-label font-normal text-ink-600">A nota é informativa: avançar ou reprovar continua sendo decisão sua.</p>
+          <p className="text-label font-normal text-fg-muted">A nota é informativa: avançar ou reprovar continua sendo decisão sua.</p>
         </div>
       );
       break;

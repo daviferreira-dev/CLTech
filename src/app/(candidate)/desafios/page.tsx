@@ -6,6 +6,8 @@ import { RefreshOnFocus } from "@/components/layout/RefreshOnFocus";
 import { ButtonLink, EmptyState } from "@/components/ui";
 import { ChallengeList } from "./ChallengeList";
 
+export const metadata = { title: "Desafios" };
+
 export default async function DesafiosPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
   const user = await requirePageRole(CANDIDATE_ROLES, currentPath("/desafios", await searchParams));
   const items = await listMyChallenges(user.id);
@@ -14,7 +16,7 @@ export default async function DesafiosPage({ searchParams }: { searchParams: Pro
     <PageContainer className="max-w-4xl">
       <RefreshOnFocus />
       <PageHeader
-        title="Desafios Técnicos"
+        title="Desafios"
         subtitle="Quando uma candidatura chega à etapa de teste de código, o desafio aparece aqui."
       />
       {items.length === 0 ? (

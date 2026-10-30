@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { STAGE_LABEL } from "@/lib/processStages";
 import { apiFetch, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
-import { SENIORITY_LABEL, WORK_MODE_LABEL } from "@/lib/labels";
+import { SENIORITY_LABEL, jobPlace } from "@/lib/labels";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Badge,
@@ -21,6 +22,7 @@ import {
   Notice,
   Skeleton,
   StageTrail,
+  textLinkClasses,
 } from "@/components/ui";
 
 type MatchScore =
@@ -148,7 +150,7 @@ export function JobDetail({ jobId, viewer }: { jobId: string; viewer: Viewer }) 
   if (loadState === "failed" || !job) {
     return (
       <ErrorState
-        title="Não foi possível carregar a vaga."
+        title="Não conseguimos abrir esta vaga agora."
         onRetry={load}
         action={
           <ButtonLink href="/vagas" variant="ghost">
@@ -178,9 +180,7 @@ export function JobDetail({ jobId, viewer }: { jobId: string; viewer: Viewer }) 
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span>{job.company}</span>
             <span aria-hidden="true">·</span>
-            <span>{job.location}</span>
-            <span aria-hidden="true">·</span>
-            <span>{WORK_MODE_LABEL[job.workMode]}</span>
+            <span>{jobPlace(job.location, job.workMode)}</span>
             <span aria-hidden="true">·</span>
             <span>{SENIORITY_LABEL[job.seniority]}</span>
           </span>
@@ -193,10 +193,10 @@ export function JobDetail({ jobId, viewer }: { jobId: string; viewer: Viewer }) 
           <Card as="section" aria-labelledby="sobre-vaga">
             <CardHeader titleId="sobre-vaga" title="Sobre a vaga" />
             <CardBody className="space-y-4">
-              <p className="whitespace-pre-line break-words text-body text-ink-900">{job.description}</p>
+              <p className="whitespace-pre-line break-words text-body text-fg">{job.description}</p>
               <div className="space-y-1">
-                <h3 className="text-label text-ink-600">Requisitos mínimos</h3>
-                <p className="whitespace-pre-line break-words text-body text-ink-900">{job.minimumRequirements}</p>
+                <h3 className="text-label text-fg-muted">Requisitos mínimos</h3>
+                <p className="whitespace-pre-line break-words text-body text-fg">{job.minimumRequirements}</p>
               </div>
             </CardBody>
           </Card>
@@ -210,14 +210,14 @@ export function JobDetail({ jobId, viewer }: { jobId: string; viewer: Viewer }) 
             <CardBody className="space-y-4">
               {calculated ? (
                 <>
-                  <p className="text-body font-medium text-ink-900">Sua compatibilidade: {calculated.value}%</p>
+                  <p className="text-body font-medium text-fg">Sua compatibilidade: {calculated.value}%</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <h3 className="text-label text-ink-600">Encontradas no seu perfil</h3>
+                      <h3 className="text-label text-fg-muted">Encontradas no seu perfil</h3>
                       <TechList items={calculated.matched ?? []} tone="found" />
                     </div>
                     <div className="space-y-2">
-                      <h3 className="text-label text-ink-600">Ainda faltando</h3>
+                      <h3 className="text-label text-fg-muted">Ainda faltando</h3>
                       <TechList items={calculated.missing ?? []} tone="missing" />
                     </div>
                   </div>
@@ -226,18 +226,16 @@ export function JobDetail({ jobId, viewer }: { jobId: string; viewer: Viewer }) 
                 <TechList items={job.technologies} tone="default" />
               )}
               {matchState?.status === "NEEDS_RESUME" && (
-                <Notice
-                  action={
-                    <ButtonLink href={profileHref} variant="secondary" size="sm">
-                      Enviar currículo
-                    </ButtonLink>
-                  }
-                >
-                  Complete seu perfil para ver sua compatibilidade com esta vaga.
-                </Notice>
+                // Uma ação primária por tela (Candidatar-se, ao lado): aqui o caminho para o perfil é só um link.
+                <p className="text-body text-fg-muted">
+                  <Link href={profileHref} className={textLinkClasses}>
+                    Envie seu currículo
+                  </Link>{" "}
+                  para ver sua compatibilidade com esta vaga.
+                </p>
               )}
               {calculated && matched.size === 0 && (calculated.missing ?? []).length === 0 && (
-                <p className="text-body text-ink-600">Esta vaga não lista tecnologias.</p>
+                <p className="text-body text-fg-muted">Esta vaga não lista tecnologias.</p>
               )}
             </CardBody>
           </Card>
@@ -248,7 +246,7 @@ export function JobDetail({ jobId, viewer }: { jobId: string; viewer: Viewer }) 
               {job.stages.length > 0 ? (
                 <StageTrail stages={job.stages.map((s) => ({ type: s.type, label: STAGE_LABEL[s.type] ?? s.type }))} />
               ) : (
-                <p className="text-body text-ink-600">O processo seletivo ainda não foi configurado.</p>
+                <p className="text-body text-fg-muted">O processo seletivo ainda não foi configurado.</p>
               )}
             </CardBody>
           </Card>
@@ -260,7 +258,7 @@ export function JobDetail({ jobId, viewer }: { jobId: string; viewer: Viewer }) 
           Duas cópias (uma escondida) quebrariam leitores de tela e o strict mode dos E2E.
         */}
         <aside aria-label="Candidatura" className="min-w-0">
-          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-brand-100 bg-surface px-4 py-3 shadow-header lg:sticky lg:inset-auto lg:top-24 lg:z-auto lg:rounded-card lg:border lg:p-6 lg:shadow-none">
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface px-4 py-3 shadow-header lg:sticky lg:inset-auto lg:top-24 lg:z-auto lg:rounded-card lg:border lg:p-6 lg:shadow-none">
             <ApplyAction
               state={apply}
               viewer={viewer}
@@ -276,7 +274,7 @@ export function JobDetail({ jobId, viewer }: { jobId: string; viewer: Viewer }) 
 }
 
 function TechList({ items, tone }: { items: string[]; tone: "found" | "missing" | "default" }) {
-  if (items.length === 0) return <p className="text-body text-ink-600">—</p>;
+  if (items.length === 0) return <p className="text-body text-fg-muted">—</p>;
   return (
     <ul className="flex flex-wrap gap-2">
       {items.map((tech) => (
@@ -312,7 +310,7 @@ function ApplyAction({
         <Button className={full} disabled>
           Candidatar-se
         </Button>
-        <p className="text-body text-ink-600">Somente candidatos podem se candidatar a vagas.</p>
+        <p className="text-body text-fg-muted">Somente candidatos podem se candidatar a vagas.</p>
       </div>
     );
   }
@@ -320,7 +318,7 @@ function ApplyAction({
   if (!jobOpen || state.kind === "notOpen") {
     return (
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-stretch">
-        <p role="status" className="text-body text-ink-900">
+        <p role="status" className="text-body text-fg">
           Esta vaga não está mais aberta para candidaturas.
         </p>
         <ButtonLink href="/vagas" variant="secondary" className={full}>
@@ -344,7 +342,7 @@ function ApplyAction({
   if (state.kind === "resumeRequired") {
     return (
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-stretch">
-        <p role="alert" className="text-body text-ink-900">
+        <p role="alert" className="text-body text-fg">
           Complete seu perfil com um currículo antes de se candidatar.
         </p>
         <ButtonLink href={profileHref} className={full}>
@@ -360,10 +358,10 @@ function ApplyAction({
         {state.kind === "sending" ? "Enviando…" : "Candidatar-se"}
       </Button>
       {viewer === "visitor" && (
-        <p className="hidden text-body text-ink-600 lg:block">Você vai entrar ou criar uma conta e voltar para esta vaga.</p>
+        <p className="hidden text-body text-fg-muted lg:block">Você vai entrar ou criar uma conta e voltar para esta vaga.</p>
       )}
       {state.kind === "failed" && (
-        <p role="alert" className="text-body text-danger-600">
+        <p role="alert" className="text-body text-danger">
           {state.message}
         </p>
       )}

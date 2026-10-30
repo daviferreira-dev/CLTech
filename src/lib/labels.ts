@@ -37,3 +37,9 @@ export const APPLICATION_STATUS_BADGE: Record<string, BadgeVariant> = {
 };
 
 export const PROVIDER_LABEL: Record<string, string> = { GITHUB: "GitHub", LINKEDIN: "LinkedIn", LATTES: "Lattes" };
+
+/** "São Paulo · Híbrido", sem repetir quando a localização já é a modalidade ("Remoto · Remoto"). */
+export function jobPlace(location: string, workMode: string): string {
+  const mode = WORK_MODE_LABEL[workMode] ?? workMode;
+  return location && location.trim().toLowerCase() !== mode.toLowerCase() ? `${location} · ${mode}` : mode;
+}

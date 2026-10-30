@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { safeInternalPath } from "@/lib/safe-path";
 import { cn } from "@/lib/cn";
-import { Button, Field, GitHubIcon, Input, LinkedInIcon, focusRing, textLinkClasses } from "@/components/ui";
+import { Button, Field, GitHubIcon, Input, LinkedInIcon, PasswordInput, focusRing, textLinkClasses } from "@/components/ui";
 
 const oauthClasses = cn(
   "flex h-11 w-full items-center justify-center gap-2.5 rounded-full text-body font-semibold transition-colors",
@@ -33,11 +33,19 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
   // Erros do OAuth chegam como ?error=<tipo> (Auth.js redireciona para pages.signIn).
   const [error, setError] = useState<string | null>(() => OAUTH_ERROR[searchParams.get("error") ?? ""] ?? null);
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
   async function handleCredentialsSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
     setError(null);
+    // Erro em linha, ligado ao campo (aria-invalid + aria-describedby), em vez do balão do navegador.
+    const errors = {
+      email: !email.trim() ? "Informe seu e-mail." : !/^\S+@\S+\.\S+$/.test(email.trim()) ? "Confira o e-mail: falta o @ ou o domínio." : undefined,
+      password: !password ? "Informe sua senha." : undefined,
+    };
+    setFieldErrors(errors);
+    if (errors.email || errors.password) return;
     setLoading(true);
 
     const result = await signIn("credentials", {
@@ -65,8 +73,8 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="font-display text-display text-ink-900">Entrar</h1>
-        <p className="text-body text-ink-600">
+        <h1 className="font-display text-display text-fg">Entrar</h1>
+        <p className="text-body text-fg-muted">
           {callbackUrl ? "Entre para continuar de onde parou." : "Acesse sua conta para acompanhar seus processos."}
         </p>
       </div>
@@ -75,7 +83,7 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
         <button
           type="button"
           onClick={() => signIn("github", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}
-          className={cn(oauthClasses, "bg-[#181717] text-surface hover:bg-black")}
+          className={cn(oauthClasses, "bg-[#181717] ring-1 ring-on-color/15 text-on-color hover:bg-black")}
         >
           <GitHubIcon />
           Entrar com GitHub
@@ -84,33 +92,33 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
           <button
             type="button"
             onClick={() => signIn("linkedin", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}
-            className={cn(oauthClasses, "border border-ink-400/50 bg-surface text-ink-900 hover:bg-canvas")}
+            className={cn(oauthClasses, "border border-fg-subtle/50 bg-surface text-fg hover:bg-page")}
           >
             <LinkedInIcon className="text-[#0A66C2]" />
             Entrar com LinkedIn
           </button>
         )}
-        <p className="pt-1 text-center text-label font-normal text-ink-600">
+        <p className="pt-1 text-center text-label font-normal text-fg-muted">
           Entrando pelo GitHub, seu portfólio já chega verificado para o recrutador.
         </p>
       </div>
 
-      <div className="flex items-center gap-3 text-label font-normal text-ink-600">
-        <span className="h-px flex-1 bg-brand-100" />
+      <div className="flex items-center gap-3 text-label font-normal text-fg-muted">
+        <span className="h-px flex-1 bg-line" />
         ou com e-mail
-        <span className="h-px flex-1 bg-brand-100" />
+        <span className="h-px flex-1 bg-line" />
       </div>
 
-      <form onSubmit={handleCredentialsSubmit} className="space-y-4">
-        <Field id="email" label="E-mail">
+      <form onSubmit={handleCredentialsSubmit} className="space-y-4" noValidate>
+        <Field id="email" label="E-mail" error={fieldErrors.email}>
           <Input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
-        <Field id="password" label="Senha">
-          <Input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Field id="password" label="Senha" error={fieldErrors.password}>
+          <PasswordInput required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
 
         {error && (
-          <p role="alert" className="text-body text-danger-600">
+          <p role="alert" className="text-body text-danger">
             {error}
           </p>
         )}
@@ -120,7 +128,7 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
         </Button>
       </form>
 
-      <p className="text-center text-body text-ink-600">
+      <p className="text-center text-body text-fg-muted">
         Ainda não tem conta?{" "}
         <Link href={registerHref} className={textLinkClasses}>
           Cadastre-se

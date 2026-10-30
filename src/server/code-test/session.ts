@@ -346,7 +346,7 @@ export interface PendingChallengeItem {
   state: "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | "NOT_CONFIGURED";
 }
 
-/** "Desafios Técnicos" (US2.1): só os desafios das candidaturas do próprio candidato em CODE_TEST. */
+/** "Desafios" (US2.1): só os desafios das candidaturas do próprio candidato em CODE_TEST. */
 export async function listMyChallenges(userId: string): Promise<PendingChallengeItem[]> {
   const applications = await prisma.application.findMany({
     where: { candidate: { userId }, currentStage: { type: "CODE_TEST" } },

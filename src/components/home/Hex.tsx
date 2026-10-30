@@ -8,9 +8,9 @@ export function Hex({ state = "todo", className }: { state?: "done" | "current" 
       data-hex={state}
       className={cn(
         "relative grid h-9 w-9 shrink-0 place-items-center [clip-path:polygon(25%_3%,75%_3%,100%_50%,75%_97%,25%_97%,0_50%)]",
-        state === "done" && "bg-accent-600 text-surface",
-        state === "current" && "bg-primary-600 text-surface",
-        state === "todo" && "bg-brand-100 text-ink-400",
+        state === "done" && "bg-success text-inverse",
+        state === "current" && "bg-action text-on-color",
+        state === "todo" && "bg-line text-fg-subtle",
         className,
       )}
     >

@@ -3,7 +3,7 @@ import { PageContainer } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Aviso de privacidade — CLTech" };
+export const metadata: Metadata = { title: "Aviso de privacidade" };
 
 // Spec 006, US6 / FR-307 — LGPD art. 9º: finalidade, forma, duração, quem acessa e como
 // exercer os direitos. O conteúdo descreve o que o código faz hoje; mudar um sem o outro
@@ -64,7 +64,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     title: "Seus direitos",
     body: (
       <p>
-        Em <a href="/perfil" className="underline underline-offset-2">Meu Perfil</a> você corrige seus dados, baixa uma
+        Em <a href="/perfil" className="underline underline-offset-2">Meu perfil</a> você corrige seus dados, baixa uma
         cópia de tudo o que guardamos (&ldquo;Baixar meus dados&rdquo;) e exclui sua conta (&ldquo;Excluir minha
         conta&rdquo;), sem precisar pedir a ninguém.
       </p>
@@ -79,8 +79,8 @@ export default function PrivacyPage() {
       <div className="space-y-4">
         {SECTIONS.map((section) => (
           <Card as="section" key={section.title}>
-            <CardBody className="space-y-2 text-body text-ink-600">
-              <h2 className="text-h3 text-ink-900">{section.title}</h2>
+            <CardBody className="space-y-2 text-body text-fg-muted">
+              <h2 className="text-h3 text-fg">{section.title}</h2>
               {section.body}
             </CardBody>
           </Card>

@@ -1,9 +1,14 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
+import { recruiterTitle, requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
 import { PageContainer } from "@/components/layout/AppShell";
 import { CardListSkeleton } from "@/components/ui";
 import { CandidatesForJobList } from "./CandidatesForJobList";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return recruiterTitle(() => prisma.job.findUnique({ where: { id }, select: { title: true } }), "Candidaturas", (job) => `Candidaturas · ${job.title}`);
+}
 
 export default async function CandidaturasDaVagaPage({
   params,

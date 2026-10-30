@@ -256,7 +256,7 @@ export function ProfileForm({
     accountAction(provider, () => apiFetch(`/api/me/external-accounts/${provider}`, { method: "DELETE" }));
 
   if (loadFailed) {
-    return <ErrorState title="Não foi possível carregar seu perfil." onRetry={load} />;
+    return <ErrorState title="Não conseguimos abrir seu perfil agora." onRetry={load} action={<ButtonLink href="/candidaturas" variant="ghost">Ir para Minhas candidaturas</ButtonLink>} />;
   }
 
   if (!profile) {
@@ -288,16 +288,16 @@ export function ProfileForm({
           <Avatar name={profile.name} size="lg" />
           <div className="min-w-0 flex-1 space-y-2">
             <div>
-              <p className="break-words text-h2 text-ink-900">{profile.name}</p>
-              {profile.details.headline && <p className="break-words text-body font-medium text-ink-900">{profile.details.headline}</p>}
-              <p className="break-all text-body text-ink-600 sm:break-words">
+              <p className="break-words text-h2 text-fg">{profile.name}</p>
+              {profile.details.headline && <p className="break-words text-body font-medium text-fg">{profile.details.headline}</p>}
+              <p className="break-all text-body text-fg-muted sm:break-words">
                 {profile.email}
                 {location && ` · ${location}`}
               </p>
             </div>
             {languages.length > 0 && (
               <div className="space-y-1">
-                <p className="text-label text-ink-600">Principais tecnologias (GitHub)</p>
+                <p className="text-label text-fg-muted">Principais tecnologias (GitHub)</p>
                 <ChipList items={languages} label="Principais tecnologias" />
               </div>
             )}
@@ -310,7 +310,7 @@ export function ProfileForm({
         <CardHeader
           titleId="curriculo"
           title="Currículo"
-          description="É a partir dele que calculamos seu match com cada vaga. Ao enviar, preenchemos os campos vazios do perfil abaixo com o que conseguirmos ler — você revisa e salva."
+          description="É a partir dele que calculamos sua compatibilidade com cada vaga. Ao enviar, preenchemos os campos vazios do perfil abaixo com o que conseguirmos ler — você revisa e salva."
         />
         <CardBody className="space-y-4">
           {justUploaded && (
@@ -325,22 +325,22 @@ export function ProfileForm({
                 ) : undefined
               }
             >
-              {next ? "Agora você já pode concluir sua candidatura." : "Seu match com as vagas será atualizado em instantes."}
+              {next ? "Agora você já pode concluir sua candidatura." : "Sua compatibilidade com as vagas será atualizada em instantes."}
             </Notice>
           )}
 
           {profile.resume ? (
-            <div className="flex flex-col gap-3 rounded-card border border-brand-100 bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-card border border-line bg-page p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <p className="break-all text-body font-medium text-ink-900">Arquivo atual: {profile.resume.originalFilename}</p>
-                <p className="text-label font-normal text-ink-600">{(profile.resume.sizeBytes / 1024).toFixed(0)} KB</p>
+                <p className="break-all text-body font-medium text-fg">Arquivo atual: {profile.resume.originalFilename}</p>
+                <p className="text-label font-normal text-fg-muted">{(profile.resume.sizeBytes / 1024).toFixed(0)} KB</p>
                 {parseStatus === "PARSED" && <Badge variant="success">Leitura Concluída</Badge>}
                 {parseStatus === "FAILED" && (
-                  <p className="text-body text-ink-900">
+                  <p className="text-body text-fg">
                     <Badge variant="warning" className="mr-2">
                       Texto não lido
                     </Badge>
-                    Não conseguimos ler o texto deste arquivo (ex.: PDF escaneado). Isso reduz a precisão do seu match.
+                    Não conseguimos ler o texto deste arquivo (ex.: PDF escaneado). Isso reduz a precisão da sua compatibilidade.
                   </p>
                 )}
               </div>
@@ -349,7 +349,7 @@ export function ProfileForm({
               </a>
             </div>
           ) : (
-            <p className="text-body text-ink-600">Nenhum currículo enviado ainda.</p>
+            <p className="text-body text-fg-muted">Nenhum currículo enviado ainda.</p>
           )}
 
           <FileDropzone
@@ -371,7 +371,7 @@ export function ProfileForm({
         <CardHeader titleId="contas" title="Conecte suas contas" description="Portfólio público usado como sinal complementar ao currículo." />
         <CardBody className="space-y-3">
           {profile.githubProfile && (
-            <p className="text-body text-ink-600">
+            <p className="text-body text-fg-muted">
               GitHub: {profile.githubProfile.publicRepoCount} repositórios públicos · {profile.githubProfile.activityLast90Days} eventos nos últimos 90 dias.
             </p>
           )}
@@ -383,22 +383,22 @@ export function ProfileForm({
               const busy = busyProvider === provider;
               const info = ACCOUNT_STATUS[status];
               return (
-                <li key={provider} className="flex flex-col gap-3 rounded-card border border-brand-100 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <li key={provider} className="flex flex-col gap-3 rounded-card border border-line p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
                     <span
                       aria-hidden="true"
                       className={cn(
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-field text-body font-bold",
-                        provider === "GITHUB" ? "bg-[#181717] text-surface" : "bg-canvas text-ink-900",
+                        provider === "GITHUB" ? "bg-[#181717] ring-1 ring-on-color/15 text-on-color" : "bg-page text-fg",
                       )}
                     >
                       {provider === "LATTES" ? PROVIDER_LABEL[provider]?.[0] : <ProviderIcon provider={provider} />}
                     </span>
                     <div className="min-w-0 space-y-1">
-                      <p className="text-body font-medium text-ink-900">
+                      <p className="text-body font-medium text-fg">
                         {PROVIDER_LABEL[provider]}
                         {status !== "DISCONNECTED" && account?.externalUsername && (
-                          <span className="font-normal text-ink-600">
+                          <span className="font-normal text-fg-muted">
                             {" · "}
                             {account.url ? (
                               <a href={account.url} target="_blank" rel="noopener noreferrer" className={textLinkClasses}>
@@ -415,12 +415,12 @@ export function ProfileForm({
                         {status !== "DISCONNECTED" && account?.verifiedAt && <Badge variant="success">Verificado</Badge>}
                       </div>
                       {status !== "DISCONNECTED" && account?.verifiedAt && account.verifiedName && (
-                        <p className="break-words text-label text-ink-600">
+                        <p className="break-words text-label text-fg-muted">
                           Conta de {account.verifiedName}, confirmada pelo {PROVIDER_LABEL[provider]}.
                         </p>
                       )}
                       {status === "UNAVAILABLE" && (
-                        <p className="break-words text-body text-ink-600">{account?.unavailableReason ?? "Motivo desconhecido."}</p>
+                        <p className="break-words text-body text-fg-muted">{account?.unavailableReason ?? "Motivo desconhecido."}</p>
                       )}
                     </div>
                   </div>
@@ -439,7 +439,7 @@ export function ProfileForm({
                         </Button>
                       </>
                     ) : connecting === provider ? null : provider === "LINKEDIN" && !linkedInEnabled ? (
-                      <span className="text-label text-ink-600">Indisponível no momento</span>
+                      <span className="text-label text-fg-muted">Indisponível no momento</span>
                     ) : (
                       <Button size="sm" loading={busy} disabled={busyProvider !== null} onClick={() => startConnect(provider)}>
                         {OAUTH_ID[provider] ? `Conectar com ${PROVIDER_LABEL[provider]}` : "Conectar"}
@@ -497,8 +497,8 @@ export function ProfileForm({
         title="Substituir currículo?"
         description={
           <>
-            O arquivo <strong className="break-all">{pendingReplace?.name}</strong> passa a ser seu currículo vigente e o
-            match com as vagas é recalculado. O anterior fica guardado no histórico.
+            O arquivo <strong className="break-all">{pendingReplace?.name}</strong> passa a ser seu currículo vigente e
+            a compatibilidade com as vagas é recalculada. O anterior fica guardado no histórico.
           </>
         }
         confirmLabel="Substituir currículo"

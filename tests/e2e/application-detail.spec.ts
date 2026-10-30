@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function loginAsRecruiter(page: Page) {
   await page.goto("/entrar");
   await page.getByLabel("E-mail").fill("recrutador@3aq.dev");
-  await page.getByLabel("Senha").fill("Senha123!");
+  await page.getByLabel("Senha", { exact: true }).fill("Senha123!");
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/recrutamento$/);
 }
@@ -17,7 +17,7 @@ async function signUpCandidate(page: Page, name: string) {
   await page.goto("/cadastro");
   await page.getByLabel("Nome").fill(name);
   await page.getByLabel("E-mail").fill(`e2e-detail-${Date.now()}@example.com`);
-  await page.getByLabel("Senha").fill("senhaSegura123");
+  await page.getByLabel("Senha", { exact: true }).fill("senhaSegura123");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 }
@@ -42,7 +42,7 @@ test("recrutador abre relatório do candidato, vê score/currículo e avança a 
   // Lido antes de candidatar: depois da candidatura o candidato vai para /candidaturas (spec 004 US2.5).
   const jobUrl = candidatePage.url();
   await candidatePage.getByRole("button", { name: "Candidatar-se" }).click();
-  await expect(candidatePage.getByText("Candidatura registrada com sucesso!")).toBeVisible();
+  await expect(candidatePage.getByText("Candidatura enviada.")).toBeVisible();
   await expect(candidatePage).toHaveURL(/\/candidaturas\?nova=/);
   const jobId = jobUrl.split("/vagas/")[1];
   await candidateContext.close();
@@ -63,5 +63,5 @@ test("recrutador abre relatório do candidato, vê score/currículo e avança a 
   // avançar é aprovar — a vaga escolhida depende dos dados do banco.
   await page.getByRole("button", { name: /Confirmar (avanço|aprovação)/ }).click();
   // Avançar volta para a lista da vaga, que anuncia o destino do candidato.
-  await expect(page.getByRole("status").filter({ hasText: `${CANDIDATE_NAME} foi aprovado(a)` })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: `${CANDIDATE_NAME} passou` })).toBeVisible();
 });

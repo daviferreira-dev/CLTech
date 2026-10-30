@@ -5,7 +5,7 @@ import { chooseOption } from "./fixtures/select";
 async function loginAsRecruiter(page: Page) {
   await page.goto("/entrar");
   await page.getByLabel("E-mail").fill("recrutador@3aq.dev");
-  await page.getByLabel("Senha").fill("Senha123!");
+  await page.getByLabel("Senha", { exact: true }).fill("Senha123!");
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/recrutamento$/);
 }
@@ -14,7 +14,7 @@ test("recrutador cria vaga, monta pipeline, publica, e vaga publicada trava edi√
   await loginAsRecruiter(page);
 
   await page.goto("/recrutamento/vagas");
-  await page.getByRole("link", { name: "Criar Vaga" }).click();
+  await page.getByRole("link", { name: "Criar vaga" }).click();
   await expect(page).toHaveURL(/\/recrutamento\/vagas\/nova$/);
 
   const title = `Vaga E2E ${Date.now()}`;

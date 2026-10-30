@@ -12,6 +12,9 @@ function first(value: string | string[] | undefined): string {
  * resolve-se aqui pelo índice único (candidateId, jobId) e redireciona com a origem
  * "busca", para o breadcrumb voltar à busca e não à vaga.
  */
+
+export const metadata = { title: "Abrir candidato" };
+
 export default async function AbrirCandidaturaPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
   const params = await searchParams;
   await requirePageRole(RECRUITER_ROLES, currentPath("/recrutamento/candidatos/abrir", params));

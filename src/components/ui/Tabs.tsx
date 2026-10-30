@@ -38,7 +38,7 @@ export function Tabs({
 
   return (
     <div className="space-y-4">
-      <div ref={listRef} role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto border-b border-brand-100">
+      <div ref={listRef} role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto border-b border-line">
         {items.map((item, index) => {
           const selected = item.id === value;
           return (
@@ -58,7 +58,7 @@ export function Tabs({
               }}
               className={cn(
                 "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-body font-medium transition-colors",
-                selected ? "border-primary-600 text-ink-900" : "border-transparent text-ink-600 hover:text-ink-900",
+                selected ? "border-action text-fg" : "border-transparent text-fg-muted hover:text-fg",
                 focusRing,
               )}
             >

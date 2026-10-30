@@ -4,6 +4,7 @@ export { Button, ButtonLink, buttonClasses, focusRing, textLinkClasses } from ".
 export type { ButtonVariant, ButtonSize } from "./Button";
 export { Card, CardHeader, CardBody } from "./Card";
 export { Input, SearchInput, Select, Textarea, Field } from "./Field";
+export { PasswordInput } from "./PasswordInput";
 export { Chip, ChipList } from "./Chip";
 export { TagInput } from "./TagInput";
 export { Badge, MatchBadge, matchVariant } from "./Badge";
@@ -14,3 +15,5 @@ export { EmptyState, ErrorState, Skeleton, CardListSkeleton, Notice } from "./St
 export { Breadcrumb, Pagination, StageTrail } from "./Navigation";
 export type { Crumb, StageTrailItem } from "./Navigation";
 export { GitHubIcon, LinkedInIcon, ProviderIcon, Logo } from "./BrandIcons";
+export { Icon } from "./Icon";
+export type { IconName } from "./Icon";

@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/cn";
-import { Avatar, ButtonLink, Logo, focusRing } from "@/components/ui";
+import { Avatar, ButtonLink, Icon, Logo, focusRing } from "@/components/ui";
+import { ThemeToggle } from "./ThemeToggle";
 import type { HeaderRole, HeaderUser, NavItem } from "./nav";
 
 const ROLE_LABEL: Record<HeaderRole, string> = {
@@ -63,7 +64,7 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
             aria-current={active ? "page" : undefined}
             className={cn(
               "block rounded-field px-3 py-2 text-body font-medium transition-colors",
-              active ? "bg-primary-100 text-primary-700" : "text-ink-600 hover:bg-canvas hover:text-ink-900",
+              active ? "bg-action-soft text-link" : "text-fg-muted hover:bg-page hover:text-fg",
               focusRing,
             )}
           >
@@ -74,7 +75,7 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
     });
 
   return (
-    <header className="sticky top-0 z-30 border-b border-brand-100 bg-surface shadow-header">
+    <header className="sticky top-0 z-30 border-b border-line bg-surface shadow-header">
       <div className="mx-auto flex h-16 max-w-content items-center gap-4 px-4 sm:px-6">
         <Link href={homeHref} className={cn("flex shrink-0 items-center gap-2 rounded-field", focusRing)}>
           <Logo size={30} />
@@ -96,13 +97,15 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
                 type="search"
                 placeholder="Buscar vagas…"
                 className={cn(
-                  "h-9 w-56 rounded-full border border-brand-100 bg-canvas px-4 text-body text-ink-900 placeholder:text-ink-400",
+                  "h-9 w-56 rounded-full border border-line bg-page px-4 text-body text-fg placeholder:text-fg-subtle",
                   focusRing,
                   "focus-visible:ring-offset-0",
                 )}
               />
             </form>
           )}
+
+          <ThemeToggle />
 
           {user ? (
             <div ref={userMenuRef} className="relative">
@@ -112,36 +115,36 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
                 aria-haspopup="true"
                 aria-controls="menu-usuario"
                 onClick={() => setUserMenuOpen((open) => !open)}
-                className={cn("flex items-center gap-2 rounded-field p-1 hover:bg-canvas", focusRing)}
+                className={cn("flex items-center gap-2 rounded-field p-1 hover:bg-page", focusRing)}
               >
                 <Avatar name={user.name} size="sm" />
                 <span className="hidden min-w-0 text-left sm:block">
-                  <span className="block max-w-40 truncate text-body font-medium text-ink-900">{user.name}</span>
-                  <span className="block text-label font-normal text-ink-600">{ROLE_LABEL[user.role]}</span>
+                  <span className="block max-w-40 truncate text-body font-medium text-fg">{user.name}</span>
+                  <span className="block text-label font-normal text-fg-muted">{ROLE_LABEL[user.role]}</span>
                 </span>
                 <span className="sr-only sm:hidden">Menu do usuário</span>
               </button>
               {userMenuOpen && (
                 <div
                   id="menu-usuario"
-                  className="absolute right-0 mt-2 w-56 rounded-card border border-brand-100 bg-surface p-2 shadow-popover"
+                  className="absolute right-0 mt-2 w-56 rounded-card border border-line bg-raised p-2 shadow-popover"
                 >
-                  <div className="border-b border-brand-100 px-2 pb-2 sm:hidden">
-                    <p className="truncate text-body font-medium text-ink-900">{user.name}</p>
-                    <p className="text-label font-normal text-ink-600">{ROLE_LABEL[user.role]}</p>
+                  <div className="border-b border-line px-2 pb-2 sm:hidden">
+                    <p className="truncate text-body font-medium text-fg">{user.name}</p>
+                    <p className="text-label font-normal text-fg-muted">{ROLE_LABEL[user.role]}</p>
                   </div>
                   {user.role === "CANDIDATE" && (
                     <Link
                       href="/perfil"
-                      className={cn("block rounded-field px-2 py-2 text-body text-ink-900 hover:bg-canvas", focusRing)}
+                      className={cn("block rounded-field px-2 py-2 text-body text-fg hover:bg-page", focusRing)}
                     >
-                      Meu Perfil
+                      Meu perfil
                     </Link>
                   )}
                   <button
                     type="button"
                     onClick={() => signOut({ callbackUrl: "/" })}
-                    className={cn("block w-full rounded-field px-2 py-2 text-left text-body text-ink-900 hover:bg-canvas", focusRing)}
+                    className={cn("block w-full rounded-field px-2 py-2 text-left text-body text-fg hover:bg-page", focusRing)}
                   >
                     Sair
                   </button>
@@ -164,21 +167,19 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
             aria-expanded={menuOpen}
             aria-controls="menu-principal-mobile"
             onClick={() => setMenuOpen((open) => !open)}
-            className={cn("rounded-field p-2 text-ink-900 hover:bg-canvas md:hidden", focusRing)}
+            className={cn("rounded-field p-2 text-fg hover:bg-page md:hidden", focusRing)}
           >
             <span className="sr-only">{menuOpen ? "Fechar menu" : "Abrir menu"}</span>
-            <span aria-hidden="true" className="block text-h2 leading-none">
-              {menuOpen ? "×" : "☰"}
-            </span>
+            <Icon name={menuOpen ? "close" : "menu"} className="h-5 w-5" />
           </button>
         </div>
       </div>
 
       {menuOpen && (
-        <nav id="menu-principal-mobile" aria-label="Navegação principal (menu)" className="border-t border-brand-100 px-4 py-3 md:hidden">
+        <nav id="menu-principal-mobile" aria-label="Navegação principal (menu)" className="border-t border-line px-4 py-3 md:hidden">
           <ul className="space-y-1">{navLinks("column")}</ul>
           {!user && (
-            <div className="mt-3 flex gap-2 border-t border-brand-100 pt-3 sm:hidden">
+            <div className="mt-3 flex gap-2 border-t border-line pt-3 sm:hidden">
               <ButtonLink href="/entrar" variant="secondary" size="sm" className="flex-1">
                 Entrar
               </ButtonLink>

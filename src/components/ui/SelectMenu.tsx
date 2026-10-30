@@ -2,6 +2,7 @@
 
 import { Children, isValidElement, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { Icon } from "./Icon";
 
 type OptionItem = { value: string; label: React.ReactNode; text: string; disabled: boolean };
 
@@ -187,26 +188,15 @@ export function SelectMenu({
         }}
         onKeyDown={onKeyDown}
         className={cn(
-          "flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-field border bg-surface pl-3 pr-2.5 text-left text-body text-ink-900 transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600",
-          open ? "border-primary-600 ring-2 ring-primary-600/20" : "border-ink-400/40 hover:border-ink-400",
-          "disabled:cursor-not-allowed disabled:bg-canvas disabled:text-ink-600 disabled:opacity-70",
-          invalid && "border-danger-600",
+          "flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-field border bg-surface pl-3 pr-2.5 text-left text-body text-fg transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+          open ? "border-action ring-2 ring-action/20" : "border-fg-subtle/40 hover:border-fg-subtle",
+          "disabled:cursor-not-allowed disabled:bg-page disabled:text-fg-muted disabled:opacity-70",
+          invalid && "border-danger",
         )}
       >
         <span className="min-w-0 truncate">{selected?.label ?? ""}</span>
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 16 16"
-          className={cn("h-4 w-4 shrink-0 text-ink-600 transition-transform duration-200", open && "rotate-180 text-primary-700")}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m4 6 4 4 4-4" />
-        </svg>
+        <Icon name="chevronDown" className={cn("h-4 w-4 shrink-0 text-fg-muted transition-transform duration-200", open && "rotate-180 text-link")} />
       </button>
 
       <ul
@@ -216,7 +206,7 @@ export function SelectMenu({
         aria-labelledby={buttonId}
         tabIndex={-1}
         hidden={!open}
-        className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-64 origin-top animate-[cl-pop_140ms_ease-out] overflow-auto rounded-field border border-brand-100 bg-surface p-1 shadow-popover motion-reduce:animate-none"
+        className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-64 origin-top animate-[cl-pop_140ms_ease-out] overflow-auto rounded-field border border-line bg-raised p-1 shadow-popover motion-reduce:animate-none"
       >
         {options.map((option, index) => {
           const isSelected = index === selectedIndex;
@@ -234,17 +224,15 @@ export function SelectMenu({
               onClick={() => commit(index)}
               className={cn(
                 "flex cursor-pointer items-center justify-between gap-3 rounded-[8px] px-3 py-2 text-body",
-                isActive && !option.disabled && "bg-primary-100 text-primary-700",
-                !isActive && "text-ink-900",
+                isActive && !option.disabled && "bg-action-soft text-link",
+                !isActive && "text-fg",
                 isSelected && "font-semibold",
-                option.disabled && "cursor-not-allowed text-ink-400",
+                option.disabled && "cursor-not-allowed text-fg-subtle",
               )}
             >
               <span className="min-w-0 truncate">{option.label}</span>
               {isSelected && (
-                <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-primary-600" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3.5 8.5 6.5 11.5 12.5 5" />
-                </svg>
+                <Icon name="check" className="text-link" />
               )}
             </li>
           );

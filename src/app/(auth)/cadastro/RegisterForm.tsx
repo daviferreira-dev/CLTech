@@ -8,7 +8,7 @@ import { safeInternalPath } from "@/lib/safe-path";
 import { NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
 import { signIn } from "next-auth/react";
 import { cn } from "@/lib/cn";
-import { Button, Field, GitHubIcon, Input, focusRing, textLinkClasses } from "@/components/ui";
+import { Button, Field, GitHubIcon, Input, PasswordInput, focusRing, textLinkClasses } from "@/components/ui";
 
 type FieldName = "name" | "email" | "password";
 
@@ -80,15 +80,15 @@ export function RegisterForm() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="font-display text-display text-ink-900">Criar conta</h1>
-        <p className="text-body text-ink-600">Candidate-se a vagas e acompanhe cada etapa do processo.</p>
+        <h1 className="font-display text-display text-fg">Criar conta</h1>
+        <p className="text-body text-fg-muted">Candidate-se a vagas e acompanhe cada etapa do processo.</p>
       </div>
 
       <button
         type="button"
         onClick={() => signIn("github", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}
         className={cn(
-          "flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-[#181717] text-body font-semibold text-surface transition-colors hover:bg-black",
+          "flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-[#181717] ring-1 ring-on-color/15 text-body font-semibold text-on-color transition-colors hover:bg-black",
           focusRing,
         )}
       >
@@ -96,10 +96,10 @@ export function RegisterForm() {
         Criar conta com GitHub
       </button>
 
-      <div className="flex items-center gap-3 text-label font-normal text-ink-600">
-        <span className="h-px flex-1 bg-brand-100" />
+      <div className="flex items-center gap-3 text-label font-normal text-fg-muted">
+        <span className="h-px flex-1 bg-line" />
         ou com e-mail
-        <span className="h-px flex-1 bg-brand-100" />
+        <span className="h-px flex-1 bg-line" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -110,11 +110,11 @@ export function RegisterForm() {
           <Input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
         <Field id="password" label="Senha" hint="Mínimo de 8 caracteres." error={fieldErrors.password}>
-          <Input type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <PasswordInput required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
 
         {error && (
-          <p role="alert" className="text-body text-danger-600">
+          <p role="alert" className="text-body text-danger">
             {error}
           </p>
         )}
@@ -122,7 +122,7 @@ export function RegisterForm() {
         <Button type="submit" loading={loading} className="w-full">
           {loading ? "Criando conta…" : "Criar conta"}
         </Button>
-        <p className="text-center text-label text-ink-600">
+        <p className="text-center text-label text-fg-muted">
           Ao criar a conta você declara ter lido o{" "}
           <Link href="/privacidade" className={textLinkClasses}>
             aviso de privacidade
@@ -131,7 +131,7 @@ export function RegisterForm() {
         </p>
       </form>
 
-      <p className="text-center text-body text-ink-600">
+      <p className="text-center text-body text-fg-muted">
         Já tem conta?{" "}
         <Link href={callbackUrl ? `/entrar?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/entrar"} className={textLinkClasses}>
           Entrar
