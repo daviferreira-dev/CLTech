@@ -1,0 +1,40 @@
+name: Sugerir funcionalidade
+description: Uma ideia ou melhoria para o CLTech.
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qual problema isso resolve
+      description: Quem sente a dor e em que situação.
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Proposta
+      description: Como você imagina a solução.
+    validations:
+      required: true
+  - type: dropdown
+    id: perfil
+    attributes:
+      label: Para quem
+      multiple: true
+      options:
+        - Candidato
+        - Recrutador
+        - Admin
+    validations:
+      required: true
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas consideradas
+  - type: checkboxes
+    id: lgpd
+    attributes:
+      label: Dados pessoais
+      options:
+        - label: Esta funcionalidade coleta, mostra ou guarda dado pessoal (exige revisão de LGPD).
