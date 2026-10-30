@@ -2,7 +2,7 @@
 // title/description/location continuam editáveis mesmo publicada.
 import { describe, it, expect } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { createJob, setStages, publishJob, updateDraftJob } from "@/server/jobs/builder";
+import { createJob, setStages, publishJob, updateDraftJob, closeJob } from "@/server/jobs/builder";
 import { ApiError } from "@/lib/errors";
 
 async function createDraftJob() {
@@ -102,5 +102,28 @@ describe("setStages concorrente (FR-039, FR-042)", () => {
     expect([["RESUME_ANALYSIS"], ["RESUME_ANALYSIS", "GITHUB_ANALYSIS"]]).toContainEqual(types);
     // E a ordem continua densa a partir de 0.
     expect(stages.map((s) => s.order)).toEqual(types.map((_, i) => i));
+  });
+});
+
+// Relatório E2E itens 3-6: vaga encerrada trava como a publicada, nunca 500, e não republica.
+describe("vaga CLOSED", () => {
+  const withCode = (expected: string) => (err: unknown) => {
+    expect((err as ApiError).code).toBe(expected);
+    return true;
+  };
+
+  it("closeJob encerra a publicada e recusa rascunho e repetição", async () => {
+    const closed = await closeJob((await createPublishedJob()).id);
+    expect(closed.status).toBe("CLOSED");
+    await expect(closeJob(closed.id)).rejects.toSatisfy(withCode("JOB_CLOSED"));
+    const draft = await createDraftJob();
+    await expect(closeJob(draft.id)).rejects.toSatisfy(withCode("NOT_PUBLISHED"));
+  });
+
+  it("trava tecnologias, pipeline e publicação", async () => {
+    const job = await closeJob((await createPublishedJob()).id);
+    await expect(updateDraftJob(job.id, { technologies: ["COBOL"] })).rejects.toSatisfy(withCode("JOB_LOCKED"));
+    await expect(setStages(job.id, { stages: [{ type: "RESUME_ANALYSIS" }] })).rejects.toSatisfy(withCode("JOB_LOCKED"));
+    await expect(publishJob(job.id)).rejects.toSatisfy(withCode("JOB_CLOSED"));
   });
 });

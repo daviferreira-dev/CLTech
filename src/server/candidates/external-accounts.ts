@@ -128,7 +128,7 @@ export async function retrySync(userId: string, provider: Provider): Promise<{ s
     where: { candidateId_provider: { candidateId, provider } },
   });
   // Vínculo desconectado só volta pelo fluxo de conexão (que exige o OAuth de novo).
-  if (!account || account.status === "DISCONNECTED") throw Errors.notFound("Conta externa");
+  if (!account || account.status === "DISCONNECTED") throw Errors.notFound("Conta externa", true);
 
   const where = { candidateId_provider: { candidateId, provider } };
 

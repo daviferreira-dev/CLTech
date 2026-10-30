@@ -18,6 +18,9 @@ const OAUTH_ERROR: Record<string, string> = {
   OAuthAccountNotLinked: "Essa conta do GitHub/LinkedIn já está vinculada a outro usuário da CLTech.",
   AccessDenied: "O acesso à conta não foi autorizado.",
   OAuthCallbackError: "Não foi possível concluir o login com o provedor. Tente de novo.",
+  Callback: "Não foi possível concluir o login com o provedor. Tente de novo.",
+  OAuthSignin: "Não foi possível iniciar o login com o provedor. Tente de novo.",
+  Configuration: "Este login está indisponível no momento. Entre com e-mail e senha.",
 };
 
 export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {

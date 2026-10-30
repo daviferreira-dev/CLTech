@@ -64,7 +64,7 @@ async function loadContext(userId: string, applicationId: string) {
     include: { currentStage: true, job: { select: { id: true, title: true, company: true } } },
   });
   // Candidatura de outra pessoa responde como inexistente — não confirma que existe.
-  if (!application) throw Errors.notFound("Candidatura");
+  if (!application) throw Errors.notFound("Candidatura", true);
 
   const submissionAtStage = await findSubmission(application.id, (application.currentStage.config as CodeTestStageConfig)?.challengeId);
   if (application.currentStage.type !== "CODE_TEST" || (application.status !== "IN_PROGRESS" && !submissionAtStage)) {

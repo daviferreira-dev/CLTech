@@ -18,6 +18,7 @@ import {
   Notice,
   Select,
   focusRing,
+  Markdown,
 } from "@/components/ui";
 import type { CandidateChallengeView, RunResponse } from "@/server/code-test/session";
 
@@ -278,7 +279,7 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
           <Card as="section" aria-labelledby="enunciado">
             <CardHeader titleId="enunciado" title="Enunciado" />
             <CardBody>
-              <p className="whitespace-pre-line break-words text-body text-ink-900">{view.challenge.statement}</p>
+              <Markdown source={view.challenge.statement} className="text-ink-900" />
             </CardBody>
           </Card>
           <Card as="section" aria-labelledby="exemplos">

@@ -9,7 +9,7 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { delimiter, join } from "node:path";
+import { delimiter, join, sep } from "node:path";
 
 import type { CaseOutcome } from "@/lib/codeTest";
 import { MAX_CASE_TIME_LIMIT_SECONDS } from "@/lib/codeTest";
@@ -256,18 +256,21 @@ export class LocalSandbox implements Sandbox {
     const dir = await mkdtemp(join(tmpdir(), "cltech-sandbox-"));
     await writeFile(join(dir, runtime.file), input.sourceCode, "utf8");
 
+    // O diagnóstico não mostra o caminho temporário do servidor: "main.js:1", não "C:\...\main.js:1".
+    const clean = (text: string) => text.replaceAll(dir + sep, "");
+
     try {
       if (runtime.compile) {
         const built = await exec(runtime.compile.cmd, runtime.compile.args, dir, "", COMPILE_TIMEOUT_MS);
         if (built.timedOut || built.code !== 0) {
-          return { outcome: "COMPILE_ERROR", stdout: "", diagnostics: built.stderr || built.stdout };
+          return { outcome: "COMPILE_ERROR", stdout: "", diagnostics: clean(built.stderr || built.stdout) };
         }
       }
       const { cmd, args } = runtime.run(dir);
       const res = await exec(cmd, args, dir, input.stdin, timeLimitMs);
-      if (res.timedOut) return { outcome: "TIME_LIMIT", stdout: res.stdout, diagnostics: res.stderr };
-      if (res.code !== 0) return { outcome: "RUNTIME_ERROR", stdout: res.stdout, diagnostics: res.stderr };
-      return { outcome: "OK", stdout: res.stdout, diagnostics: res.stderr };
+      if (res.timedOut) return { outcome: "TIME_LIMIT", stdout: res.stdout, diagnostics: clean(res.stderr) };
+      if (res.code !== 0) return { outcome: "RUNTIME_ERROR", stdout: res.stdout, diagnostics: clean(res.stderr) };
+      return { outcome: "OK", stdout: res.stdout, diagnostics: clean(res.stderr) };
     } finally {
       await rm(dir, { recursive: true, force: true }).catch(() => {});
     }

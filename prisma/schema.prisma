@@ -336,11 +336,14 @@ enum ProcessStageType {
 
 /// 🟢 Etapa ordenada do pipeline de uma vaga.
 model ProcessStage {
-  id     String           @id @default(uuid())
-  jobId  String
-  type   ProcessStageType
-  order  Int
-  config Json             @default("{}")
+  id           String           @id @default(uuid())
+  jobId        String
+  type         ProcessStageType
+  order        Int
+  config       Json             @default("{}")
+  // E-mail ao candidato que entra nesta etapa (entrevistas); nulo usa o texto padrão.
+  emailSubject String?
+  emailBody    String?
 
   job            Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
   applicationsAt Application[]
@@ -401,8 +404,8 @@ model ApplicationStageHistory {
   exitedAt        DateTime?
   decidedByUserId String?
   /// Reunião marcada pelo recrutador ao mover o candidato para uma entrevista (RH/técnica).
-  meetingAt  DateTime?
-  meetingUrl String?
+  meetingAt       DateTime?
+  meetingUrl      String?
 
   application Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   stage       ProcessStage @relation(fields: [stageId], references: [id])

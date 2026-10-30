@@ -22,7 +22,7 @@ test("recrutador busca candidato por e-mail e vê as duas candidaturas agrupadas
   await candidatePage.getByLabel("Nome").fill("Candidato Busca");
   await candidatePage.getByLabel("E-mail").fill(email);
   await candidatePage.getByLabel("Senha").fill("senhaSegura123");
-  await candidatePage.getByRole("button", { name: "Criar conta" }).click();
+  await candidatePage.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(candidatePage).toHaveURL(/\/vagas$/);
 
   await candidatePage.goto("/perfil");
@@ -46,6 +46,8 @@ test("recrutador busca candidato por e-mail e vê as duas candidaturas agrupadas
 
   await loginAsRecruiter(page);
   await page.goto("/recrutamento/candidatos");
+  // Buscar antes da hidratação vira submit nativo e a lista não carrega.
+  await page.waitForLoadState("networkidle");
   await page.getByPlaceholder("Nome, e-mail ou tecnologia").fill(email);
   await page.getByRole("button", { name: "Buscar" }).click();
 
@@ -57,6 +59,7 @@ test("recrutador busca candidato por e-mail e vê as duas candidaturas agrupadas
 test("busca sem correspondência mostra mensagem (FR-053)", async ({ page }) => {
   await loginAsRecruiter(page);
   await page.goto("/recrutamento/candidatos");
+  await page.waitForLoadState("networkidle");
   await page.getByPlaceholder("Nome, e-mail ou tecnologia").fill(`inexistente-${Date.now()}@example.com`);
   await page.getByRole("button", { name: "Buscar" }).click();
   await expect(page.getByText("Nenhum candidato encontrado para essa busca.")).toBeVisible();

@@ -9,6 +9,10 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 2 : 0,
+  // `next dev` descarta páginas ociosas e recompila no próximo acesso; os 5s padrão do
+  // expect estouravam no meio da navegação.
+  expect: { timeout: 15_000 },
+  timeout: 60_000,
   reporter: "html",
   use: {
     baseURL: "http://localhost:3000",

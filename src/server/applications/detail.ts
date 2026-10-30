@@ -30,7 +30,7 @@ export async function getApplicationDetail(applicationId: string): Promise<Appli
       evaluations: { orderBy: { createdAt: "desc" }, select: { type: true, score: true, justification: true } },
     },
   });
-  if (!application) throw Errors.notFound("Candidatura");
+  if (!application) throw Errors.notFound("Candidatura", true);
 
   // Mantém só a avaliação mais recente por tipo (reprocessamento insere nova versão, D7).
   const latestByType = new Map<string, { type: string; score: number; justification: unknown }>();

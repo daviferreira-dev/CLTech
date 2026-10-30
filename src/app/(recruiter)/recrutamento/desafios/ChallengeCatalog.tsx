@@ -17,6 +17,7 @@ import {
   Notice,
   Select,
   Textarea,
+  Markdown,
 } from "@/components/ui";
 import type { ChallengePublicView } from "@/server/code-test/challenges";
 
@@ -71,7 +72,7 @@ export function ChallengeCatalog({ initial, canCreate }: { initial: ChallengePub
                   {DIFFICULTY_LABEL[challenge.difficulty]}
                 </Badge>
               </div>
-              <p className="line-clamp-3 whitespace-pre-line break-words text-body text-ink-600">{challenge.statement}</p>
+              <Markdown source={challenge.statement} className="line-clamp-3 text-ink-600" />
               <p className="text-body text-ink-600">
                 {challenge.languages.map((l) => LANGUAGE_LABEL[l] ?? l).join(", ")} · {challenge.visibleCases.length} caso(s) visível(is) ·{" "}
                 {challenge.hiddenCaseCount} oculto(s) · até {challenge.timeLimitSeconds}s por caso

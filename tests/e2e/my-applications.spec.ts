@@ -15,7 +15,7 @@ test("candidato sem candidaturas vê estado vazio orientando a explorar vagas", 
   await page.getByLabel("Nome").fill("Pessoa Sem Candidatura");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill("senhaSegura123");
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 
   await page.goto("/candidaturas");
@@ -29,7 +29,7 @@ test("duas candidaturas aparecem com status correto (FR-025)", async ({ page }) 
   await page.getByLabel("Nome").fill("Pessoa Duas Candidaturas");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill("senhaSegura123");
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 
   await page.goto("/perfil");

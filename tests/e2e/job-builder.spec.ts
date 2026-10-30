@@ -1,5 +1,6 @@
 // Fluxo 2 do quickstart.md — User Story 2 (Sprint 2).
 import { test, expect, type Page } from "@playwright/test";
+import { chooseOption } from "./fixtures/select";
 
 async function loginAsRecruiter(page: Page) {
   await page.goto("/entrar");
@@ -39,15 +40,15 @@ test("recrutador cria vaga, monta pipeline, publica, e vaga publicada trava edi�
   // evita violação de strict mode do Playwright.
   const stageItem = (label: string) => page.getByRole("listitem").filter({ hasText: label });
 
-  await page.getByLabel("Tipo de etapa").selectOption("RESUME_ANALYSIS");
+  await chooseOption(page.getByLabel("Tipo de etapa"), "Análise de Currículo");
   await page.getByRole("button", { name: "Adicionar etapa" }).click();
   await expect(stageItem("Análise de Currículo")).toBeVisible();
 
-  await page.getByLabel("Tipo de etapa").selectOption("GITHUB_ANALYSIS");
+  await chooseOption(page.getByLabel("Tipo de etapa"), "Análise de GitHub");
   await page.getByRole("button", { name: "Adicionar etapa" }).click();
   await expect(stageItem("Análise de GitHub")).toBeVisible();
 
-  await page.getByLabel("Tipo de etapa").selectOption("TECH_INTERVIEW");
+  await chooseOption(page.getByLabel("Tipo de etapa"), "Entrevista Técnica");
   await page.getByRole("button", { name: "Adicionar etapa" }).click();
   await expect(stageItem("Entrevista Técnica")).toBeVisible();
 

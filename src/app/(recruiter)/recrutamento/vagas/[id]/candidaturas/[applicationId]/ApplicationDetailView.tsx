@@ -400,6 +400,12 @@ export function ApplicationDetailView({
         <CardBody>
           {data.status === "IN_PROGRESS" ? (
             <div className="flex flex-wrap gap-3">
+              {/* Só aviso: a regra continua deixando a pessoa decidir sem o envio. */}
+              {data.currentStage.type === "CODE_TEST" && (data.codeTest.status === "NOT_STARTED" || data.codeTest.status === "IN_PROGRESS") && (
+                <Notice tone="warning" className="basis-full">
+                  O candidato ainda não enviou o teste de código. Avançar agora pula a correção automática.
+                </Notice>
+              )}
               <Button onClick={() => setPending("ADVANCE")} disabled={saving}>
                 {isLastStage ? "Avançar e aprovar" : "Avançar"}
               </Button>

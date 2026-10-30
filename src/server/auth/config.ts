@@ -82,6 +82,8 @@ export const authConfig: NextAuthConfig = {
   providers,
   pages: {
     signIn: "/entrar",
+    // Erros como Configuration chegam em /entrar?error=..., no lugar da página padrão em inglês.
+    error: "/entrar",
   },
   callbacks: {
     // FR-003: provedor externo com e-mail já cadastrado vincula à conta existente

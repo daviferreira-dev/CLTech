@@ -1,6 +1,7 @@
 // E-mail "você passou de etapa" / "você foi aprovado" (RN005).
 // Princípio I (research.md R11): leva nome, vaga e etapa — nunca score, currículo ou GitHub.
 import type { MailMessage } from "../mailer";
+import { fillTemplate, meetingValues } from "@/lib/emailTemplate";
 import { COLOR, FONT, escapeHtml, firstName, joinUrl, renderEmailLayout, stageLabel } from "./layout";
 
 // O que o candidato faz (ou espera) na etapa em que acabou de entrar.
@@ -17,6 +18,12 @@ const NEXT_STEP: Record<string, { text: string; cta: string; path: string }> = {
   FINAL_OFFER: { text: "Você chegou à etapa final! Em breve você recebe os detalhes da proposta.", cta: "Acompanhar candidatura", path: "/candidaturas" },
 };
 
+// Com a reunião já marcada, "vamos entrar em contato para agendar" contradiria a data e o link.
+const SCHEDULED_TEXT: Record<string, string> = {
+  HR_INTERVIEW: "Sua conversa com o time de RH já está marcada. Confira a data e o link da reunião abaixo.",
+  TECH_INTERVIEW: "Sua entrevista técnica já está marcada. Confira a data e o link da reunião abaixo.",
+};
+
 export interface StageAdvancedEmailInput {
   to: string;
   candidateName: string;
@@ -27,6 +34,8 @@ export interface StageAdvancedEmailInput {
   newStageOrder: number | null;
   /** Reunião marcada pelo recrutador (entrevistas). */
   meeting?: { at: Date; url: string };
+  /** Assunto/corpo montados pelo recrutador na etapa; vazio usa o texto padrão. */
+  template?: { subject: string | null; body: string | null };
   appUrl: string;
 }
 
@@ -73,7 +82,9 @@ export function stageAdvancedEmail(input: StageAdvancedEmailInput): MailMessage 
   const name = firstName(input.candidateName);
   const approved = input.newStageOrder === null;
   const newStage = approved ? null : input.stages.find((s) => s.order === input.newStageOrder);
-  const next = newStage ? (NEXT_STEP[newStage.type] ?? NEXT_STEP.RESUME_ANALYSIS) : null;
+  const defaultNext = newStage ? (NEXT_STEP[newStage.type] ?? NEXT_STEP.RESUME_ANALYSIS) : null;
+  const scheduledText = input.meeting && newStage ? SCHEDULED_TEXT[newStage.type] : undefined;
+  const next = defaultNext && scheduledText ? { ...defaultNext, text: scheduledText } : defaultNext;
   const ctaHref = joinUrl(input.appUrl, next?.path ?? "/candidaturas");
   const ctaLabel = next?.cta ?? "Ver minha candidatura";
   const job = escapeHtml(input.jobTitle);
@@ -89,15 +100,29 @@ export function stageAdvancedEmail(input: StageAdvancedEmailInput): MailMessage 
       </div>`
     : "";
 
-  const subject = approved
-    ? `Você foi aprovado(a) na vaga ${input.jobTitle}! 🎉`
-    : `Você avançou para ${stageLabel(newStage!.type)} — ${input.jobTitle}`;
+  const values = {
+    candidato: input.candidateName,
+    vaga: input.jobTitle,
+    etapa: newStage ? stageLabel(newStage.type) : "",
+    ...(input.meeting ? meetingValues(input.meeting.at) : { data: "", horario: "" }),
+    link: input.meeting?.url ?? "",
+  };
+  const fill = (template: string | null | undefined) => (!approved && template?.trim() ? fillTemplate(template.trim(), values) : null);
+  // Assunto vai em cabeçalho: quebra de linha viraria outro cabeçalho.
+  const customSubject = fill(input.template?.subject)?.replace(/[\r\n]+/g, " ");
+  const customBody = fill(input.template?.body);
+
+  const subject =
+    customSubject ||
+    (approved ? `Você foi aprovado(a) na vaga ${input.jobTitle}! 🎉` : `Você avançou para ${stageLabel(newStage!.type)} — ${input.jobTitle}`);
 
   const html = renderEmailLayout({
     subject,
     preheader: approved ? "Você foi aprovado(a)! Veja os próximos passos." : `Nova etapa: ${stageLabel(newStage!.type)}. Veja o que vem agora.`,
     headline: approved ? `Parabéns, ${name}!` : `Boa notícia, ${name}!`,
-    intro: approved
+    intro: customBody
+      ? escapeHtml(customBody).replace(/\n/g, "<br>")
+      : approved
       ? `Você foi <strong>aprovado(a)</strong> no processo seletivo da vaga <strong>${job}</strong>. Foi uma jornada e tanto — obrigado por cada etapa.`
       : `Você passou para a próxima etapa do processo seletivo da vaga <strong>${job}</strong>.`,
     highlight: approved
@@ -112,7 +137,7 @@ export function stageAdvancedEmail(input: StageAdvancedEmailInput): MailMessage 
     "",
     approved
       ? `Você foi aprovado(a) no processo seletivo da vaga ${input.jobTitle}. O time de recrutamento vai entrar em contato com os próximos passos da contratação.`
-      : `Você passou para a próxima etapa da vaga ${input.jobTitle}: ${stageLabel(newStage!.type)}.\n${next!.text}${meetingText ? `\n${meetingText}` : ""}`,
+      : `${customBody ?? `Você passou para a próxima etapa da vaga ${input.jobTitle}: ${stageLabel(newStage!.type)}.\n${next!.text}`}${meetingText ? `\n${meetingText}` : ""}`,
     "",
     "Seu progresso:",
     ...input.stages.map((s) => {

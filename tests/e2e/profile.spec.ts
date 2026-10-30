@@ -14,7 +14,7 @@ async function signUp(page: import("@playwright/test").Page, email: string) {
   await page.getByLabel("Nome").fill("Pessoa Perfil");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill("senhaSegura123");
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 }
 

@@ -1,4 +1,13 @@
 import { z } from "zod";
+import { EMAIL_BODY_MAX, EMAIL_SUBJECT_MAX } from "@/lib/emailTemplate";
+
+// Vazio/ausente: a etapa usa o e-mail padrão (o builder grava null).
+const optionalText = (max: number, label: string) =>
+  z.string().trim().max(max, `${label} pode ter no máximo ${max} caracteres.`).nullish();
+const stageEmailFields = {
+  emailSubject: optionalText(EMAIL_SUBJECT_MAX, "O assunto do e-mail"),
+  emailBody: optionalText(EMAIL_BODY_MAX, "O texto do e-mail"),
+};
 
 // FR-019: filtros da listagem pública de vagas.
 export const jobListQuerySchema = z.object({
@@ -48,7 +57,12 @@ export const setStagesSchema = z.object({
     z.object({
       type: z.enum(PROCESS_STAGE_TYPES),
       config: z.record(z.string(), z.unknown()).optional(),
+      ...stageEmailFields,
     }),
   ),
 });
 export type SetStagesInput = z.infer<typeof setStagesSchema>;
+
+// Template do e-mail de entrevista: editável mesmo com a vaga publicada (é só texto).
+export const stageEmailSchema = z.object({ stageId: z.string().uuid(), ...stageEmailFields });
+export type StageEmailInput = z.infer<typeof stageEmailSchema>;

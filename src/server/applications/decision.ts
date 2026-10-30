@@ -28,7 +28,7 @@ export async function recordDecision(
       job: { include: { stages: { orderBy: { order: "asc" } } } },
     },
   });
-  if (!application) throw Errors.notFound("Candidatura");
+  if (!application) throw Errors.notFound("Candidatura", true);
   if (application.status !== "IN_PROGRESS") {
     throw Errors.conflict("APPLICATION_CLOSED", "Esta candidatura já foi decidida.");
   }
@@ -38,7 +38,11 @@ export async function recordDecision(
   // RN005: avisa o candidato que passou de etapa, foi aprovado ou reprovado. Sem await — o
   // e-mail não segura a resposta ao recrutador, e falha de SMTP só vai pro log.
   const appUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  const notifyAdvanced = (newStageOrder: number | null, scheduled?: MeetingInput) =>
+  const notifyAdvanced = (
+    newStageOrder: number | null,
+    scheduled?: MeetingInput,
+    template?: { subject: string | null; body: string | null },
+  ) =>
     keepAlive(
       sendMail(
         stageAdvancedEmail({
@@ -48,6 +52,7 @@ export async function recordDecision(
           stages: application.job.stages,
           newStageOrder,
           meeting: scheduled ? { at: new Date(scheduled.scheduledAt), url: scheduled.url } : undefined,
+          template,
           appUrl,
         }),
       ),
@@ -154,7 +159,7 @@ export async function recordDecision(
       },
     }),
   ]);
-  notifyAdvanced(nextStage.order, scheduled);
+  notifyAdvanced(nextStage.order, scheduled, needsMeeting ? { subject: nextStage.emailSubject, body: nextStage.emailBody } : undefined);
   // Etapas automáticas (currículo/GitHub) analisam ao entrar, com os dados mais recentes.
   keepAlive(runStageAnalysis(applicationId, nextStage.type));
 

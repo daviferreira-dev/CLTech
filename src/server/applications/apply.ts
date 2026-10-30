@@ -39,7 +39,7 @@ export async function applyToJob(userId: string, jobId: string): Promise<ApplyRe
     where: { id: jobId },
     include: { stages: { orderBy: { order: "asc" } } },
   });
-  if (!job) throw Errors.notFound("Vaga");
+  if (!job) throw Errors.notFound("Vaga", true);
   if (job.status !== "PUBLISHED") {
     throw Errors.businessRule("JOB_NOT_OPEN", "Esta vaga não está mais aceitando candidaturas.");
   }

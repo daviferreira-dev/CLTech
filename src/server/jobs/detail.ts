@@ -28,7 +28,7 @@ export async function getJobDetail(jobId: string, requesterUserId: string | null
     include: { stages: { orderBy: { order: "asc" }, select: { type: true, order: true } } },
   });
 
-  if (!job) throw Errors.notFound("Vaga");
+  if (!job) throw Errors.notFound("Vaga", true);
 
   const hasOwnApplication = requesterUserId
     ? (await prisma.application.findFirst({
@@ -37,7 +37,7 @@ export async function getJobDetail(jobId: string, requesterUserId: string | null
       })) !== null
     : false;
 
-  if (job.status !== "PUBLISHED" && !hasOwnApplication) throw Errors.notFound("Vaga");
+  if (job.status !== "PUBLISHED" && !hasOwnApplication) throw Errors.notFound("Vaga", true);
 
   const matchScore = requesterUserId ? await getMatchScoreForRequester(job.id, requesterUserId) : undefined;
 
