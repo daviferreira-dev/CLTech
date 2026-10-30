@@ -141,7 +141,7 @@ flowchart LR
 | **Triagem por NLP próprio, sem LLM externo** | Score auditável e reproduzível (exigido pela RN003), currículo nunca sai da infraestrutura (LGPD) e custo zero |
 | **Score armazenado como somente-leitura e versionado** | A RN003 exige imutabilidade; correção só por reprocessamento, que cria nova versão |
 | **Criptografia seletiva em coluna** | Dados pessoais sensíveis cifrados com AES-256-GCM; e-mail em claro por ser chave de identidade indexável (RN007) |
-| **Currículos em bucket privado com URL assinada** | Link vazado não expõe documento de candidato (RN004) |
+| **Currículos cifrados em bucket privado, entregues só pelo servidor** | Link vazado não expõe documento de candidato (RN004) |
 | **Código de candidato em sandbox sem rede** | Executar código de terceiros é a maior superfície de ataque do produto (RNF06) |
 | **Coleta do GitHub degrada em vez de falhar** | API indisponível marca os dados como "Indisponível" e nunca bloqueia a candidatura |
 
@@ -203,9 +203,10 @@ deliberada: mantém a lógica testável sem subir servidor.
 | Node.js | 20 LTS ou superior | aplicação Next.js |
 | Git | recente | controle de versão |
 
-Banco e storage rodam no Supabase (gerenciado) — não precisa de Docker para
-desenvolvimento local. Peça o `DATABASE_URL` e as credenciais `STORAGE_*` de quem já
-tem acesso ao projeto Supabase, ou crie seu próprio projeto para testar isolado.
+Em produção, banco e storage rodam no Supabase. Para desenvolver, o jeito mais simples é o
+ambiente local com Docker: `pnpm dev:setup` sobe um Postgres, guarda os currículos em
+`.storage/` e roda migrações e seed; depois `pnpm dev`. Ver
+[docs/manual-execucao.md](docs/manual-execucao.md), seção 2.1.
 
 ### 1. Clonar e configurar
 

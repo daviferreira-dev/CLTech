@@ -1,0 +1,24 @@
+# Banco de desenvolvimento local. Sobe com `pnpm dev:setup` (ver docs/manual-execucao.md).
+# Dois bancos no mesmo Postgres: `cltech` (o app em dev) e `cltech_test` (a suíte de
+# integração, que dá TRUNCATE em tudo). Os currículos ficam em .storage/, sem contêiner.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cltech-postgres
+    environment:
+      POSTGRES_USER: cltech
+      POSTGRES_PASSWORD: cltech
+      POSTGRES_DB: cltech
+    ports:
+      - "5432:5432"
+    volumes:
+      - cltech-pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/01-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cltech -d cltech"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  cltech-pgdata:
