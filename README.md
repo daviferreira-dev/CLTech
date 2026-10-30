@@ -203,9 +203,10 @@ deliberada: mantém a lógica testável sem subir servidor.
 | Node.js | 20 LTS ou superior | aplicação Next.js |
 | Git | recente | controle de versão |
 
-Banco e storage rodam no Supabase (gerenciado) — não precisa de Docker para
-desenvolvimento local. Peça o `DATABASE_URL` e as credenciais `STORAGE_*` de quem já
-tem acesso ao projeto Supabase, ou crie seu próprio projeto para testar isolado.
+Em produção, banco e storage rodam no Supabase. Para desenvolver, o jeito mais simples é o
+ambiente local com Docker: `pnpm dev:setup` sobe um Postgres, guarda os currículos em
+`.storage/` e roda migrações e seed; depois `pnpm dev`. Ver
+[docs/manual-execucao.md](docs/manual-execucao.md), seção 2.1.
 
 ### 1. Clonar e configurar
 

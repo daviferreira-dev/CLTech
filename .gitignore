@@ -58,3 +58,7 @@ Thumbs.db
 # Currículos de exemplo para testar a leitura (dados pessoais: nunca versionar)
 curriculos-teste/
 .tmp_ers/
+
+# Ambiente local (pnpm dev:setup): currículos de dev e backup do .env anterior
+.storage/
+.env.backup

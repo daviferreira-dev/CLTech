@@ -31,6 +31,29 @@ pnpm prisma generate    # obrigatório: o projeto não tem postinstall
 No Windows, `run.bat` faz instalação, confere o `.env` (gera `AUTH_SECRET` e `ENCRYPTION_KEY` se
 estiverem vazias e para listando o que falta), gera o Prisma, aplica migrações e seed, faz build e start.
 
+## 2.1 Ambiente local com Docker (recomendado para desenvolver)
+
+Banco no seu computador, sem Supabase e sem risco de mexer na produção. Pré-requisito: Docker
+Desktop aberto.
+
+```bash
+pnpm dev:setup   # ajusta o .env, sobe o Postgres, aplica migrações e roda o seed
+pnpm dev         # http://localhost:3000 — cada alteração no código aparece na hora
+```
+
+O `pnpm dev:setup` guarda o `.env` anterior em `.env.backup` (só na primeira vez) e aponta
+`DATABASE_URL` para `localhost:5432/cltech` e os currículos para a pasta `.storage/`
+(`STORAGE_ENDPOINT="local"`, recusado na Vercel). Pode rodar de novo quando quiser: não duplica
+nada. O mesmo Postgres tem o banco `cltech_test`, usado por `pnpm test`.
+
+Login local: use as contas do seed (seção 5) ou crie uma em `/cadastro`. O login pelo GitHub só
+funciona com um OAuth App cujo callback seja `http://localhost:3000/api/auth/callback/github`.
+
+Para parar o banco: `docker compose stop`. Para apagar tudo e começar do zero:
+`docker compose down -v` e `pnpm dev:setup` de novo.
+
+Com o ambiente local, as seções 3 e 4 abaixo já estão feitas.
+
 ## 3. Configuração
 
 Copie `.env.example` para `.env` e preencha:
@@ -41,7 +64,7 @@ Copie `.env.example` para `.env` e preencha:
 | `AUTH_SECRET` | sim | `openssl rand -base64 32` |
 | `ENCRYPTION_KEY` | sim | `openssl rand -base64 32`. **Perder esta chave torna irrecuperáveis os telefones, currículos e códigos já gravados.** |
 | `GITHUB_ID` / `GITHUB_SECRET` | sim | github.com/settings/developers; callback `http://localhost:3000/api/auth/callback/github` |
-| `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` | sim | Supabase → Storage → *S3 Connection*. O bucket **precisa ser privado**. |
+| `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` | sim | Supabase → Storage → *S3 Connection*. O bucket **precisa ser privado**. Em dev, `STORAGE_ENDPOINT="local"` grava em `.storage/` (seção 2.1) |
 | `NEXTAUTH_URL` | sim | `http://localhost:3000` local; a URL pública em produção |
 | `LINKEDIN_ID` / `LINKEDIN_SECRET` | não | vazio esconde o botão do LinkedIn |
 | `SANDBOX_URL` / `SANDBOX_TOKEN` | não | URL da VM com Judge0. Vazio: "Executar testes" e "Submeter" respondem que o ambiente está indisponível (o rascunho fica salvo). Submissão que falhou na correção é retentada a cada consulta, no máximo a cada 5 minutos, quando o sandbox volta. `local` (só dev): roda python/javascript/typescript direto na máquina, sem isolamento; ignorado com `NODE_ENV=production`, salvo `SANDBOX_ALLOW_LOCAL=1` (o `run.bat` já define) |
