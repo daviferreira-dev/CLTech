@@ -4,14 +4,21 @@
 
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
-import { getSignedDownloadUrl } from "@/server/storage";
+import { decrypt } from "@/server/crypto";
+import { getPrivateObject } from "@/server/storage";
 
 export interface Requester {
   id: string; // User.id
   role: "CANDIDATE" | "RECRUITER" | "ADMIN";
 }
 
-export async function getResumeDownloadUrl(requester: Requester, resumeId: string): Promise<string> {
+export interface ResumeFile {
+  filename: string;
+  mimeType: string;
+  content: Buffer;
+}
+
+export async function getResumeFile(requester: Requester, resumeId: string): Promise<ResumeFile> {
   const resume = await prisma.resume.findUnique({
     where: { id: resumeId },
     include: { candidate: { select: { userId: true } } },
@@ -25,5 +32,9 @@ export async function getResumeDownloadUrl(requester: Requester, resumeId: strin
     throw Errors.forbidden();
   }
 
-  return getSignedDownloadUrl(resume.storageKey);
+  // O bucket guarda o arquivo cifrado (R4, ver uploadResume): base64 do original, cifrado em
+  // AES-256-GCM. Decifra aqui, depois da checagem de papel, e entrega o arquivo original.
+  const stored = await getPrivateObject(resume.storageKey);
+  const content = Buffer.from(decrypt(stored.toString("utf8")), "base64");
+  return { filename: resume.originalFilename, mimeType: resume.mimeType, content };
 }

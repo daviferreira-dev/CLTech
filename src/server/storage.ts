@@ -1,12 +1,12 @@
 // Bucket privado S3-compatível para currículos (Princípio I / FR-017 / R5).
-// Nenhum arquivo é servido publicamente: toda leitura passa por URL assinada de
-// curta duração, gerada apenas após a checagem de papel no chamador.
+// Nenhum arquivo é servido publicamente: o conteúdo (cifrado) só sai do bucket pelo servidor,
+// que confere o papel do solicitante e decifra antes de entregar.
 //
 // Desenvolvimento: STORAGE_ENDPOINT="local" grava numa pasta (.storage/) em vez do bucket, com
-// a mesma interface — inclusive URL assinada, servida por /api/dev-storage. Recusado na Vercel,
-// onde o disco é efêmero e o arquivo sumiria entre uma função e outra.
+// a mesma interface. Recusado na Vercel, onde o disco é efêmero e o arquivo sumiria entre uma
+// função e outra.
 
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -15,9 +15,6 @@ import {
   GetObjectCommand,
   DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
-const SIGNED_URL_TTL_SECONDS = 60;
 
 function getClient(): S3Client {
   return new S3Client({
@@ -53,23 +50,6 @@ export function localObjectPath(storageKey: string): string {
   return file;
 }
 
-function localSignature(storageKey: string, expires: number): Buffer {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) throw new Error("AUTH_SECRET não configurado");
-  return createHmac("sha256", secret).update(`${storageKey}\n${expires}`).digest();
-}
-
-/** Confere a assinatura e o prazo de uma URL gerada por getSignedDownloadUrl no modo local. */
-export function verifyLocalSignature(storageKey: string, expires: number, signature: string): boolean {
-  if (!Number.isFinite(expires) || expires < Date.now() / 1000) return false;
-  const expected = localSignature(storageKey, expires);
-  const given = Buffer.from(signature, "base64url");
-  return given.length === expected.length && timingSafeEqual(given, expected);
-}
-
-export async function readLocalObject(storageKey: string): Promise<Buffer> {
-  return readFile(localObjectPath(storageKey));
-}
 
 export interface UploadResult {
   storageKey: string;
@@ -112,22 +92,14 @@ export async function uploadPrivateObject(
 }
 
 /**
- * Gera URL assinada de curta duração para download. MUST ser chamada só depois
- * de verificar, no servidor, que o solicitante tem permissão (FR-017).
+ * Lê o objeto do bucket (conteúdo como foi gravado, ainda cifrado). MUST ser chamada só
+ * depois de verificar, no servidor, que o solicitante tem permissão (FR-017).
  */
-export async function getSignedDownloadUrl(storageKey: string): Promise<string> {
-  if (isLocalStorage()) {
-    const expires = Math.floor(Date.now() / 1000) + SIGNED_URL_TTL_SECONDS;
-    const query = new URLSearchParams({
-      key: storageKey,
-      expires: String(expires),
-      signature: localSignature(storageKey, expires).toString("base64url"),
-    });
-    const base = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-    return new URL(`/api/dev-storage?${query}`, base).toString();
-  }
-  const command = new GetObjectCommand({ Bucket: getBucket(), Key: storageKey });
-  return getSignedUrl(getClient(), command, { expiresIn: SIGNED_URL_TTL_SECONDS });
+export async function getPrivateObject(storageKey: string): Promise<Buffer> {
+  if (isLocalStorage()) return readFile(localObjectPath(storageKey));
+  const response = await getClient().send(new GetObjectCommand({ Bucket: getBucket(), Key: storageKey }));
+  if (!response.Body) throw new Error(`Objeto vazio no bucket: ${storageKey}`);
+  return Buffer.from(await response.Body.transformToByteArray());
 }
 
 /** Apaga objetos do bucket — usado na exclusão de conta (spec 006, FR-306). */

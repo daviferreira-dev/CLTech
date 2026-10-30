@@ -105,8 +105,9 @@ Validação **no servidor**: extensão, MIME, tamanho ≤ 5 MB e magic number (`
 Em ambos os casos o currículo anterior permanece vigente.
 
 ### `GET /api/resumes/{id}/download`
-**200**: redirect para URL assinada de curta duração, gerada só após a checagem de
-permissão (R5).
+**200**: o arquivo original (PDF/DOCX, `Content-Disposition: attachment`), lido do bucket
+privado e decifrado no servidor só após a checagem de permissão (R4/R5). Nenhuma URL do
+bucket chega ao navegador.
 
 **Autorização (FR-017)**: o próprio candidato dono do arquivo, ou papel `RECRUITER`/`ADMIN`.
 Qualquer outro caso → **403**. *Esta rota tem teste automatizado obrigatório

@@ -29,7 +29,7 @@ repouso, negação de acesso) e nenhum deles é verificado hoje por teste automa
 - AES-256-GCM (`src/server/crypto.ts`) em `Candidate.phone`, `Resume.extractedText`,
   `CodeDraft.sourceCode`, `CodeSubmission.sourceCode` e no arquivo do currículo (cifrado
   antes do upload, `src/server/candidates/resume.ts`).
-- Bucket privado com URL assinada de 60 s (`src/server/storage.ts`).
+- Bucket privado; o currículo só sai pelo servidor, decifrado após a checagem de papel (`src/server/storage.ts`, `src/server/candidates/resume-access.ts`).
 - Toda rota de API sensível chama `requireRole`/`requireSession`, que relê o papel do banco
   a cada acesso; toda página protegida chama `requirePageRole`.
 

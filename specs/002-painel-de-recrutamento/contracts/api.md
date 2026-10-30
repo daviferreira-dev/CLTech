@@ -140,7 +140,7 @@ lida do currículo para a tela pré-preencher, ou `null` se o texto não pôde s
 **413 / 415**: ver tabela comum. O currículo anterior continua vigente.
 
 ### `GET /api/resumes/{id}/download` — sessão
-**302** para URL assinada de curta duração. Permitido ao dono do currículo e a `RECRUITER`/`ADMIN`;
+**200** com o arquivo original, decifrado no servidor (ver contrato da spec 001). Permitido ao dono do currículo e a `RECRUITER`/`ADMIN`;
 qualquer outro → **403**.
 
 ### `POST /api/me/external-accounts` — `CANDIDATE`
