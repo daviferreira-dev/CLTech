@@ -1,260 +1,231 @@
-# CLTech — Plataforma de Seleção Automatizada e Inteligente de Talentos
+<div align="center">
 
-Plataforma web que automatiza o ciclo de recrutamento técnico da **3aq Tecnologia**: da
-triagem de currículos até a correção automática de testes de código, com feedback imediato
-ao candidato e ranking padronizado para o RH.
+# CLTech
 
-> Projeto acadêmico — Curso Superior de Análise e Desenvolvimento de Sistemas
-> Faculdade de Tecnologia SENAI Taubaté · 2026 · Prof. Wesley Fioreze
+**Triagem automática, decisão humana.**
+
+Portal de recrutamento técnico: o candidato se inscreve, o sistema analisa o perfil e aplica
+um teste de código que se corrige sozinho, e o recrutador decide com dados na mão.
+
+[![CI](https://github.com/daviferreira-dev/CLTech/actions/workflows/ci.yml/badge.svg)](https://github.com/daviferreira-dev/CLTech/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/daviferreira-dev/CLTech?label=release)](https://github.com/daviferreira-dev/CLTech/releases)
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma)
+
+**[cltech-3aq.vercel.app](https://cltech-3aq.vercel.app/)**
+
+</div>
+
+> Projeto acadêmico do curso de Análise e Desenvolvimento de Sistemas, Faculdade de
+> Tecnologia SENAI Taubaté, 2026, para a demanda da **3aq Tecnologia**.
 
 ---
 
 ## Índice
 
-- [O problema](#o-problema)
-- [A solução](#a-solução)
-- [Escopo](#escopo)
-- [Arquitetura](#arquitetura)
-- [Estrutura do repositório](#estrutura-do-repositório)
-- [Como rodar](#como-rodar)
+- [Por que o CLTech](#por-que-o-cltech)
+- [Funcionalidades](#funcionalidades)
+- [Telas](#telas)
+- [Stack e arquitetura](#stack-e-arquitetura)
+- [Como rodar localmente](#como-rodar-localmente)
+- [Testes](#testes)
+- [Variáveis de ambiente](#variáveis-de-ambiente)
+- [Segurança e LGPD](#segurança-e-lgpd)
+- [Estrutura de pastas](#estrutura-de-pastas)
 - [Documentação](#documentação)
+- [Como contribuir](#como-contribuir)
 - [Equipe](#equipe)
 
 ---
 
-## O problema
+## Por que o CLTech
 
-A 3aq Tecnologia cresce rápido e contrata programadores continuamente, mas o processo de
-recrutamento é manual, lento e descentralizado. Quatro dores concretas:
+A 3aq contrata programadores o tempo todo, e o processo era manual:
 
 | Dor | Consequência |
 |---|---|
-| RH lê centenas de currículos um a um | Bons talentos são descartados por currículo mal escrito, não por falta de competência |
-| Programadores sêniores param para corrigir testes técnicos | Os projetos da própria 3aq atrasam |
-| Dados de candidatos espalhados em e-mails e pastas | Não há como saber quem já se candidatou antes |
+| RH lê centenas de currículos um a um | Bons talentos caem por currículo mal escrito, não por falta de competência |
+| Programadores sêniores param para corrigir testes | Os projetos da própria empresa atrasam |
+| Dados de candidatos espalhados em e-mails e pastas | Ninguém sabe quem já se candidatou antes |
 | Cada avaliador tem um critério | A escolha não é justa nem puramente técnica |
 
-## A solução
+O CLTech automatiza a parte repetitiva (triagem e correção) e deixa a decisão com uma
+pessoa. O score de compatibilidade é calculado por regras próprias, sem LLM externo: é
+auditável, reproduzível e **imutável** depois de emitido (RN003).
 
-Um site único onde o candidato se inscreve e o sistema faz o resto: analisa o perfil
-automaticamente, aplica um teste de programação que se corrige sozinho e entrega um
-relatório mostrando se o candidato sabe programar.
+## Funcionalidades
 
-**Benefícios esperados**
+### Candidato
 
-- Reduzir em **pelo menos 50%** o tempo entre o anúncio da vaga e a proposta final
-- Avaliar todos os candidatos pelos **mesmos critérios objetivos**
-- Liberar programadores experientes da correção manual de testes
-- Dar **feedback automático e imediato** ao candidato
+- Cadastro com e-mail e senha ou login com **GitHub** (LinkedIn opcional)
+- Perfil profissional completo, com **preenchimento automático pelo currículo** (PDF/DOCX)
+- Busca de vagas e candidatura com o **match** do perfil com a vaga
+- Acompanhamento das candidaturas etapa por etapa, com aviso por e-mail a cada mudança
+- **Teste técnico de código** no navegador, com tentativa única e correção automática
+- Direitos do titular (LGPD): baixar os próprios dados e excluir a conta
 
----
+### Recrutador / Admin
 
-## Escopo
+- Criação de vagas e montagem do **pipeline de seleção** (etapas, teste de código)
+- **Painel de recrutamento** multi-vaga com o funil de contratação
+- Triagem das candidaturas ordenada pelo score de compatibilidade
+- Análise detalhada do candidato: perfil, currículo, portfólio do GitHub, resultado do teste
+- Busca e histórico de candidatos entre todas as vagas
+- Catálogo de desafios de código
 
-### Requisitos funcionais
+## Telas
 
-| ID | Requisito | Prioridade | Sprint |
-|---|---|---|---|
-| RF01 | Autenticação e Cadastro | MVP | 1 |
-| RF02 | Gestão de Perfil do Candidato | MVP | 1 |
-| RF03 | Busca e Candidatura a Vagas | MVP | 1 |
-| RF04 | Configuração do Pipeline de Seleção da Vaga | MVP | 2 |
-| RF05 | Aplicação de Teste de Código | MVP | 3 |
-| RF06 | Correção Automática e Relatório de Desempenho | MVP | 3 |
-| RF07 | Painel de Recrutamento (Dashboard Multi-vaga) | MVP | 2 |
-| RF08 | Análise Detalhada do Candidato | MVP | 2 |
-| RF09 | Busca e Histórico de Candidatos | Desejável | 2 |
+<!--
+TODO: adicionar os prints depois que o redesign (branch design/revisao-nota-10) entrar na main.
 
-### Requisitos não funcionais
+Arquivos esperados em docs/screenshots/:
+  home.png               página inicial
+  vagas.png              lista de vagas
+  perfil.png             perfil do candidato
+  candidaturas.png       acompanhamento das candidaturas
+  desafio.png            teste de código
+  painel.png             painel de recrutamento
+  candidato.png          análise detalhada do candidato
 
-`RNF01` Segurança (HTTPS + AES-256) · `RNF02` Disponibilidade 95% · `RNF03` Resposta ≤ 3 s
-· `RNF04` Interface responsiva 360 px–1280 px+ · `RNF05` Conformidade com a LGPD ·
-`RNF06` Isolamento na execução de código
+| Candidato | Recrutamento |
+|---|---|
+| ![Vagas](docs/screenshots/vagas.png) | ![Painel](docs/screenshots/painel.png) |
+| ![Perfil](docs/screenshots/perfil.png) | ![Candidato](docs/screenshots/candidato.png) |
+| ![Desafio](docs/screenshots/desafio.png) | ![Candidaturas](docs/screenshots/candidaturas.png) |
+-->
 
-### Regras de negócio
+*Em breve.*
 
-`RN001` Toda triagem passa pela IA antes do RH · `RN002` Vaga só publica com stack e
-requisitos preenchidos · `RN003` **Score da IA é imutável** · `RN004` Dados sensíveis só
-para Recrutador/Admin · `RN005` Feedback obrigatório ao candidato · `RN006` Tentativa única
-no teste de código · `RN007` Um perfil por e-mail
+## Stack e arquitetura
 
-### Fora de escopo
-
-Instalação local por parte do candidato — a plataforma é 100% navegador.
-
-### Cronograma
-
-| Sprint | Entrega | Foco |
-|---|---|---|
-| **Sprint 1** | 14/09/2026 | Documentação, modelagem e fundação web: autenticação, perfil e candidatura |
-| **Sprint 2** | 26/10/2026 | Motor de triagem (NLP), integração GitHub e painel do recrutador |
-| **Sprint 3** | 30/11/2026 | Teste de código, correção automática em sandbox, feedback e LGPD |
-
----
-
-## Arquitetura
-
-Uma aplicação Next.js (React + Node.js) com o banco e o storage no Supabase. A triagem roda
-dentro da própria aplicação, e a execução de código fica numa máquina isolada (Judge0):
+| Camada | Tecnologia |
+|---|---|
+| Aplicação | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS |
+| Autenticação | Auth.js (next-auth v5), Argon2id para senhas |
+| Dados | Prisma 6 + PostgreSQL 16 |
+| Arquivos | Storage S3-compatível privado (Supabase Storage em produção; pasta `.storage/` em dev) |
+| Execução de código | Judge0 em sandbox isolado (modo local sem isolamento só em dev) |
+| E-mail | Nodemailer via SMTP |
+| Testes | Vitest (unit e integration), Playwright (e2e) |
+| Deploy | Vercel |
 
 ```mermaid
 flowchart LR
-    subgraph nav ["Navegador"]
-        C["Candidato"]
-        R["Recrutador / RH"]
-    end
-
-    subgraph app ["Aplicação Next.js"]
-        F["src/app<br/>React + rotas de API"]
-        B["src/server<br/>regra de negócio"]
-    end
-
-    subgraph dados ["Persistência"]
-        DB[("PostgreSQL")]
-        S[("Storage privado<br/>currículos")]
-    end
-
-    GH{{"API do GitHub"}}
-    SB["Sandbox isolado (Judge0)<br/>execução de código"]
-
-    C --> F
-    R --> F
-    F --> B
-    B --> DB
-    B --> S
-    B --> GH
-    B --> SB
+    U["Navegador<br/>candidato e recrutador"] --> N["Next.js<br/>telas React"]
+    N --> A["API routes<br/>src/app/api"]
+    A --> S["Regra de negócio<br/>src/server"]
+    S --> P["Prisma"] --> DB[("PostgreSQL")]
+    S --> ST[("Storage privado<br/>currículos cifrados")]
+    S --> SB["Sandbox Judge0<br/>execução de código"]
+    S --> M["SMTP<br/>e-mail ao candidato"]
+    S --> GH{{"API do GitHub"}}
 ```
 
-### Responsabilidade de cada camada
+`src/app/api/` é uma casca HTTP fina; a regra fica em `src/server/`, testável sem subir
+servidor. Toda rota responde erro no formato único `{ "error": { "code", "message" } }`
+(`src/lib/errors.ts`).
 
-| Camada | Responsabilidade |
-|---|---|
-| **`src/app`** | Telas do candidato e do recrutador, editor de código embutido, responsividade, e as rotas de API (casca fina sobre `src/server`) |
-| **`src/server`** | Regras de negócio, autenticação e sessão, controle de acesso por papel, criptografia, integração com o GitHub, triagem (extração do currículo e score de compatibilidade), correção das submissões de código, persistência |
-| **Sandbox (Judge0)** | Execução isolada do código dos candidatos, sem rede e com limite de tempo — máquina separada, prevista para a Sprint 3 |
-
-### Decisões de arquitetura
-
-| Decisão | Motivo |
-|---|---|
-| **Triagem por NLP próprio, sem LLM externo** | Score auditável e reproduzível (exigido pela RN003), currículo nunca sai da infraestrutura (LGPD) e custo zero |
-| **Score armazenado como somente-leitura e versionado** | A RN003 exige imutabilidade; correção só por reprocessamento, que cria nova versão |
-| **Criptografia seletiva em coluna** | Dados pessoais sensíveis cifrados com AES-256-GCM; e-mail em claro por ser chave de identidade indexável (RN007) |
-| **Currículos cifrados em bucket privado, entregues só pelo servidor** | Link vazado não expõe documento de candidato (RN004) |
-| **Código de candidato em sandbox sem rede** | Executar código de terceiros é a maior superfície de ataque do produto (RNF06) |
-| **Coleta do GitHub degrada em vez de falhar** | API indisponível marca os dados como "Indisponível" e nunca bloqueia a candidatura |
-
-As decisões completas, com as alternativas que foram descartadas e o porquê, estão em
+As decisões técnicas, com as alternativas descartadas, estão em
 [`specs/001-portal-candidatura/research.md`](specs/001-portal-candidatura/research.md).
-As diferenças em relação ao ERS estão em
-[`ers-divergences.md`](specs/001-portal-candidatura/ers-divergences.md).
 
-### Princípios inegociáveis
+## Como rodar localmente
 
-O projeto tem uma [constituição](.specify/memory/constitution.md) com seis princípios. Três
-não podem ser flexibilizados por prazo ou conveniência de demonstração:
+Pré-requisitos: **Node.js 24**, **pnpm**, **Docker** e Git.
 
-1. **Privacidade e LGPD por padrão** — dado pessoal cifrado e restrito por papel
-2. **Score objetivo e imutável** — nenhuma rota, tela ou operação edita um score emitido
-3. **Isolamento na execução de código de terceiros** — sandbox sem rede, sem disco, com limite de tempo
+O jeito mais simples é o ambiente local com Docker. O `pnpm dev:setup`:
 
----
+1. ajusta o `.env` para o banco local (guarda o anterior em `.env.backup`) e gera
+   `AUTH_SECRET` e `ENCRYPTION_KEY`;
+2. sobe o Postgres (`docker compose`) com dois bancos: `cltech` (dev) e `cltech_test` (testes);
+3. aplica as migrações nos dois e roda o seed no de dev.
 
-## Estrutura do repositório
+Os currículos ficam em `.storage/` e o sandbox roda em modo local. Pode rodar de novo
+quando quiser; nada é duplicado.
 
-```text
-CLTech/
-├── prisma/            Schema, migrações e seed
-│   ├── schema.prisma  21 tabelas (DER em docs/diagramas)
-│   ├── migrations/    Inclui a trigger de imutabilidade de Evaluation
-│   └── seed.ts        Vagas, pipelines e usuários de demonstração
-├── src/
-│   ├── app/           Telas React (App Router) + rotas de API
-│   ├── server/        Regra de negócio testável, sem HTTP
-│   ├── components/    UI reutilizável
-│   └── lib/           Utilitários compartilhados
-├── services/ai/       Reservado; não usado (a triagem roda em src/server — decisão D11)
-├── tests/             Vitest (unidade/integração) e Playwright (ponta a ponta)
-├── docs/              Documentação acadêmica
-│   ├── diagramas/     Casos de uso, classes, DER, sequência, atividade
-│   ├── prototipo/     Protótipo das interfaces e navegação
-│   └── entregas/      ERS, relatórios e evidências por sprint
-├── specs/             Especificação técnica (Spec Kit)
-│   ├── 001-portal-candidatura/      Sprint 1: spec, plano, decisões (research.md), divergências do ERS
-│   ├── 002-painel-de-recrutamento/  Sprint 2: contracts/api.md é a referência de todas as rotas
-│   └── 003 a 007                    Sprint 3: visual, fluxo, teste técnico, LGPD, perfil completo
-```
-
-A separação entre `src/app/api/` (casca HTTP) e `src/server/` (regra de negócio) é
-deliberada: mantém a lógica testável sem subir servidor.
-
----
-
-## Como rodar
-
-> Passo a passo completo, contas de demonstração, roteiro de apresentação e problemas
-> comuns: [docs/manual-execucao.md](docs/manual-execucao.md).
-
-### Pré-requisitos
-
-| Ferramenta | Versão | Para quê |
-|---|---|---|
-| Node.js | 20 LTS ou superior | aplicação Next.js |
-| Git | recente | controle de versão |
-
-Em produção, banco e storage rodam no Supabase. Para desenvolver, o jeito mais simples é o
-ambiente local com Docker: `pnpm dev:setup` sobe um Postgres, guarda os currículos em
-`.storage/` e roda migrações e seed; depois `pnpm dev`. Ver
-[docs/manual-execucao.md](docs/manual-execucao.md), seção 2.1.
-
-### 1. Clonar e configurar
+**Linux / macOS**
 
 ```bash
-git clone <url-do-repositorio>
+git clone https://github.com/daviferreira-dev/CLTech.git
 cd CLTech
 pnpm install
-cp .env.example .env      # preencher as variáveis
+pnpm dev:setup
+pnpm dev            # http://localhost:3000
 ```
 
-**Variáveis de ambiente**
+**Windows (PowerShell)**
 
-| Variável | Descrição |
+```powershell
+git clone https://github.com/daviferreira-dev/CLTech.git
+cd CLTech
+pnpm install
+pnpm dev:setup
+pnpm dev            # http://localhost:3000
+```
+
+Sem Node instalado? `run.bat` (Windows) e `./run.sh` (Linux/macOS) instalam o que falta e
+sobem a aplicação.
+
+### E-mail em dev (opcional)
+
+Sem `SMTP_HOST`, `SMTP_USER` e `SMTP_PASS` o envio fica desligado e nada quebra. Para ver os
+e-mails, suba o [Mailpit](https://mailpit.axllent.org/):
+
+```bash
+docker run -d --name mailpit -p 1025:1025 -p 8025:8025 axllent/mailpit --smtp-auth-accept-any --smtp-auth-allow-insecure
+```
+
+No `.env`: `SMTP_HOST="localhost"`, `SMTP_PORT="1025"` e qualquer valor em `SMTP_USER` e
+`SMTP_PASS` (o mailer exige os três). As mensagens aparecem em http://localhost:8025.
+
+Contas de demonstração, roteiro de apresentação e problemas comuns:
+[docs/manual-execucao.md](docs/manual-execucao.md).
+
+## Testes
+
+```bash
+pnpm test:unit          # Vitest, sem banco
+pnpm test:integration   # Vitest, no Postgres de teste (cltech_test)
+pnpm test               # unit + integration
+pnpm test:e2e           # Playwright, contra pnpm build && pnpm start
+```
+
+- A suíte de integração dá `TRUNCATE` antes de cada teste: roda só no banco `cltech_test`,
+  nunca no de produção.
+- O e2e sobe a aplicação em modo produção e roda em série (`workers: 1`).
+- O CI (`.github/workflows/ci.yml`) roda lint, `tsc --noEmit`, migrações, `pnpm test` e build
+  a cada push na `main` e em todo PR.
+
+## Variáveis de ambiente
+
+Todas estão documentadas em [`.env.example`](.env.example) (e as de teste em
+[`.env.test.example`](.env.test.example)). Copie para `.env` e preencha; o `pnpm dev:setup`
+já faz isso para o ambiente local. O `.env` nunca é versionado.
+
+| Grupo | Variáveis |
 |---|---|
-| `DATABASE_URL` | Conexão com o Postgres do Supabase (connection pooler) |
-| `AUTH_SECRET` | Assinatura das sessões |
-| `ENCRYPTION_KEY` | Chave AES-256 em base64 — gerar com `openssl rand -base64 32` |
-| `GITHUB_ID` / `GITHUB_SECRET` | OAuth e coleta de portfólio |
-| `STORAGE_*` | Bucket S3-compatível do Supabase Storage (Project Settings → Storage → S3 Connection) para currículos |
+| Banco | `DATABASE_URL` |
+| Autenticação | `AUTH_SECRET`, `NEXTAUTH_URL`, `GITHUB_ID`/`GITHUB_SECRET`, `LINKEDIN_ID`/`LINKEDIN_SECRET` (opcional) |
+| Criptografia | `ENCRYPTION_KEY` (AES-256, perder a chave torna os dados cifrados irrecuperáveis), `ENCRYPTION_KEY_PREVIOUS` (só durante a troca de chave) |
+| Storage | `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` |
+| E-mail | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` |
+| Sandbox | `SANDBOX_URL`, `SANDBOX_TOKEN`, `CRON_SECRET` |
 
-Nenhum segredo é versionado. O arquivo `.env` está no `.gitignore`.
+## Segurança e LGPD
 
-### 2. Schema e dados de demonstração
-
-```bash
-pnpm prisma migrate dev     # cria o schema
-pnpm db:seed                # vagas, pipelines e usuários de demonstração
-```
-
-### 3. Rodar a aplicação
-
-```bash
-pnpm build && pnpm start    # http://localhost:3000
-```
-
-Uma aplicação só: as telas React e as rotas de API sobem juntas. Não há segundo servidor.
-O motor de triagem também roda dentro do Next.js (D11); `services/ai/` não é usado.
-
-### Testes
-
-```bash
-pnpm test          # Vitest — unidade e integração, num Postgres só de teste (ver docs/manual-execucao.md §7)
-pnpm test:e2e      # Playwright — fluxos P1 em 360 px e 1280 px, contra `pnpm build && pnpm start`
-```
-
-`pnpm test:e2e` sobe a aplicação em modo produção (não `pnpm dev`) e roda os testes em
-série (`workers: 1`) — um único banco compartilhado via pooler não aguenta registro
-concorrente com Argon2id sem esgotar conexões.
+- **Dados pessoais cifrados** em coluna com AES-256-GCM (`src/server/crypto.ts`); e-mail em
+  claro por ser chave de identidade (RN007).
+- **Currículos cifrados** em bucket privado, entregues só pelo servidor a quem tem permissão
+  (RN004).
+- **Sem tokens OAuth guardados**: o login por GitHub/LinkedIn grava só o vínculo da conta
+  (`src/server/auth/adapter.ts`).
+- **Controle de acesso por papel** (candidato, recrutador, admin), provado por testes de matriz.
+- **Logs sem dado pessoal**: erros inesperados são logados sem a mensagem (`logSafeError`).
+- **Código de candidato em sandbox** sem rede e com limite de tempo (RNF06).
+- **Direitos do titular**: exportação dos próprios dados, exclusão da conta e aviso de
+  privacidade em `/privacidade`.
+- **Login protegido**: login social só com e-mail verificado pelo provedor, limite de
+  tentativas no login e no cadastro, e CSP nos cabeçalhos.
 
 ### Trocar a ENCRYPTION_KEY
 
@@ -268,40 +239,53 @@ com a `ENCRYPTION_KEY`. Para trocar a chave sem perder nada:
    O script re-cifra o que ainda está com a chave antiga e pode ser rodado de novo sem efeito.
 4. Quando ele mostrar tudo zerado, apague `ENCRYPTION_KEY_PREVIOUS`.
 
----
+Detalhes em [`specs/006-lgpd/spec.md`](specs/006-lgpd/spec.md) e na
+[constituição](.specify/memory/constitution.md) do projeto.
+
+## Estrutura de pastas
+
+```text
+CLTech/
+├── prisma/            Schema, migrações, seed e scripts SQL avulsos
+├── src/
+│   ├── app/           Telas (App Router) e rotas de API
+│   ├── server/        Regra de negócio, sem HTTP
+│   ├── components/    UI reutilizável
+│   └── lib/           Utilitários (erros, validação, labels)
+├── tests/
+│   ├── unit/          Vitest sem banco
+│   ├── integration/   Vitest com Postgres de teste
+│   └── e2e/           Playwright
+├── scripts/           dev-setup e checagens de ambiente
+├── docker/            Init do Postgres local
+├── services/          Reservado (a triagem roda em src/server)
+├── specs/             Especificações por feature (Spec Kit)
+├── docs/              Manual, deploy, diagramas e entregas acadêmicas
+└── DESIGN.md          Identidade visual: cores, tipografia, componentes
+```
 
 ## Documentação
 
 | Documento | Conteúdo |
 |---|---|
-| [ERS v1.1 (PDF)](docs/entregas/CLTech%20-%20ERS%20v1.1.pdf) · [Word](docs/entregas/CLTech%20-%20ERS.docx) | Especificação de Requisitos de Software completa |
-| [Constituição](.specify/memory/constitution.md) | Princípios técnicos inegociáveis do projeto |
-| [Especificação da Sprint 1](specs/001-portal-candidatura/spec.md) | Histórias de usuário, requisitos e critérios de sucesso |
-| [Plano de implementação](specs/001-portal-candidatura/plan.md) | Contexto técnico e estrutura de código |
-| [Decisões técnicas](specs/001-portal-candidatura/research.md) | O que foi escolhido, o que foi descartado e por quê |
-| [Divergências do ERS](specs/001-portal-candidatura/ers-divergences.md) | Onde a implementação difere do ERS, por quê e o que precisa ser emendado |
-| [Modelo de dados](specs/001-portal-candidatura/data-model.md) | Entidades, relações e transições de estado |
-| [Contratos de API](specs/002-painel-de-recrutamento/contracts/api.md) | As 32 rotas HTTP, corpos, respostas e códigos de erro |
+| [Manual de execução](docs/manual-execucao.md) | Instalação, contas de demonstração, testes, problemas comuns |
+| [Deploy na Vercel](docs/deploy-vercel.md) | Publicação da aplicação |
+| [Contratos de API](specs/002-painel-de-recrutamento/contracts/api.md) | Rotas HTTP, corpos, respostas e códigos de erro |
+| [Decisões técnicas](specs/001-portal-candidatura/research.md) | O que foi escolhido e por quê |
+| [Modelo de dados](specs/001-portal-candidatura/data-model.md) | Entidades, relações e estados |
+| [DESIGN.md](DESIGN.md) | Fonte da identidade visual |
 | [Diagramas](docs/diagramas/LEIA-ME.md) | Casos de uso, classes, DER, sequência e atividade |
-| [Relatório de testes da Sprint 2](docs/entregas/Sprint2_Relatorio_Testes.md) | Resultado das suítes e o que cada teste prova |
-| [Dificuldades e decisões da Sprint 2](docs/entregas/Sprint2_Dificuldades_Decisoes.md) | Decisões de arquitetura, problemas resolvidos e mudanças de escopo |
-| [Deploy na Vercel](docs/deploy-vercel.md) | Passo a passo para publicar a aplicação |
-| [Matriz de rastreabilidade](docs/rastreabilidade.md) | Requisito do ERS → spec → código → teste, com status |
-| [Manual de execução](docs/manual-execucao.md) | Instalação, configuração, demonstração e testes |
+| [Rastreabilidade](docs/rastreabilidade.md) | Requisito → spec → código → teste |
+| [ERS v1.1 (PDF)](docs/entregas/CLTech%20-%20ERS%20v1.1.pdf) | Especificação de Requisitos de Software |
 
----
+## Como contribuir
+
+Leia o [CONTRIBUTING.md](.github/CONTRIBUTING.md). Em resumo: branch a partir da `main`,
+commits no padrão `feat|fix|docs(escopo): ...`, testes passando e PR com o template.
 
 ## Equipe
 
-| Integrante |
-|---|
-| Cassiano Luiz Brandes Soares |
-| Davi Ferreira da Cunha |
-| Guilherme Emanuel Gonçalves |
-| João Vitor Charleaux |
-| Pedro Henrique Dias Brito |
-| Vinícius Rodrigues Vilaça |
+Cassiano Luiz Brandes Soares · Davi Ferreira da Cunha · Guilherme Emanuel Gonçalves ·
+João Vitor Charleaux · Pedro Henrique Dias Brito · Vinícius Rodrigues Vilaça
 
-**Orientação:** Prof. Wesley Fioreze
-**Demanda:** 3aq Tecnologia — via SAGA
-**Instituição parceira:** Centro de Formação Profissional Wanderillo de Castro Câmara (CE)
+**Orientação:** Prof. Wesley Fioreze · **Demanda:** 3aq Tecnologia, via SAGA

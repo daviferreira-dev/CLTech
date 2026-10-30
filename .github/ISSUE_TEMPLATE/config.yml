@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Manual de execução
+    url: https://github.com/daviferreira-dev/CLTech/blob/main/docs/manual-execucao.md
+    about: Instalação, contas de demonstração e problemas comuns.
+  - name: Site do CLTech
+    url: https://cl-tech-pi.vercel.app
+    about: A aplicação publicada.
