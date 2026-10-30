@@ -21,7 +21,14 @@ const OAUTH_ERROR: Record<string, string> = {
   Callback: "Não foi possível concluir o login com o provedor. Tente de novo.",
   OAuthSignin: "Não foi possível iniciar o login com o provedor. Tente de novo.",
   Configuration: "Este login está indisponível no momento. Entre com e-mail e senha.",
+  EmailNotVerified: "Confirme seu e-mail no GitHub/LinkedIn (o principal da conta) e tente de novo.",
 };
+
+/** A2: o servidor manda `blocked_<minutos>` quando o limite de tentativas estoura. */
+function blockedMessage(code: string | undefined): string | null {
+  const minutes = Number(code?.match(/^blocked_(\d+)$/)?.[1]);
+  return minutes ? `Muitas tentativas. Tente de novo em ${minutes} ${minutes === 1 ? "minuto" : "minutos"}.` : null;
+}
 
 export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
   const searchParams = useSearchParams();
@@ -58,7 +65,12 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
 
     if (result?.error) {
       // FR-004: mensagem genérica, sem revelar se o e-mail existe. O e-mail digitado fica.
-      setError(result.error === "network" ? "Sem conexão com o servidor. Tente de novo." : "E-mail ou senha incorretos.");
+      const code = "code" in result ? result.code : undefined;
+      setError(
+        result.error === "network"
+          ? "Sem conexão com o servidor. Tente de novo."
+          : (blockedMessage(code) ?? "E-mail ou senha incorretos."),
+      );
       setPassword("");
       return;
     }

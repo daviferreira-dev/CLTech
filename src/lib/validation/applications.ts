@@ -9,7 +9,7 @@ export const meetingSchema = z.object({
     .trim()
     .max(500)
     .url("Informe um link válido para a reunião.")
-    .refine((value) => /^https?:\/\//i.test(value), "O link da reunião deve começar com http:// ou https://."),
+    .refine((value) => /^https:\/\//i.test(value), "O link da reunião deve começar com https://."),
 });
 export type MeetingInput = z.infer<typeof meetingSchema>;
 

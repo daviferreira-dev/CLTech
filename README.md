@@ -206,7 +206,7 @@ já faz isso para o ambiente local. O `.env` nunca é versionado.
 |---|---|
 | Banco | `DATABASE_URL` |
 | Autenticação | `AUTH_SECRET`, `NEXTAUTH_URL`, `GITHUB_ID`/`GITHUB_SECRET`, `LINKEDIN_ID`/`LINKEDIN_SECRET` (opcional) |
-| Criptografia | `ENCRYPTION_KEY` (AES-256, perder a chave torna os dados cifrados irrecuperáveis) |
+| Criptografia | `ENCRYPTION_KEY` (AES-256, perder a chave torna os dados cifrados irrecuperáveis), `ENCRYPTION_KEY_PREVIOUS` (só durante a troca de chave) |
 | Storage | `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` |
 | E-mail | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` |
 | Sandbox | `SANDBOX_URL`, `SANDBOX_TOKEN`, `CRON_SECRET` |
@@ -224,6 +224,20 @@ já faz isso para o ambiente local. O `.env` nunca é versionado.
 - **Código de candidato em sandbox** sem rede e com limite de tempo (RNF06).
 - **Direitos do titular**: exportação dos próprios dados, exclusão da conta e aviso de
   privacidade em `/privacidade`.
+- **Login protegido**: login social só com e-mail verificado pelo provedor, limite de
+  tentativas no login e no cadastro, e CSP nos cabeçalhos.
+
+### Trocar a ENCRYPTION_KEY
+
+Telefone, currículos (arquivo e texto extraído) e código dos testes técnicos ficam cifrados
+com a `ENCRYPTION_KEY`. Para trocar a chave sem perder nada:
+
+1. Gere a nova: `openssl rand -base64 32`.
+2. No ambiente (`.env` ou Vercel), mova a chave atual para `ENCRYPTION_KEY_PREVIOUS` e ponha a
+   nova em `ENCRYPTION_KEY`. A aplicação já lê dados das duas e grava só com a nova.
+3. Rode `pnpm db:reencrypt` com essas variáveis apontando para o banco e o bucket de produção.
+   O script re-cifra o que ainda está com a chave antiga e pode ser rodado de novo sem efeito.
+4. Quando ele mostrar tudo zerado, apague `ENCRYPTION_KEY_PREVIOUS`.
 
 Detalhes em [`specs/006-lgpd/spec.md`](specs/006-lgpd/spec.md) e na
 [constituição](.specify/memory/constitution.md) do projeto.

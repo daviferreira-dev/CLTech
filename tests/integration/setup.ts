@@ -21,6 +21,7 @@ const DOMAIN_TABLES = [
   "Session",
   "Account",
   "VerificationToken",
+  "RateLimit",
   "User",
 ];
 

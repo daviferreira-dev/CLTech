@@ -1,0 +1,7 @@
+version: 2
+secret:
+  ignored_matches:
+    # Chave só de teste em .env.test.example ("test-only-key-not-for-production"), incidente 39313427.
+    # Guardada como SHA-256 do valor, não o valor.
+    - name: chave de teste do .env.test.example
+      match: e1ec560a44f5cafab555f700f937683041aad07e42819b946e176e448a916e6c

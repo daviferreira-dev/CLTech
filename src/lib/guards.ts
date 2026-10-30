@@ -4,6 +4,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/server/auth/config";
 import { destinationForRole } from "@/server/auth/redirect";
+import { requireSession } from "@/server/auth/session";
+import { ApiError } from "@/lib/errors";
 
 export { safeInternalPath } from "./safe-path";
 
@@ -29,11 +31,15 @@ export function loginUrl(callbackPath: string): string {
   return `/entrar?callbackUrl=${encodeURIComponent(callbackPath)}`;
 }
 
+/** Papel relido no banco (requireSession), não o do JWT: rebaixado ou excluído perde o acesso já (M2). */
 export async function requirePageRole(allowed: Role[], path: string) {
-  const session = await auth();
-  if (!session?.user?.role) redirect(loginUrl(path));
-  if (!allowed.includes(session.user.role)) redirect(destinationForRole(session.user.role));
-  return session.user;
+  const user = await requireSession().catch((err) => {
+    if (err instanceof ApiError) return null;
+    throw err;
+  });
+  if (!user) redirect(loginUrl(path));
+  if (!allowed.includes(user.role)) redirect(destinationForRole(user.role));
+  return user;
 }
 
 /** `<title>` com dado real (nome da vaga, do candidato) só para quem pode ver a página. */

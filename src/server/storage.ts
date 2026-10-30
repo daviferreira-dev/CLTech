@@ -71,12 +71,17 @@ export async function uploadPrivateObject(
   contentType: string,
 ): Promise<UploadResult> {
   const storageKey = buildResumeStorageKey(candidateId);
+  await putPrivateObject(storageKey, body, contentType);
+  return { storageKey };
+}
 
+/** Grava (ou sobrescreve, na re-cifragem de scripts/reencrypt.ts) o objeto na chave dada. */
+export async function putPrivateObject(storageKey: string, body: Buffer, contentType: string): Promise<void> {
   if (isLocalStorage()) {
     const file = localObjectPath(storageKey);
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, body);
-    return { storageKey };
+    return;
   }
 
   await getClient().send(
@@ -87,8 +92,6 @@ export async function uploadPrivateObject(
       ContentType: contentType,
     }),
   );
-
-  return { storageKey };
 }
 
 /**

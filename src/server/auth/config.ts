@@ -13,14 +13,14 @@
 // Credentials com Argon2id, GitHub obrigatório, LinkedIn opcional (sem
 // LINKEDIN_ID o botão simplesmente não aparece, sem quebrar o resto — R2).
 
-import NextAuth, { type NextAuthConfig } from "next-auth";
+import NextAuth, { CredentialsSignin, type NextAuthConfig } from "next-auth";
 import { createAdapter } from "@/server/auth/adapter";
 import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import LinkedIn from "next-auth/providers/linkedin";
-import * as argon2 from "argon2";
-import { prisma } from "@/lib/prisma";
-import { loginSchema } from "@/lib/validation/auth";
+import { TooManyAttempts, authorizeCredentials } from "@/server/auth/credentials";
+import { oauthEmailVerified } from "@/server/auth/oauth-email";
+import { clientIp } from "@/server/auth/rate-limit";
 import { recordOAuthIdentity } from "@/server/candidates/external-accounts";
 
 const providers: NextAuthConfig["providers"] = [
@@ -30,20 +30,14 @@ const providers: NextAuthConfig["providers"] = [
       email: { label: "E-mail", type: "email" },
       password: { label: "Senha", type: "password" },
     },
-    async authorize(raw) {
-      const parsed = loginSchema.safeParse(raw);
-      if (!parsed.success) return null;
-      const { email, password } = parsed.data;
-
-      const user = await prisma.user.findUnique({ where: { email } });
-      // FR-004: não revelar se o e-mail existe — mesma resposta genérica (null)
-      // tanto para usuário inexistente quanto para senha incorreta.
-      if (!user || !user.passwordHash) return null;
-
-      const valid = await argon2.verify(user.passwordHash, password);
-      if (!valid) return null;
-
-      return { id: user.id, name: user.name, email: user.email, role: user.role };
+    async authorize(raw, request) {
+      try {
+        return await authorizeCredentials(raw, clientIp(request.headers));
+      } catch (err) {
+        // CredentialsSignin chega ao cliente como `code` ("blocked_<minutos>"), não como erro 500.
+        if (err instanceof TooManyAttempts) throw Object.assign(new CredentialsSignin(), { code: err.code });
+        throw err;
+      }
     },
   }),
   GitHub({
@@ -54,7 +48,7 @@ const providers: NextAuthConfig["providers"] = [
     // ("unexpected iss response parameter value" → /api/auth/error?error=Configuration).
     issuer: "https://github.com/login/oauth",
     // FR-003: vincula à conta existente pelo e-mail em vez de bloquear com
-    // OAuthAccountNotLinked. Seguro aqui porque o GitHub verifica o e-mail.
+    // OAuthAccountNotLinked. Seguro só porque o callback signIn exige o e-mail verificado.
     allowDangerousEmailAccountLinking: true,
   }),
 ];
@@ -66,6 +60,7 @@ if (process.env.LINKEDIN_ID && process.env.LINKEDIN_SECRET) {
     LinkedIn({
       clientId: process.env.LINKEDIN_ID,
       clientSecret: process.env.LINKEDIN_SECRET,
+      // Idem GitHub: o signIn exige `email_verified` do OIDC.
       allowDangerousEmailAccountLinking: true,
     }),
   );
@@ -78,6 +73,8 @@ export const authConfig: NextAuthConfig = {
   session: { strategy: "jwt" },
   // Deploy self-hosted (não Vercel) — Auth.js só confia automaticamente no Host
   // em dev ou na Vercel; em `next start` puro rejeita com UntrustedHost sem isto.
+  // B2: seguro porque o next-auth troca a origem da requisição por AUTH_URL/NEXTAUTH_URL
+  // quando definida (exigida por scripts/check-env.mjs): o Host enviado não muda callbacks.
   trustHost: true,
   providers,
   pages: {
@@ -87,11 +84,11 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     // FR-003: provedor externo com e-mail já cadastrado vincula à conta existente
-    // em vez de criar uma segunda. O PrismaAdapter já faz isso automaticamente
-    // quando `allowDangerousEmailAccountLinking` é ligado para os provedores OAuth
-    // confiáveis que verificam e-mail (GitHub e LinkedIn verificam).
-    async signIn() {
-      return true;
+    // em vez de criar uma segunda (`allowDangerousEmailAccountLinking`). O Auth.js chama
+    // este callback antes de vincular, então aqui se exige o e-mail verificado (A1).
+    async signIn({ account, profile }) {
+      if (!account || (await oauthEmailVerified(account, profile))) return true;
+      return "/entrar?error=EmailNotVerified";
     },
     // Estratégia "jwt": o papel precisa ser carregado no token no login e
     // propagado para a sessão a cada leitura — não há mais `user` vindo do banco
