@@ -113,16 +113,24 @@ Use duas janelas: uma normal para o candidato e uma anônima para o recrutador.
 
 ```bash
 pnpm lint
-pnpm test                    # Vitest — integração
-pnpm db:seed                 # obrigatório entre os dois — ver aviso
+pnpm test:unit               # Vitest — só unidade, sem banco
+pnpm test                    # Vitest — unidade + integração (exige o banco de teste abaixo)
 pnpm exec playwright install chromium   # só na primeira vez
 pnpm test:e2e                # Playwright — 360 px e 1280 px, sobe build + start sozinho
 ```
 
-> **`pnpm test` apaga o banco.** Os testes de integração leem o `DATABASE_URL` de
-> `.env.test.example` e dão `TRUNCATE` em todas as tabelas antes de cada teste. Hoje esse
-> arquivo aponta para o mesmo projeto Supabase de desenvolvimento, então rodar a suíte apaga
-> o seed. Rode `pnpm db:seed` antes do E2E e antes de qualquer demonstração.
+> **Banco de teste separado.** Os testes de integração dão `TRUNCATE` em todas as tabelas
+> antes de cada teste, por isso rodam num Postgres só de teste — nunca no Supabase. O
+> `DATABASE_URL` vem do `.env.test` (local, não versionado) ou, sem ele, do
+> `.env.test.example`, que aponta para `localhost:5432/cltech_test`. A suíte se recusa a
+> rodar se esse banco for o mesmo do `.env`. Para subir o banco:
+>
+> ```bash
+> docker run -d --name cltech-test-db -p 5432:5432 -e POSTGRES_USER=cltech -e POSTGRES_PASSWORD=cltech -e POSTGRES_DB=cltech_test postgres:16
+> DATABASE_URL="postgresql://cltech:cltech@localhost:5432/cltech_test" pnpm exec prisma migrate deploy
+> ```
+>
+> O CI (`.github/workflows/ci.yml`) faz o mesmo a cada push na `main` e em todo pull request.
 
 Para rodar só a auditoria LGPD (CT-RNF05): `pnpm test -- lgpd`.
 
@@ -131,7 +139,7 @@ Para rodar só a auditoria LGPD (CT-RNF05): `pnpm test -- lgpd`.
 | Sintoma | Causa provável | O que fazer |
 |---|---|---|
 | `Can't reach database server` | Projeto Supabase pausado por inatividade (plano gratuito) ou rede bloqueando a porta | Restaurar o projeto no painel do Supabase; testar de outra rede |
-| `/vagas` vazia | `pnpm test` rodou depois do seed | `pnpm db:seed` |
+| `/vagas` vazia | Banco sem seed | `pnpm db:seed` |
 | `ENCRYPTION_KEY não configurada` / erro ao abrir o perfil | Chave ausente ou diferente da usada para gravar | Usar a mesma chave do ambiente que gravou os dados |
 | "Ambiente de execução indisponível" no desafio | `SANDBOX_URL` vazio ou VM fora do ar | Comportamento esperado sem a VM. O código do candidato fica salvo |
 | Desafio com prazo vencido não é submetido sozinho | Ninguém agendou a rota de expiração | Agendar `POST /api/internal/code-tests/expire` com `Authorization: Bearer $CRON_SECRET`. Sem isso, a expiração só acontece quando o candidato volta à tela |

@@ -82,19 +82,16 @@ sem citar o Prisma — o erro não diz qual é o passo que faltou.
 ```bash
 pnpm exec playwright install chromium   # só na primeira vez
 pnpm test                               # Vitest — matching, publish e lock
-pnpm db:seed                            # obrigatório entre os dois — ver aviso abaixo
+pnpm db:seed                            # popula o banco do .env antes do E2E
 pnpm test:e2e                           # Playwright — os cinco fluxos, 360px e 1280px
 ```
 
-**`pnpm test` apaga os dados do banco.** `tests/integration/setup.ts` dá
-`TRUNCATE ... CASCADE` em todas as tabelas de domínio antes de cada teste, e o
-`.env.test.example` aponta para o mesmo projeto Supabase do `.env`. Rodar a suíte de
-integração derruba o seed; sem rodar `pnpm db:seed` de novo, o Playwright encontra `/vagas`
-vazia e quase toda a suíte E2E falha com timeouts que não indicam a causa real.
-
-`vitest.config.ts` recusa iniciar se o `.env.test.example` não existir ou se o
-`DATABASE_URL` dele ainda estiver com os placeholders — antes esse caso caía em silêncio no
-`DATABASE_URL` do `.env` e truncava o banco de desenvolvimento sem nenhum aviso.
+**A suíte de integração roda num banco só de teste.** `tests/integration/setup.ts` dá
+`TRUNCATE ... CASCADE` em todas as tabelas de domínio antes de cada teste. O
+`DATABASE_URL` vem do `.env.test` (não versionado) ou do `.env.test.example`
+(`localhost:5432/cltech_test`), e `tests/integration/env.ts` recusa iniciar se esse banco
+for o mesmo do `.env` — antes a suíte apontava para o mesmo Supabase do desenvolvimento e
+apagava o seed. Ver `docs/manual-execucao.md`, seção 7, para subir o Postgres de teste.
 
 Testes obrigatórios pela constituição nesta sprint:
 1. Nenhuma candidatura é criada sem `Evaluation(RESUME_MATCH)` junto (Princípio III).

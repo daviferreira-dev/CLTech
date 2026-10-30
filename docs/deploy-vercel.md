@@ -31,12 +31,12 @@ Crie um segundo app só para produção:
 
 1. https://github.com/settings/developers → **New OAuth App**
 2. **Application name**: `CLTech (produção)`
-3. **Homepage URL**: `https://cltech.vercel.app` (ajuste depois se a Vercel der outro nome)
-4. **Authorization callback URL**: `https://cltech.vercel.app/api/auth/callback/github`
+3. **Homepage URL**: `https://cltech-3aq.vercel.app` (ajuste depois se a Vercel der outro nome)
+4. **Authorization callback URL**: `https://cltech-3aq.vercel.app/api/auth/callback/github`
 5. **Register application** → anote o **Client ID** → **Generate a new client secret** e anote o segredo.
 
 **LinkedIn** (opcional): no app do LinkedIn, em *Auth → Authorized redirect URLs*, adicione
-`https://cltech.vercel.app/api/auth/callback/linkedin`. O LinkedIn aceita várias URLs, então a
+`https://cltech-3aq.vercel.app/api/auth/callback/linkedin`. O LinkedIn aceita várias URLs, então a
 de `localhost` continua valendo. Se não for usar, apague `LINKEDIN_ID` e `LINKEDIN_SECRET` do
 arquivo de variáveis: vazio esconde o botão.
 
@@ -47,7 +47,7 @@ Abra `.env.vercel.local` e troque os três valores marcados com `TROCAR`:
 | Variável | Valor |
 |---|---|
 | `GITHUB_ID` / `GITHUB_SECRET` | os do OAuth App de **produção** (passo 2) |
-| `NEXTAUTH_URL` | `https://cltech.vercel.app` (a URL final do projeto, sem barra no fim) |
+| `NEXTAUTH_URL` | `https://cltech-3aq.vercel.app` (a URL final do projeto, sem barra no fim) |
 
 O resto já vem do `.env`, com um ajuste: o `DATABASE_URL` usa a **porta 6543** do pooler do
 Supabase com `?pgbouncer=true&connection_limit=1`, o modo recomendado para funções
@@ -88,7 +88,7 @@ A região já vem de `vercel.json`; não precisa mexer em *Settings → Function
 
 ## 5. Ajustes depois do primeiro deploy
 
-1. **URL**: se a Vercel deu um nome diferente de `cltech.vercel.app`, atualize `NEXTAUTH_URL`
+1. **URL**: se a Vercel deu um nome diferente de `cltech-3aq.vercel.app`, atualize `NEXTAUTH_URL`
    (Settings → Environment Variables), as duas URLs do OAuth App do GitHub e, se usar, a do
    LinkedIn. Depois: **Deployments → ⋯ → Redeploy**. Variável alterada só vale após redeploy.
 2. **Região**: em Deployments → (deploy) → **Functions**, confirme `gru1`.
