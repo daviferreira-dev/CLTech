@@ -93,18 +93,25 @@ export async function connectExternalAccount(
 /**
  * Chamado no callback `jwt` a cada login/vínculo OAuth: guarda o nome que o provedor
  * devolveu, exibido ao recrutador como "verificado". Cria o vínculo como DISCONNECTED se
- * ainda não existir — ele só fica CONNECTED pelo `connectExternalAccount`.
+ * ainda não existir.
+ *
+ * GitHub: na primeira vez (sem vínculo ainda) já conecta o portfólio — a tela de login
+ * avisa disso. Depois de um "Desconectar", o vínculo existe e o login não reconecta.
+ * LinkedIn: o OIDC não traz o link do perfil, então segue pelo formulário do perfil.
  */
 export async function recordOAuthIdentity(userId: string, oauthProvider: string, name: string | null | undefined): Promise<void> {
   const provider = (Object.keys(OAUTH_PROVIDER) as Provider[]).find((p) => OAUTH_PROVIDER[p] === oauthProvider);
   if (!provider || !name) return;
   const candidate = await prisma.candidate.findUnique({ where: { userId }, select: { id: true } });
   if (!candidate) return;
+  const where = { candidateId_provider: { candidateId: candidate.id, provider } };
+  const firstTime = !(await prisma.externalAccount.findUnique({ where, select: { id: true } }));
   await prisma.externalAccount.upsert({
-    where: { candidateId_provider: { candidateId: candidate.id, provider } },
+    where,
     create: { candidateId: candidate.id, provider, status: "DISCONNECTED", verifiedName: name },
     update: { verifiedName: name },
   });
+  if (provider === "GITHUB" && firstTime) await connectExternalAccount(userId, { provider: "GITHUB" });
 }
 
 export async function disconnectExternalAccount(userId: string, provider: Provider): Promise<void> {

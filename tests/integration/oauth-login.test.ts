@@ -1,13 +1,23 @@
 // Primeiro login social e vínculo por e-mail, chamando o adapter na mesma ordem que o
 // Auth.js (handleLoginOrRegister em @auth/core): getUserByAccount → getUserByEmail →
 // createUser (só se não achou) → linkAccount; depois o callback jwt grava a identidade.
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import type { AdapterAccount, AdapterUser } from "next-auth/adapters";
 import { prisma } from "@/lib/prisma";
 import { createAdapter } from "@/server/auth/adapter";
 import { recordOAuthIdentity } from "@/server/candidates/external-accounts";
 
 const adapter = createAdapter();
+
+// O primeiro login com GitHub conecta o portfólio: API do GitHub falsa para a conta 583231.
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+vi.stubGlobal(
+  "fetch",
+  vi.fn(async (url: string) => (url.endsWith("/user/583231") ? json({ login: "octocat" }) : json({ message: "Not Found" }, 404))),
+);
+afterAll(() => {
+  vi.unstubAllGlobals();
+});
 
 type Profile = { email: string; name: string | null; image: string | null; login?: string };
 
@@ -61,10 +71,11 @@ describe("primeiro login social e vínculo de contas (FR-003)", () => {
     expect(await prisma.account.count({ where: { userId: github.id } })).toBe(2);
     expect(await prisma.account.findFirstOrThrow({ where: { provider: "linkedin" } })).toMatchObject({ access_token: null, id_token: null });
 
-    // (d) ExternalAccount nasce DISCONNECTED com o nome verificado (login do GitHub quando name é nulo).
+    // (d) GitHub já sai conectado (coleta em andamento, login como nome quando name é nulo);
+    // LinkedIn fica DISCONNECTED com o nome verificado, porque o OIDC não traz o link do perfil.
     const external = await prisma.externalAccount.findMany({ where: { candidateId: candidate.id }, orderBy: { provider: "asc" } });
     expect(external).toMatchObject([
-      { provider: "GITHUB", status: "DISCONNECTED", verifiedName: "octocat" },
+      { provider: "GITHUB", status: expect.stringMatching(/PENDING|CONNECTED|UNAVAILABLE/), externalUsername: "octocat", verifiedName: "octocat" },
       { provider: "LINKEDIN", status: "DISCONNECTED", verifiedName: "Octo Cat" },
     ]);
 
