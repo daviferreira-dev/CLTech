@@ -88,10 +88,29 @@ describe("conectar contas externas exige OAuth", () => {
     await expect(connectExternalAccount(userId, { provider: "LINKEDIN", url: "https://linkedin.com/company/acme" })).rejects.toMatchObject({ status: 400 });
   });
 
-  it("recordOAuthIdentity cria o vínculo desconectado, sem conectar", async () => {
+  it("primeiro login com GitHub já conecta o portfólio; LinkedIn fica desconectado", async () => {
     const { userId, candidateId } = await candidate();
+    await authorize(userId, "github");
+    await authorize(userId, "linkedin");
     await recordOAuthIdentity(userId, "github", "octocat");
-    expect(await account(candidateId, "GITHUB")).toMatchObject({ status: "DISCONNECTED", verifiedName: "octocat" });
+    await recordOAuthIdentity(userId, "linkedin", "Ana Souza");
+    expect(await account(candidateId, "GITHUB")).toMatchObject({
+      status: expect.stringMatching(/PENDING|CONNECTED/),
+      externalUsername: "octocat",
+      verifiedName: "octocat",
+    });
+    expect(await account(candidateId, "LINKEDIN")).toMatchObject({ status: "DISCONNECTED", verifiedName: "Ana Souza" });
+  });
+
+  it("login com GitHub depois de desconectar não reconecta", async () => {
+    const { userId, candidateId } = await candidate();
+    await authorize(userId, "github");
+    await recordOAuthIdentity(userId, "github", "octocat");
+    // A coleta disparada no login termina antes de o candidato ir ao perfil desconectar.
+    await vi.waitFor(async () => expect((await account(candidateId, "GITHUB")).status).toBe("CONNECTED"));
+    await disconnectExternalAccount(userId, "GITHUB");
+    await recordOAuthIdentity(userId, "github", "octocat");
+    expect((await account(candidateId, "GITHUB")).status).toBe("DISCONNECTED");
   });
 
   it("desconectar o GitHub apaga o snapshot; retry não reativa vínculo desconectado", async () => {

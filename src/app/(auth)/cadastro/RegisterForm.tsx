@@ -95,6 +95,9 @@ export function RegisterForm() {
         <GitHubIcon />
         Criar conta com GitHub
       </button>
+      <p className="-mt-2 text-center text-label font-normal text-fg-muted">
+        Seu perfil público do GitHub vira portfólio verificado para o recrutador. Dá para desconectar no seu perfil.
+      </p>
 
       <div className="flex items-center gap-3 text-label font-normal text-fg-muted">
         <span className="h-px flex-1 bg-line" />

@@ -111,7 +111,7 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
           </button>
         )}
         <p className="pt-1 text-center text-label font-normal text-fg-muted">
-          Entrando pelo GitHub, seu portfólio já chega verificado para o recrutador.
+          Entrando pelo GitHub, seu perfil público vira portfólio verificado para o recrutador. Dá para desconectar no seu perfil.
         </p>
       </div>
 
