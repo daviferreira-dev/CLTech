@@ -537,3 +537,12 @@ model CodeSubmission {
   @@unique([applicationId, challengeId])
   @@map("CodeSubmission")
 }
+
+/// Tentativas de login/cadastro por chave (IP ou e-mail) numa janela fixa — A2, src/server/auth/rate-limit.ts.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@map("RateLimit")
+}

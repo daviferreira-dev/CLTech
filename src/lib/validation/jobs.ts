@@ -5,7 +5,11 @@ import { EMAIL_BODY_MAX, EMAIL_SUBJECT_MAX } from "@/lib/emailTemplate";
 const optionalText = (max: number, label: string) =>
   z.string().trim().max(max, `${label} pode ter no máximo ${max} caracteres.`).nullish();
 const stageEmailFields = {
-  emailSubject: optionalText(EMAIL_SUBJECT_MAX, "O assunto do e-mail"),
+  // B5: quebra de linha no assunto viraria cabeçalho novo no e-mail.
+  emailSubject: optionalText(EMAIL_SUBJECT_MAX, "O assunto do e-mail").refine(
+    (v) => !v || !/[\r\n]/.test(v),
+    "O assunto do e-mail não pode ter quebra de linha.",
+  ),
   emailBody: optionalText(EMAIL_BODY_MAX, "O texto do e-mail"),
 };
 

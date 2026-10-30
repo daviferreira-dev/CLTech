@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:seed": "tsx --env-file=.env prisma/seed.ts",
+    "db:reencrypt": "tsx --env-file=.env scripts/reencrypt.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "test:unit": "vitest run --project unit",

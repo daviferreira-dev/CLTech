@@ -67,4 +67,5 @@ export const Errors = {
   businessRule: (code: string, message: string) => new ApiError(422, code, message),
   payloadTooLarge: (message: string) => new ApiError(413, "PAYLOAD_TOO_LARGE", message),
   unsupportedMediaType: (message: string) => new ApiError(415, "UNSUPPORTED_MEDIA_TYPE", message),
+  tooManyRequests: (message: string) => new ApiError(429, "RATE_LIMITED", message),
 };

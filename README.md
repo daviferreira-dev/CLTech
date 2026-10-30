@@ -256,6 +256,18 @@ pnpm test:e2e      # Playwright — fluxos P1 em 360 px e 1280 px, contra `pnpm 
 série (`workers: 1`) — um único banco compartilhado via pooler não aguenta registro
 concorrente com Argon2id sem esgotar conexões.
 
+### Trocar a ENCRYPTION_KEY
+
+Telefone, currículos (arquivo e texto extraído) e código dos testes técnicos ficam cifrados
+com a `ENCRYPTION_KEY`. Para trocar a chave sem perder nada:
+
+1. Gere a nova: `openssl rand -base64 32`.
+2. No ambiente (`.env` ou Vercel), mova a chave atual para `ENCRYPTION_KEY_PREVIOUS` e ponha a
+   nova em `ENCRYPTION_KEY`. A aplicação já lê dados das duas e grava só com a nova.
+3. Rode `pnpm db:reencrypt` com essas variáveis apontando para o banco e o bucket de produção.
+   O script re-cifra o que ainda está com a chave antiga e pode ser rodado de novo sem efeito.
+4. Quando ele mostrar tudo zerado, apague `ENCRYPTION_KEY_PREVIOUS`.
+
 ---
 
 ## Documentação

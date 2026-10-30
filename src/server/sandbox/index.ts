@@ -288,15 +288,28 @@ class UnconfiguredSandbox implements Sandbox {
 }
 
 let override: Sandbox | null = null;
+let warned = false;
+
+/**
+ * M3: em produção o sandbox local falha como infraestrutura indisponível, salvo opt-in de quem
+ * roda o build na própria máquina (run.bat/run.sh). Na Vercel o opt-in é ignorado, e fora dela
+ * sai um aviso no log, porque qualquer candidato passa a executar código no servidor.
+ */
+export function localSandboxAllowed(env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.NODE_ENV !== "production") return true;
+  if (env.VERCEL || env.SANDBOX_ALLOW_LOCAL !== "1") return false;
+  if (!warned) {
+    warned = true;
+    console.warn("[sandbox] ATENÇÃO: SANDBOX_ALLOW_LOCAL=1 em produção — código de candidato roda nesta máquina SEM isolamento.");
+  }
+  return true;
+}
 
 export function getSandbox(): Sandbox {
   if (override) return override;
   const url = process.env.SANDBOX_URL;
   if (url === "local") {
-    // Em produção falha como infraestrutura indisponível, igual a SANDBOX_URL vazia — salvo
-    // opt-in explícito de quem roda o build na própria máquina (run.bat).
-    const allowed = process.env.NODE_ENV !== "production" || process.env.SANDBOX_ALLOW_LOCAL === "1";
-    return allowed ? new LocalSandbox() : new UnconfiguredSandbox();
+    return localSandboxAllowed() ? new LocalSandbox() : new UnconfiguredSandbox();
   }
   return url ? new Judge0Sandbox(url, process.env.SANDBOX_TOKEN) : new UnconfiguredSandbox();
 }

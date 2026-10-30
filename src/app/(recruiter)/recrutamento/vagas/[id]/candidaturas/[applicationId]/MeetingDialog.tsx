@@ -34,7 +34,7 @@ export function MeetingDialog({
 
   const date = when ? new Date(when) : null;
   const whenError = !date || Number.isNaN(date.getTime()) ? "Informe a data e a hora." : date.getTime() <= Date.now() ? "A data deve ser no futuro." : null;
-  const urlError = /^https?:\/\/\S+$/i.test(url.trim()) ? null : "Informe um link começando com http:// ou https://.";
+  const urlError = /^https:\/\/\S+$/i.test(url.trim()) ? null : "Informe um link começando com https://.";
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
