@@ -6,6 +6,8 @@ import { PageContainer } from "@/components/layout/AppShell";
 import { ButtonLink, EmptyState } from "@/components/ui";
 import { ChallengeWorkspace } from "./ChallengeWorkspace";
 
+export const metadata = { title: "Teste de código" };
+
 export default async function DesafioPage({
   params,
   searchParams,

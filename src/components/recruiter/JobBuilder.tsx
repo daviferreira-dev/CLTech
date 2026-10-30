@@ -11,6 +11,7 @@ import {
   MAX_TEST_RUNS,
   MAX_TIME_LIMIT_MINUTES,
   MIN_TIME_LIMIT_MINUTES,
+  casesLabel,
   isCodeTestConfigComplete,
   type CodeTestStageConfig,
 } from "@/lib/codeTest";
@@ -361,7 +362,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     <Breadcrumb
       items={[
         { label: "Painel", href: "/recrutamento" },
-        { label: "Minhas Vagas", href: "/recrutamento/vagas" },
+        { label: "Minhas vagas", href: "/recrutamento/vagas" },
         { label: jobId ? fields.title || "Vaga" : "Nova vaga" },
       ]}
     />
@@ -389,14 +390,14 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     );
   }
   if (loadState === "failed") {
-    return <ErrorState title="Não foi possível carregar a vaga." onRetry={load} />;
+    return <ErrorState title="Não conseguimos abrir esta vaga agora." onRetry={load} action={<ButtonLink href="/recrutamento/vagas" variant="ghost">Voltar para Minhas vagas</ButtonLink>} />;
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
         breadcrumb={breadcrumb}
-        title={jobId ? "Editar Vaga" : "Criar Vaga"}
+        title={jobId ? "Editar vaga" : "Criar vaga"}
         subtitle={jobId ? <Badge variant={JOB_STATUS_BADGE[status]}>{JOB_STATUS_LABEL[status]}</Badge> : "Salve o rascunho para montar o pipeline de seleção."}
         actions={
           locked ? (
@@ -483,7 +484,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
               <Button type="submit" loading={saving}>
                 {saving ? "Salvando…" : jobId ? "Salvar alterações" : "Salvar rascunho"}
               </Button>
-              {dirty && <span className="text-body text-ink-600">Alterações não salvas.</span>}
+              {dirty && <span className="text-body text-fg-muted">Alterações não salvas.</span>}
             </div>
           </form>
         </CardBody>
@@ -498,22 +499,22 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
           />
           <CardBody className="space-y-4">
             {stages.length === 0 ? (
-              <p className="text-body text-ink-600">Nenhuma etapa ainda. Adicione ao menos uma para publicar.</p>
+              <p className="text-body text-fg-muted">Nenhuma etapa ainda. Adicione ao menos uma para publicar.</p>
             ) : (
               <ol className="space-y-2" aria-busy={savingStages || undefined}>
                 {stages.map((stage, index) => {
                   const label = STAGE_LABEL[stage.type];
                   return (
-                    <li key={`${stage.type}-${index}`} className="rounded-card border border-brand-100 bg-surface px-4 py-3">
+                    <li key={`${stage.type}-${index}`} className="rounded-card border border-line bg-surface px-4 py-3">
                       <div className="flex items-center justify-between gap-3">
                         <span className="flex min-w-0 items-center gap-3">
                           <span
                             aria-hidden="true"
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-600 text-label text-surface"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-action text-label text-on-color"
                           >
                             {index + 1}
                           </span>
-                          <span className="min-w-0 break-words text-body font-medium text-ink-900">{label}</span>
+                          <span className="min-w-0 break-words text-body font-medium text-fg">{label}</span>
                         </span>
                         {!locked && (
                           <div className="flex shrink-0 gap-1">
@@ -540,7 +541,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                               size="sm"
                               onClick={() => removeStage(index)}
                               disabled={savingStages}
-                              className="text-danger-600"
+                              className="text-danger"
                               aria-label={`Remover ${label}`}
                             >
                               Remover
@@ -585,7 +586,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
               </ol>
             )}
             {missingFields.includes("stages") && (
-              <p role="alert" className="text-body text-danger-600">
+              <p role="alert" className="text-body text-danger">
                 Adicione ao menos uma etapa antes de publicar.
               </p>
             )}
@@ -611,20 +612,20 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
       )}
 
       {jobId && !locked && (
-        <div className="flex flex-col gap-3 rounded-card border border-brand-100 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <p className="text-body text-ink-600">Ao publicar, a vaga aparece para os candidatos e o pipeline fica travado.</p>
+        <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <p className="text-body text-fg-muted">Ao publicar, a vaga aparece para os candidatos e o pipeline fica travado.</p>
           <Button onClick={() => setConfirmPublish(true)} disabled={publishing || savingStages || dirty}>
             Publicar Vaga
           </Button>
         </div>
       )}
       {jobId && !locked && dirty && (
-        <p className="text-body text-ink-600">Salve as alterações antes de publicar.</p>
+        <p className="text-body text-fg-muted">Salve as alterações antes de publicar.</p>
       )}
 
       {status === "PUBLISHED" && (
-        <div className="flex flex-col gap-3 rounded-card border border-brand-100 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <p className="text-body text-ink-600">Ao encerrar, a vaga deixa de aceitar candidaturas.</p>
+        <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <p className="text-body text-fg-muted">Ao encerrar, a vaga deixa de aceitar candidaturas.</p>
           <Button variant="secondary" onClick={() => setConfirmClose(true)} disabled={closing}>
             Encerrar vaga
           </Button>
@@ -705,13 +706,13 @@ function CodeTestConfigPanel({
   const minutesValid = Number.isInteger(minutesNumber) && minutesNumber >= MIN_TIME_LIMIT_MINUTES && minutesNumber <= MAX_TIME_LIMIT_MINUTES;
 
   if (catalog === null) {
-    return <p className="mt-3 text-body text-ink-600">Carregando catálogo de desafios…</p>;
+    return <p className="mt-3 text-body text-fg-muted">Carregando catálogo de desafios…</p>;
   }
 
   if (locked) {
     const saved = catalog.find((c) => c.id === config.challengeId);
     return (
-      <p className="mt-3 text-body text-ink-600">
+      <p className="mt-3 text-body text-fg-muted">
         {saved
           ? `Desafio: ${saved.title} · ${config.timeLimitMinutes ?? DEFAULT_TIME_LIMIT_MINUTES} min · ${(config.languages ?? []).map((l) => LANGUAGE_LABEL[l] ?? l).join(", ")}`
           : "Teste de código sem desafio configurado."}
@@ -729,9 +730,9 @@ function CodeTestConfigPanel({
   }
 
   return (
-    <div className={`mt-3 space-y-3 rounded-card border p-3 ${highlight && !complete ? "border-danger-600/50" : "border-brand-100 bg-canvas"}`}>
+    <div className={`mt-3 space-y-3 rounded-card border p-3 ${highlight && !complete ? "border-danger/50" : "border-line bg-page"}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-label text-ink-600">Configuração do teste de código</p>
+        <p className="text-label text-fg-muted">Configuração do teste de código</p>
         <Badge variant={complete ? "success" : "warning"}>{complete ? "Configurado" : "Falta configurar"}</Badge>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -762,24 +763,24 @@ function CodeTestConfigPanel({
       </div>
       {challenge && (
         <fieldset className="space-y-2">
-          <legend className="text-label text-ink-600">Linguagens permitidas</legend>
+          <legend className="text-label text-fg-muted">Linguagens permitidas</legend>
           <div className="flex flex-wrap gap-3">
             {challenge.languages.map((language) => (
-              <label key={language} className="flex items-center gap-2 text-body text-ink-900">
+              <label key={language} className="flex items-center gap-2 text-body text-fg">
                 <input
                   type="checkbox"
                   checked={languages.includes(language)}
                   onChange={(e) =>
                     setLanguages((prev) => (e.target.checked ? [...prev, language] : prev.filter((l) => l !== language)))
                   }
-                  className="h-4 w-4 accent-primary-600"
+                  className="h-4 w-4 accent-action"
                 />
                 {LANGUAGE_LABEL[language] ?? language}
               </label>
             ))}
           </div>
-          <p className="text-label font-normal text-ink-600">
-            {challenge.visibleCases.length} caso(s) visível(is) e {challenge.hiddenCaseCount} oculto(s) · até {MAX_TEST_RUNS} execuções de teste por candidato.
+          <p className="text-label font-normal text-fg-muted">
+            {casesLabel(challenge.visibleCases.length, "visible")} e {casesLabel(challenge.hiddenCaseCount, "hidden")} · até {MAX_TEST_RUNS} execuções de teste por candidato.
           </p>
         </fieldset>
       )}
@@ -815,7 +816,7 @@ function FinalOfferPanel({
   const valid = Number.isInteger(number) && number >= MIN_POSITIONS && number <= MAX_POSITIONS;
 
   return (
-    <div className="mt-3 flex flex-col gap-3 rounded-card border border-brand-100 bg-canvas p-3 sm:flex-row sm:items-end">
+    <div className="mt-3 flex flex-col gap-3 rounded-card border border-line bg-page p-3 sm:flex-row sm:items-end">
       <Field
         id={`vagas-etapa-${stageIndex}`}
         label="Quantidade de vagas"
@@ -870,8 +871,8 @@ function InterviewEmailPanel({
   const changed = draftSubject !== subject || draftBody !== body;
 
   return (
-    <div className="mt-3 space-y-3 rounded-card border border-brand-100 bg-canvas p-3">
-      <p className="text-label text-ink-600">E-mail ao candidato que entra nesta etapa</p>
+    <div className="mt-3 space-y-3 rounded-card border border-line bg-page p-3">
+      <p className="text-label text-fg-muted">E-mail ao candidato que entra nesta etapa</p>
       <Field id={`assunto-email-etapa-${stageIndex}`} label="Assunto">
         <Input maxLength={EMAIL_SUBJECT_MAX} value={draftSubject} onChange={(e) => setDraftSubject(e.target.value)} placeholder="Entrevista marcada — {{vaga}}" />
       </Field>
@@ -889,10 +890,10 @@ function InterviewEmailPanel({
         />
       </Field>
       {(draftSubject.trim() || draftBody.trim()) && (
-        <div className="rounded-card border border-brand-100 bg-surface p-3" aria-label="Pré-visualização do e-mail">
-          <p className="text-label text-ink-600">Pré-visualização (dados de exemplo)</p>
-          {draftSubject.trim() && <p className="mt-1 break-words text-body font-medium text-ink-900">{fillTemplate(draftSubject.trim(), values)}</p>}
-          {draftBody.trim() && <p className="mt-1 whitespace-pre-wrap break-words text-body text-ink-900">{fillTemplate(draftBody.trim(), values)}</p>}
+        <div className="rounded-card border border-line bg-surface p-3" aria-label="Pré-visualização do e-mail">
+          <p className="text-label text-fg-muted">Pré-visualização (dados de exemplo)</p>
+          {draftSubject.trim() && <p className="mt-1 break-words text-body font-medium text-fg">{fillTemplate(draftSubject.trim(), values)}</p>}
+          {draftBody.trim() && <p className="mt-1 whitespace-pre-wrap break-words text-body text-fg">{fillTemplate(draftBody.trim(), values)}</p>}
         </div>
       )}
       <Button size="sm" variant="secondary" loading={saving} disabled={!changed} onClick={() => onSave({ emailSubject: draftSubject, emailBody: draftBody })}>

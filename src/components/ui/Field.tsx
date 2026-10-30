@@ -1,13 +1,14 @@
 import { Children, cloneElement, forwardRef, isValidElement } from "react";
 import { cn } from "@/lib/cn";
+import { Icon } from "./Icon";
 import { focusRing } from "./Button";
 import { SelectMenu } from "./SelectMenu";
 
-const controlBase = cn(
-  "w-full min-w-0 rounded-field border border-ink-400/40 bg-surface px-3 text-body text-ink-900",
-  "placeholder:text-ink-400 transition-colors hover:border-ink-400",
-  "disabled:cursor-not-allowed disabled:bg-canvas disabled:text-ink-600 disabled:opacity-70",
-  "aria-[invalid=true]:border-danger-600",
+export const controlBase = cn(
+  "w-full min-w-0 rounded-field border border-fg-subtle/40 bg-surface px-3 text-body text-fg",
+  "placeholder:text-fg-subtle transition-colors hover:border-fg-subtle",
+  "disabled:cursor-not-allowed disabled:bg-page disabled:text-fg-muted disabled:opacity-70",
+  "aria-[invalid=true]:border-danger",
   focusRing,
   "focus-visible:ring-offset-0",
 );
@@ -26,18 +27,7 @@ export const SearchInput = forwardRef<HTMLInputElement, React.InputHTMLAttribute
 ) {
   return (
     <div className="relative">
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 20 20"
-        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      >
-        <circle cx="9" cy="9" r="6" />
-        <path d="m17 17-3.5-3.5" />
-      </svg>
+      <Icon name="search" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
       <input ref={ref} type="search" className={cn(controlBase, "h-10 pl-10", className)} {...props} />
     </div>
   );
@@ -86,17 +76,17 @@ export function Field({
 
   return (
     <div className={cn("min-w-0 space-y-1.5", className)}>
-      <label htmlFor={id} className="block text-label text-ink-600">
+      <label htmlFor={id} className="block text-label text-fg-muted">
         {label}
       </label>
       {enhanced}
       {hint && (
-        <p id={hintId} className="text-label font-normal text-ink-600">
+        <p id={hintId} className="text-label font-normal text-fg-muted">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} role="alert" className="text-label text-danger-600">
+        <p id={errorId} role="alert" className="text-label text-danger">
           {error}
         </p>
       )}

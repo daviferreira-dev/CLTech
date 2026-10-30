@@ -3,6 +3,8 @@ import { listChallenges } from "@/server/code-test/challenges";
 import { PageContainer } from "@/components/layout/AppShell";
 import { ChallengeCatalog } from "./ChallengeCatalog";
 
+export const metadata = { title: "Catálogo de desafios" };
+
 export default async function DesafiosCatalogoPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
   const user = await requirePageRole(RECRUITER_ROLES, currentPath("/recrutamento/desafios", await searchParams));
   const challenges = await listChallenges();

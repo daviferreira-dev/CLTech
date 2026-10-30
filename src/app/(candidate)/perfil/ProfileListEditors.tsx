@@ -51,11 +51,11 @@ function ListShell<T>({
 }) {
   return (
     <div className="space-y-4">
-      {items.length === 0 && <p className="text-body text-ink-600">{emptyText}</p>}
+      {items.length === 0 && <p className="text-body text-fg-muted">{emptyText}</p>}
       {items.map((item, index) => (
-        <fieldset key={index} className="space-y-4 rounded-card border border-brand-100 p-4">
+        <fieldset key={index} className="space-y-4 rounded-card border border-line p-4">
           <div className="flex items-center justify-between gap-3">
-            <legend className="text-body font-medium text-ink-900">{itemLabel(index)}</legend>
+            <legend className="text-body font-medium text-fg">{itemLabel(index)}</legend>
             <Button variant="ghost" size="sm" onClick={() => onChange(items.filter((_, i) => i !== index))}>
               Remover
             </Button>
@@ -100,12 +100,12 @@ export function ExperienceEditor({ items, onChange }: { items: ExperienceForm[];
                 <Input type="month" value={item.endDate} min={item.startDate || undefined} onChange={(e) => set({ endDate: e.target.value })} />
               </Field>
             )}
-            <label className="flex items-center gap-2 text-body text-ink-900 sm:col-span-2">
+            <label className="flex items-center gap-2 text-body text-fg sm:col-span-2">
               <input
                 type="checkbox"
                 checked={item.isCurrent}
                 onChange={(e) => set({ isCurrent: e.target.checked, endDate: e.target.checked ? "" : item.endDate })}
-                className="h-4 w-4 accent-primary-600"
+                className="h-4 w-4 accent-action"
               />
               Trabalho aqui atualmente
             </label>
@@ -157,12 +157,12 @@ export function EducationEditor({ items, onChange }: { items: EducationForm[]; o
                 <Input type="month" value={item.endDate} onChange={(e) => set({ endDate: e.target.value })} />
               </Field>
             </div>
-            <label className="flex items-center gap-2 text-body text-ink-900 sm:col-span-2">
+            <label className="flex items-center gap-2 text-body text-fg sm:col-span-2">
               <input
                 type="checkbox"
                 checked={item.inProgress}
                 onChange={(e) => set({ inProgress: e.target.checked })}
-                className="h-4 w-4 accent-primary-600"
+                className="h-4 w-4 accent-action"
               />
               Em andamento
             </label>

@@ -9,7 +9,7 @@ export function Markdown({ source, className }: { source: string; className?: st
         block.type === "code" ? (
           <pre
             key={i}
-            className="overflow-x-auto rounded-field bg-canvas p-3 font-mono text-[0.875rem] text-ink-900"
+            className="overflow-x-auto rounded-field bg-page p-3 font-mono text-[0.875rem] text-fg"
           >
             <code>{block.text}</code>
           </pre>
@@ -19,7 +19,7 @@ export function Markdown({ source, className }: { source: string; className?: st
               part.code ? (
                 <code
                   key={j}
-                  className="rounded bg-canvas px-1 py-0.5 font-mono text-[0.875em]"
+                  className="rounded bg-page px-1 py-0.5 font-mono text-[0.875em]"
                 >
                   {part.text}
                 </code>

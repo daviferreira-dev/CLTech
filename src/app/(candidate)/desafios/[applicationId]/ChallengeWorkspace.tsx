@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
-import { CASE_OUTCOME_LABEL, DIFFICULTY_LABEL, LANGUAGE_LABEL, STARTER_CODE } from "@/lib/codeTest";
+import { CASE_OUTCOME_LABEL, DIFFICULTY_LABEL, LANGUAGE_LABEL, STARTER_CODE, casesLabel } from "@/lib/codeTest";
 import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -234,7 +234,7 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
   return (
     <div className="space-y-6">
       <PageHeader
-        breadcrumb={<Breadcrumb items={[{ label: "Desafios Técnicos", href: "/desafios" }, { label: view.challenge.title }]} />}
+        breadcrumb={<Breadcrumb items={[{ label: "Desafios", href: "/desafios" }, { label: view.challenge.title }]} />}
         title={view.challenge.title}
         subtitle={`${view.job.title} · ${view.job.company} · ${DIFFICULTY_LABEL[view.challenge.difficulty] ?? view.challenge.difficulty}`}
         actions={
@@ -247,11 +247,11 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
               aria-label={`Tempo restante: ${formatRemaining(remainingMs)}`}
               className={cn(
                 "rounded-card border px-4 py-2 text-right",
-                lowTime ? "border-danger-600/50 bg-danger-600/10" : "border-brand-100 bg-surface",
+                lowTime ? "border-danger/50 bg-danger/10" : "border-line bg-surface",
               )}
             >
-              <p className="text-label text-ink-600">Tempo restante</p>
-              <p className="font-mono text-h2 tabular-nums text-ink-900">{formatRemaining(remainingMs)}</p>
+              <p className="text-label text-fg-muted">Tempo restante</p>
+              <p className="font-mono text-h2 tabular-nums text-fg">{formatRemaining(remainingMs)}</p>
             </div>
           )
         }
@@ -279,7 +279,7 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
           <Card as="section" aria-labelledby="enunciado">
             <CardHeader titleId="enunciado" title="Enunciado" />
             <CardBody>
-              <Markdown source={view.challenge.statement} className="text-ink-900" />
+              <Markdown source={view.challenge.statement} className="text-fg" />
             </CardBody>
           </Card>
           <Card as="section" aria-labelledby="exemplos">
@@ -288,7 +288,7 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
               title="Casos de exemplo"
               description={
                 view.challenge.hiddenCaseCount > 0
-                  ? `Sua solução também será corrigida contra ${view.challenge.hiddenCaseCount} caso(s) oculto(s).`
+                  ? `Sua solução também será corrigida contra ${casesLabel(view.challenge.hiddenCaseCount, "hidden")}.`
                   : undefined
               }
             />
@@ -296,12 +296,12 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
               {view.challenge.visibleCases.map((c, i) => (
                 <div key={c.index} className="grid gap-2 sm:grid-cols-2">
                   <div className="min-w-0">
-                    <p className="text-label text-ink-600">Entrada {i + 1}</p>
-                    <pre className="overflow-x-auto rounded-field bg-canvas p-2 font-mono text-label font-normal text-ink-900">{c.input || "(vazia)"}</pre>
+                    <p className="text-label text-fg-muted">Entrada {i + 1}</p>
+                    <pre className="overflow-x-auto rounded-field bg-page p-2 font-mono text-label font-normal text-fg">{c.input || "(vazia)"}</pre>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-label text-ink-600">Saída esperada {i + 1}</p>
-                    <pre className="overflow-x-auto rounded-field bg-canvas p-2 font-mono text-label font-normal text-ink-900">{c.expectedOutput}</pre>
+                    <p className="text-label text-fg-muted">Saída esperada {i + 1}</p>
+                    <pre className="overflow-x-auto rounded-field bg-page p-2 font-mono text-label font-normal text-fg">{c.expectedOutput}</pre>
                   </div>
                 </div>
               ))}
@@ -316,7 +316,7 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
               title="Sua solução"
               description={readOnly ? "Somente leitura." : "Leia da entrada padrão e escreva na saída padrão."}
               actions={
-                <span aria-live="polite" className="text-label font-normal text-ink-600">
+                <span aria-live="polite" className="text-label font-normal text-fg-muted">
                   {readOnly
                     ? null
                     : saveState === "saving"
@@ -340,7 +340,7 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
                 </Select>
               </Field>
               <div className="space-y-1.5">
-                <label htmlFor="codigo" className="block text-label text-ink-600">
+                <label htmlFor="codigo" className="block text-label text-fg-muted">
                   Código
                 </label>
                 <textarea
@@ -359,20 +359,20 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
                   aria-describedby="codigo-dica"
                   rows={20}
                   className={cn(
-                    "w-full resize-y rounded-field border border-brand-100 bg-brand-900 p-3 font-mono text-label font-normal leading-5 text-surface",
+                    "w-full resize-y rounded-field border border-line bg-inverse p-3 font-mono text-label font-normal leading-5 text-on-color",
                     readOnly && "opacity-80",
                     focusRing,
                   )}
                 />
-                <p id="codigo-dica" className="text-label font-normal text-ink-600">
+                <p id="codigo-dica" className="text-label font-normal text-fg-muted">
                   Tab insere espaços; Esc sai do editor.
                 </p>
               </div>
 
               {!readOnly && (
-                <div className="flex flex-col gap-3 border-t border-brand-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-body text-ink-600">
-                    Execuções de teste restantes: <strong className="text-ink-900">{view.remainingRuns}</strong> de {view.maxTestRuns}
+                <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-body text-fg-muted">
+                    Execuções de teste restantes: <strong className="text-fg">{view.remainingRuns}</strong> de {view.maxTestRuns}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button variant="secondary" onClick={handleRun} loading={running} disabled={view.remainingRuns <= 0}>
@@ -398,25 +398,25 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
               <CardBody className="space-y-3">
                 <ul className="space-y-3">
                   {runResult.results.map((r, i) => (
-                    <li key={r.index} className="space-y-2 rounded-card border border-brand-100 p-3">
+                    <li key={r.index} className="space-y-2 rounded-card border border-line p-3">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-body font-medium text-ink-900">Caso {i + 1}</p>
+                        <p className="text-body font-medium text-fg">Caso {i + 1}</p>
                         <Badge variant={r.outcome === "PASSED" ? "success" : "danger"}>{CASE_OUTCOME_LABEL[r.outcome]}</Badge>
                       </div>
                       {r.outcome !== "PASSED" && (
                         <div className="grid gap-2 sm:grid-cols-2">
                           <div className="min-w-0">
-                            <p className="text-label text-ink-600">Saída obtida</p>
-                            <pre className="overflow-x-auto rounded-field bg-canvas p-2 font-mono text-label font-normal">{r.actualOutput || "(vazia)"}</pre>
+                            <p className="text-label text-fg-muted">Saída obtida</p>
+                            <pre className="overflow-x-auto rounded-field bg-page p-2 font-mono text-label font-normal">{r.actualOutput || "(vazia)"}</pre>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-label text-ink-600">Saída esperada</p>
-                            <pre className="overflow-x-auto rounded-field bg-canvas p-2 font-mono text-label font-normal">{r.expectedOutput}</pre>
+                            <p className="text-label text-fg-muted">Saída esperada</p>
+                            <pre className="overflow-x-auto rounded-field bg-page p-2 font-mono text-label font-normal">{r.expectedOutput}</pre>
                           </div>
                         </div>
                       )}
                       {r.diagnostics && r.outcome !== "PASSED" && (
-                        <pre className="max-h-40 overflow-auto rounded-field bg-danger-600/5 p-2 font-mono text-label font-normal text-ink-900">{r.diagnostics}</pre>
+                        <pre className="max-h-40 overflow-auto rounded-field bg-danger/5 p-2 font-mono text-label font-normal text-fg">{r.diagnostics}</pre>
                       )}
                     </li>
                   ))}

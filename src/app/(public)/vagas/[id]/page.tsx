@@ -1,6 +1,14 @@
+import { prisma } from "@/lib/prisma";
 import { auth } from "@/server/auth/config";
 import { PageContainer } from "@/components/layout/AppShell";
 import { JobDetail } from "./JobDetail";
+
+// Só vaga publicada vira título: rascunho não vaza pelo <title>.
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const job = await prisma.job.findFirst({ where: { id, status: "PUBLISHED" }, select: { title: true } });
+  return { title: job?.title ?? "Vaga" };
+}
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

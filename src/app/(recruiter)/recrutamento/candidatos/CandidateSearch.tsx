@@ -11,6 +11,7 @@ import {
   Avatar,
   Badge,
   Button,
+  ButtonLink,
   Card,
   CardListSkeleton,
   EmptyState,
@@ -82,7 +83,7 @@ export function CandidateSearch() {
     <>
       <PageHeader title="Candidatos" subtitle="Busque entre todas as pessoas que já se candidataram a alguma vaga." />
 
-      <form onSubmit={handleSearch} role="search" className="mb-6 flex flex-col gap-3 rounded-card border border-brand-100 bg-surface p-4 sm:flex-row sm:p-6">
+      <form onSubmit={handleSearch} role="search" className="mb-6 flex flex-col gap-3 rounded-card border border-line bg-surface p-4 sm:flex-row sm:p-6">
         <label htmlFor="busca-candidatos" className="sr-only">
           Buscar candidatos
         </label>
@@ -100,7 +101,7 @@ export function CandidateSearch() {
       </form>
 
       {searching && items === null && <CardListSkeleton count={2} label="Buscando candidatos…" />}
-      {failed && <ErrorState title="Não foi possível buscar candidatos." onRetry={() => runSearch(q || query)} />}
+      {failed && <ErrorState title="Não conseguimos buscar candidatos agora." onRetry={() => runSearch(q || query)} action={<ButtonLink href="/recrutamento" variant="ghost">Voltar ao painel</ButtonLink>} />}
 
       {!q && !searching && !failed && (
         <EmptyState title="Comece pela busca." description="Digite um nome, um e-mail ou uma tecnologia exigida por alguma vaga." />
@@ -122,20 +123,20 @@ export function CandidateSearch() {
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar name={candidate.name} />
                   <div className="min-w-0">
-                    <p className="break-words text-h3 text-ink-900">{candidate.name}</p>
-                    <p className="break-all text-body text-ink-600 sm:break-words">{candidate.email}</p>
+                    <p className="break-words text-h3 text-fg">{candidate.name}</p>
+                    <p className="break-all text-body text-fg-muted sm:break-words">{candidate.email}</p>
                   </div>
                 </div>
                 <Link href="/recrutamento/vagas" className={cn(textLinkClasses, "self-start text-body sm:shrink-0")}>
                   Convidar para nova vaga
                 </Link>
               </div>
-              <ul className="mt-4 divide-y divide-brand-100 rounded-card border border-brand-100">
+              <ul className="mt-4 divide-y divide-line rounded-card border border-line">
                 {candidate.applications.map((application) => (
                   <li key={application.jobId} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <Link
                       href={`/recrutamento/candidatos/abrir?candidato=${candidate.candidateId}&vaga=${application.jobId}&q=${encodeURIComponent(q)}`}
-                      className={cn("min-w-0 break-words rounded-sm text-body font-medium text-ink-900 hover:underline", focusRing)}
+                      className={cn("inline-flex min-h-6 min-w-0 items-center break-words rounded-sm text-body font-medium text-fg hover:underline", focusRing)}
                     >
                       {application.jobTitle}
                     </Link>

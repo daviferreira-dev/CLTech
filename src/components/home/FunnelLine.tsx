@@ -27,7 +27,7 @@ export function FunnelLine() {
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         gsap.from("[data-funnel-head]", {
           y: 24,
-          autoAlpha: 0,
+          opacity: 0,
           duration: 0.7,
           stagger: 0.08,
           ease: "power3.out",
@@ -41,7 +41,7 @@ export function FunnelLine() {
         gsap.utils.toArray<HTMLElement>("[data-funnel-item]").forEach((item) => {
           gsap.from(item, {
             x: -24,
-            autoAlpha: 0,
+            opacity: 0,
             duration: 0.6,
             ease: "power3.out",
             scrollTrigger: { trigger: item, start: "top 82%" },
@@ -64,39 +64,39 @@ export function FunnelLine() {
     <section ref={root} aria-labelledby="funil-titulo" className="bg-surface">
       <div className="mx-auto grid max-w-content gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:py-28">
         <div className="space-y-5 lg:sticky lg:top-28 lg:self-start">
-          <h2 id="funil-titulo" data-funnel-head className="font-display text-[34px] font-semibold leading-[40px] tracking-tight text-brand-900 sm:text-[44px] sm:leading-[48px]">
+          <h2 id="funil-titulo" data-funnel-head className="font-display text-[34px] font-semibold leading-[40px] tracking-tight text-fg sm:text-[44px] sm:leading-[48px]">
             Seis postos de inspeção, do currículo à proposta.
           </h2>
-          <p data-funnel-head className="max-w-md text-[16px] leading-7 text-ink-600">
+          <p data-funnel-head className="max-w-md text-[16px] leading-7 text-fg-muted">
             Os três primeiros rodam sozinhos e entregam notas comparáveis. Os três últimos são conversas. Em todos eles, quem
             decide se o candidato avança é uma pessoa.
           </p>
           <div data-funnel-head className="flex flex-wrap gap-2 text-label">
-            <span className="rounded-full bg-accent-100 px-3 py-1.5 font-semibold text-accent-900">Automático</span>
-            <span className="rounded-full bg-primary-100 px-3 py-1.5 font-semibold text-primary-700">Com a equipe</span>
+            <span className="rounded-full bg-success-soft px-3 py-1.5 font-semibold text-success-ink">Automático</span>
+            <span className="rounded-full bg-action-soft px-3 py-1.5 font-semibold text-link">Com a equipe</span>
           </div>
         </div>
 
         <ol data-funnel-list className="relative space-y-8" aria-label="Etapas do processo seletivo">
-          <span aria-hidden="true" className="absolute bottom-6 left-[17px] top-6 w-0.5 bg-brand-100" />
-          <span aria-hidden="true" data-funnel-fill className="absolute bottom-6 left-[17px] top-6 w-0.5 origin-top bg-accent-600" />
+          <span aria-hidden="true" className="absolute bottom-6 left-[17px] top-6 w-0.5 bg-line" />
+          <span aria-hidden="true" data-funnel-fill className="absolute bottom-6 left-[17px] top-6 w-0.5 origin-top bg-success" />
           {STAGES.map((stage) => (
             <li key={stage.name} data-funnel-item className="relative flex gap-5">
               <Hex state={stage.auto ? "done" : "current"} />
               <div className="min-w-0 space-y-1 pt-1">
-                <h3 className="flex flex-wrap items-center gap-2 font-display text-[20px] font-semibold leading-7 text-brand-900">
+                <h3 className="flex flex-wrap items-center gap-2 font-display text-[20px] font-semibold leading-7 text-fg">
                   {stage.name}
                   <span
                     className={
                       stage.auto
-                        ? "rounded-full bg-accent-100 px-2.5 py-0.5 font-sans text-label font-semibold text-accent-900"
-                        : "rounded-full bg-primary-100 px-2.5 py-0.5 font-sans text-label font-semibold text-primary-700"
+                        ? "rounded-full bg-success-soft px-2.5 py-0.5 font-sans text-label font-semibold text-success-ink"
+                        : "rounded-full bg-action-soft px-2.5 py-0.5 font-sans text-label font-semibold text-link"
                     }
                   >
                     {stage.auto ? "Automático" : "Com a equipe"}
                   </span>
                 </h3>
-                <p className="max-w-xl text-body leading-6 text-ink-600">{stage.text}</p>
+                <p className="max-w-xl text-body leading-6 text-fg-muted">{stage.text}</p>
               </div>
             </li>
           ))}

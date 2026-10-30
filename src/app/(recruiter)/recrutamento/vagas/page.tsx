@@ -2,6 +2,8 @@ import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } 
 import { PageContainer } from "@/components/layout/AppShell";
 import { JobsManagerList } from "./JobsManagerList";
 
+export const metadata = { title: "Minhas vagas" };
+
 export default async function VagasRecrutadorPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
   await requirePageRole(RECRUITER_ROLES, currentPath("/recrutamento/vagas", await searchParams));
 

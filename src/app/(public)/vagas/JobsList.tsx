@@ -5,18 +5,20 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api-client";
-import { SENIORITY_LABEL, WORK_MODE_LABEL } from "@/lib/labels";
+import { SENIORITY_LABEL, jobPlace } from "@/lib/labels";
 import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SidebarFilters, WithSidebar } from "@/components/layout/SidebarFilters";
 import {
   Button,
+  ButtonLink,
   Card,
   CardListSkeleton,
   ChipList,
   EmptyState,
   ErrorState,
   Field,
+  Icon,
   SearchInput,
   MatchBadge,
   Pagination,
@@ -148,7 +150,7 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
 
   return (
     <>
-      <PageHeader title="Vagas abertas" subtitle={<span aria-live="polite">{subtitle}</span>} />
+      <PageHeader title="Vagas" subtitle={<span aria-live="polite">{subtitle}</span>} />
 
       <form
         role="search"
@@ -157,7 +159,7 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
           e.preventDefault();
           updateQuery({ q: qDraft, technology: techDraft });
         }}
-        className="mb-6 grid gap-3 rounded-card border border-brand-100 bg-surface p-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-end sm:p-6"
+        className="mb-6 grid gap-3 rounded-card border border-line bg-surface p-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-end sm:p-6"
       >
         <Field id="busca-q" label="Cargo ou palavra-chave">
           <SearchInput value={qDraft} onChange={(e) => setQDraft(e.target.value)} placeholder="Ex.: Frontend, Dados…" />
@@ -180,11 +182,9 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className={cn("inline-flex items-center gap-1.5 rounded-full text-body font-semibold text-primary-700 hover:text-brand-900", focusRing)}
+                  className={cn("inline-flex items-center gap-1.5 rounded-full text-body font-semibold text-link hover:text-fg", focusRing)}
                 >
-                  <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="m4 4 8 8M12 4l-8 8" />
-                  </svg>
+                  <Icon name="close" />
                   Limpar filtros
                 </button>
               ) : undefined
@@ -214,8 +214,9 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
 
         {failed && (
           <ErrorState
-            title="Não foi possível carregar as vagas."
-            description="Pode ser uma instabilidade momentânea. Seus filtros foram mantidos."
+            title="Não conseguimos carregar as vagas."
+            description="O servidor não respondeu, talvez por uma instabilidade momentânea. Seus filtros foram mantidos."
+            action={hasFilters ? <Button variant="ghost" onClick={clearFilters}>Limpar filtros</Button> : <ButtonLink href="/" variant="ghost">Ir para o início</ButtonLink>}
             onRetry={() => setReloadKey((k) => k + 1)}
           />
         )}
@@ -234,19 +235,19 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
               {data.items.map((job) => {
                 const match = matchStateFor(job, viewer);
                 return (
-                  <Card as="li" key={job.id} data-reveal className="relative p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-600/40 hover:shadow-popover sm:p-6">
+                  <Card as="li" key={job.id} data-reveal className="relative p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-action/40 hover:shadow-popover sm:p-6">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
                         <h2 className="font-display text-[19px] font-semibold leading-7">
                           <Link
                             href={`/vagas/${job.id}`}
-                            className={cn("break-words rounded-sm text-brand-900 after:absolute after:inset-0 hover:text-primary-700", focusRing)}
+                            className={cn("break-words rounded-sm text-fg after:absolute after:inset-0 hover:text-link", focusRing)}
                           >
                             {job.title}
                           </Link>
                         </h2>
-                        <p className="break-words text-body text-ink-600">
-                          {job.company} · {job.location} · {WORK_MODE_LABEL[job.workMode]} · {SENIORITY_LABEL[job.seniority]}
+                        <p className="break-words text-body text-fg-muted">
+                          {job.company} · {jobPlace(job.location, job.workMode)} · {SENIORITY_LABEL[job.seniority]}
                         </p>
                       </div>
                       {match && match.status !== "NEEDS_RESUME" && <MatchBadge match={match} />}

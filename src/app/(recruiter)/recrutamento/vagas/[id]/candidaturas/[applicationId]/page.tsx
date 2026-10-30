@@ -1,9 +1,19 @@
-import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
+import { prisma } from "@/lib/prisma";
+import { recruiterTitle, requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } from "@/lib/guards";
 import { PageContainer } from "@/components/layout/AppShell";
 import { ApplicationDetailView, type ReportOrigin } from "./ApplicationDetailView";
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ applicationId: string }> }) {
+  const { applicationId } = await params;
+  return recruiterTitle(
+    () => prisma.application.findUnique({ where: { id: applicationId }, select: { candidate: { select: { user: { select: { name: true } } } } } }),
+    "Relatório do candidato",
+    (app) => `${app.candidate.user.name} · Relatório`,
+  );
 }
 
 export default async function CandidaturaDetailPage({

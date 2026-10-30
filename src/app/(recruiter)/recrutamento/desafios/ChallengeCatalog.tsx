@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
-import { CODE_LANGUAGES, DIFFICULTY_LABEL, LANGUAGE_LABEL, MAX_CASE_TIME_LIMIT_SECONDS } from "@/lib/codeTest";
+import { CODE_LANGUAGES, DIFFICULTY_LABEL, LANGUAGE_LABEL, MAX_CASE_TIME_LIMIT_SECONDS, casesLabel } from "@/lib/codeTest";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Badge,
@@ -18,6 +18,7 @@ import {
   Select,
   Textarea,
   Markdown,
+  Icon,
 } from "@/components/ui";
 import type { ChallengePublicView } from "@/server/code-test/challenges";
 
@@ -32,6 +33,9 @@ const EMPTY_CASE: CaseDraft = { input: "", expectedOutput: "", hidden: false };
 export function ChallengeCatalog({ initial, canCreate }: { initial: ChallengePublicView[]; canCreate: boolean }) {
   const [items, setItems] = useState(initial);
   const [creating, setCreating] = useState(false);
+  const [difficulty, setDifficulty] = useState("");
+  const [language, setLanguage] = useState("");
+  const visible = items.filter((c) => (!difficulty || c.difficulty === difficulty) && (!language || c.languages.includes(language)));
 
   return (
     <>
@@ -63,23 +67,68 @@ export function ChallengeCatalog({ initial, canCreate }: { initial: ChallengePub
           action={canCreate && !creating ? <Button onClick={() => setCreating(true)}>Cadastrar desafio</Button> : undefined}
         />
       ) : (
-        <ul className="space-y-4">
-          {items.map((challenge) => (
-            <Card as="li" key={challenge.id} className="space-y-3 p-4 sm:p-6">
+        <>
+          <div className="mb-4 grid gap-3 sm:grid-cols-[repeat(2,minmax(0,14rem))] sm:items-end">
+            <Field id="filtro-dificuldade" label="Dificuldade">
+              <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                <option value="">Todas</option>
+                {Object.entries(DIFFICULTY_LABEL).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field id="filtro-linguagem" label="Linguagem">
+              <Select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                <option value="">Todas</option>
+                {CODE_LANGUAGES.map((l) => (
+                  <option key={l} value={l}>
+                    {LANGUAGE_LABEL[l] ?? l}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <p aria-live="polite" className="mb-3 text-body text-fg-muted">
+            {visible.length} {visible.length === 1 ? "desafio" : "desafios"}
+            {difficulty || language ? " com os filtros aplicados" : ""}
+          </p>
+          {visible.length === 0 && (
+            <EmptyState
+              title="Nenhum desafio com esses filtros."
+              action={
+                <Button variant="secondary" onClick={() => (setDifficulty(""), setLanguage(""))}>
+                  Limpar filtros
+                </Button>
+              }
+            />
+          )}
+        <ul className="grid gap-3 md:grid-cols-2">
+          {visible.map((challenge) => (
+            <Card as="li" key={challenge.id} className="space-y-2 p-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <h2 className="break-words text-h3 text-ink-900">{challenge.title}</h2>
+                <h2 className="break-words text-h3 text-fg">{challenge.title}</h2>
                 <Badge variant={challenge.difficulty === "HARD" ? "danger" : challenge.difficulty === "MID" ? "warning" : "success"}>
                   {DIFFICULTY_LABEL[challenge.difficulty]}
                 </Badge>
               </div>
-              <Markdown source={challenge.statement} className="line-clamp-3 text-ink-600" />
-              <p className="text-body text-ink-600">
-                {challenge.languages.map((l) => LANGUAGE_LABEL[l] ?? l).join(", ")} · {challenge.visibleCases.length} caso(s) visível(is) ·{" "}
-                {challenge.hiddenCaseCount} oculto(s) · até {challenge.timeLimitSeconds}s por caso
+              <p className="text-body text-fg-muted">
+                {challenge.languages.map((l) => LANGUAGE_LABEL[l] ?? l).join(", ")} · {casesLabel(challenge.visibleCases.length, "visible")} ·{" "}
+                {casesLabel(challenge.hiddenCaseCount, "hidden")} · até {challenge.timeLimitSeconds}s por caso
               </p>
+              <details className="group">
+                <summary className="inline-flex min-h-6 cursor-pointer list-none items-center gap-1 rounded-sm text-body font-medium text-link hover:underline">
+                  <Icon name="chevronDown" className="transition-transform group-open:rotate-180" />
+                  <span className="group-open:hidden">Ver enunciado</span>
+                  <span className="hidden group-open:inline">Ocultar enunciado</span>
+                </summary>
+                <Markdown source={challenge.statement} className="mt-2 text-fg" />
+              </details>
             </Card>
           ))}
         </ul>
+        </>
       )}
     </>
   );
@@ -141,15 +190,15 @@ function ChallengeForm({ onCancel, onCreated }: { onCancel: () => void; onCreate
             </Field>
           </div>
           <fieldset className="space-y-2">
-            <legend className="text-label text-ink-600">Linguagens</legend>
+            <legend className="text-label text-fg-muted">Linguagens</legend>
             <div className="flex flex-wrap gap-3">
               {CODE_LANGUAGES.map((language) => (
-                <label key={language} className="flex items-center gap-2 text-body text-ink-900">
+                <label key={language} className="flex items-center gap-2 text-body text-fg">
                   <input
                     type="checkbox"
                     checked={languages.includes(language)}
                     onChange={(e) => setLanguages((prev) => (e.target.checked ? [...prev, language] : prev.filter((l) => l !== language)))}
-                    className="h-4 w-4 accent-primary-600"
+                    className="h-4 w-4 accent-action"
                   />
                   {LANGUAGE_LABEL[language]}
                 </label>
@@ -158,14 +207,14 @@ function ChallengeForm({ onCancel, onCreated }: { onCancel: () => void; onCreate
           </fieldset>
 
           <fieldset className="space-y-3">
-            <legend className="text-label text-ink-600">Casos de teste</legend>
+            <legend className="text-label text-fg-muted">Casos de teste</legend>
             {cases.map((c, index) => (
-              <div key={index} className="space-y-2 rounded-card border border-brand-100 p-3">
+              <div key={index} className="space-y-2 rounded-card border border-line p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-body font-medium text-ink-900">Caso {index + 1}</p>
+                  <p className="text-body font-medium text-fg">Caso {index + 1}</p>
                   <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 text-body text-ink-900">
-                      <input type="checkbox" checked={c.hidden} onChange={(e) => updateCase(index, { hidden: e.target.checked })} className="h-4 w-4 accent-primary-600" />
+                    <label className="flex items-center gap-2 text-body text-fg">
+                      <input type="checkbox" checked={c.hidden} onChange={(e) => updateCase(index, { hidden: e.target.checked })} className="h-4 w-4 accent-action" />
                       Oculto
                     </label>
                     <Button variant="ghost" size="sm" onClick={() => setCases((prev) => prev.filter((_, i) => i !== index))} disabled={cases.length <= 1}>

@@ -14,22 +14,22 @@ export interface NavItem {
   matchPrefix?: string;
 }
 
-// "Desafios Técnicos" entrou com a spec 005 (antes era item sem rota, proibido pela 004 SC-104).
+// "Desafios" entrou com a spec 005 (antes era item sem rota, proibido pela 004 SC-104).
 export const CANDIDATE_NAV: NavItem[] = [
-  { href: "/vagas", label: "Vagas Disponíveis", matchPrefix: "/vagas" },
-  { href: "/candidaturas", label: "Minhas Candidaturas", matchPrefix: "/candidaturas" },
-  { href: "/desafios", label: "Desafios Técnicos", matchPrefix: "/desafios" },
-  { href: "/perfil", label: "Meu Perfil", matchPrefix: "/perfil" },
+  { href: "/vagas", label: "Vagas", matchPrefix: "/vagas" },
+  { href: "/candidaturas", label: "Minhas candidaturas", matchPrefix: "/candidaturas" },
+  { href: "/desafios", label: "Desafios", matchPrefix: "/desafios" },
+  { href: "/perfil", label: "Meu perfil", matchPrefix: "/perfil" },
 ];
 
 export const RECRUITER_NAV: NavItem[] = [
   { href: "/recrutamento", label: "Painel" },
-  { href: "/recrutamento/vagas", label: "Minhas Vagas", matchPrefix: "/recrutamento/vagas" },
+  { href: "/recrutamento/vagas", label: "Minhas vagas", matchPrefix: "/recrutamento/vagas" },
   { href: "/recrutamento/candidatos", label: "Candidatos", matchPrefix: "/recrutamento/candidatos" },
   { href: "/recrutamento/desafios", label: "Desafios", matchPrefix: "/recrutamento/desafios" },
 ];
 
-export const VISITOR_NAV: NavItem[] = [{ href: "/vagas", label: "Vagas Disponíveis", matchPrefix: "/vagas" }];
+export const VISITOR_NAV: NavItem[] = [{ href: "/vagas", label: "Vagas", matchPrefix: "/vagas" }];
 
 export function navFor(user: HeaderUser | null, candidateExtra: NavItem[] = []): NavItem[] {
   if (!user) return VISITOR_NAV;

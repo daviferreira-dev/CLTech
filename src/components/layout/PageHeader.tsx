@@ -19,8 +19,8 @@ export function PageHeader({
       {breadcrumb}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 space-y-1">
-          <h1 className="break-words font-display text-[26px] font-semibold leading-8 tracking-tight text-brand-900 sm:text-display">{title}</h1>
-          {subtitle && <div className="text-body text-ink-600">{subtitle}</div>}
+          <h1 className="break-words font-display text-[26px] font-semibold leading-8 tracking-tight text-fg sm:text-display">{title}</h1>
+          {subtitle && <div className="text-body text-fg-muted">{subtitle}</div>}
         </div>
         {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
       </div>

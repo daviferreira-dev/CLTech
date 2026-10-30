@@ -2,6 +2,8 @@ import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } 
 import { PageContainer } from "@/components/layout/AppShell";
 import { JobBuilder } from "@/components/recruiter/JobBuilder";
 
+export const metadata = { title: "Criar vaga" };
+
 export default async function NovaVagaPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
   await requirePageRole(RECRUITER_ROLES, currentPath("/recrutamento/vagas/nova", await searchParams));
 

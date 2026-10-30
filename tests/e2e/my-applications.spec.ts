@@ -1,4 +1,4 @@
-// User Story 4 — "Minhas Candidaturas".
+// User Story 4 — "Minhas candidaturas".
 import { test, expect } from "@playwright/test";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,7 +14,7 @@ test("candidato sem candidaturas vê estado vazio orientando a explorar vagas", 
   await page.goto("/cadastro");
   await page.getByLabel("Nome").fill("Pessoa Sem Candidatura");
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill("senhaSegura123");
+  await page.getByLabel("Senha", { exact: true }).fill("senhaSegura123");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 
@@ -28,7 +28,7 @@ test("duas candidaturas aparecem com status correto (FR-025)", async ({ page }) 
   await page.goto("/cadastro");
   await page.getByLabel("Nome").fill("Pessoa Duas Candidaturas");
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill("senhaSegura123");
+  await page.getByLabel("Senha", { exact: true }).fill("senhaSegura123");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 
@@ -44,12 +44,12 @@ test("duas candidaturas aparecem com status correto (FR-025)", async ({ page }) 
 
   await jobLinks.nth(0).click();
   await page.getByRole("button", { name: "Candidatar-se" }).click();
-  await expect(page.getByText("Candidatura registrada com sucesso!")).toBeVisible();
+  await expect(page.getByText("Candidatura enviada.")).toBeVisible();
 
   await page.goto("/vagas");
   await page.getByRole("link", { name: secondTitle }).click();
   await page.getByRole("button", { name: "Candidatar-se" }).click();
-  await expect(page.getByText("Candidatura registrada com sucesso!")).toBeVisible();
+  await expect(page.getByText("Candidatura enviada.")).toBeVisible();
 
   await page.goto("/candidaturas");
   await expect(page.getByText(firstTitle, { exact: true })).toBeVisible();

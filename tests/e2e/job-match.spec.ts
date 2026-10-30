@@ -14,7 +14,7 @@ async function signUp(page: Page, email: string) {
   await page.goto("/cadastro");
   await page.getByLabel("Nome").fill("Pessoa Match");
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill("senhaSegura123");
+  await page.getByLabel("Senha", { exact: true }).fill("senhaSegura123");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 }
@@ -41,21 +41,21 @@ async function waitForJobMatch(page: Page, jobTitle: string, pattern: RegExp) {
 
 test("deslogado nunca vê percentual de compatibilidade (FR-035)", async ({ page }) => {
   await page.goto("/vagas");
-  await expect(page.getByText(/% match/)).toHaveCount(0);
+  await expect(page.getByText(/% de compatibilidade/)).toHaveCount(0);
 });
 
 test("candidato sem currículo vê orientação em vez de um número (FR-036)", async ({ page }) => {
   await signUp(page, uniqueEmail());
   await page.goto("/vagas");
-  await expect(page.getByText("Complete seu perfil para ver seu match.").first()).toBeVisible();
-  await expect(page.getByText(/% match/)).toHaveCount(0);
+  await expect(page.getByText("Complete seu perfil para ver sua compatibilidade.").first()).toBeVisible();
+  await expect(page.getByText(/% de compatibilidade/)).toHaveCount(0);
 });
 
 test("compatibilidade aparece, muda com o currículo, e some ao deslogar (FR-033, FR-034)", async ({ page }) => {
   await signUp(page, uniqueEmail());
   await uploadResume(page, "cv-react-node.docx");
 
-  await waitForJobMatch(page, REACT_JOB_TITLE, /67% match/);
+  await waitForJobMatch(page, REACT_JOB_TITLE, /67% de compatibilidade/);
 
   await page.getByRole("link", { name: REACT_JOB_TITLE }).click();
   await expect(page).toHaveURL(/\/vagas\/.+/);
@@ -64,5 +64,5 @@ test("compatibilidade aparece, muda com o currículo, e some ao deslogar (FR-033
   await expect(page.getByText(/Ainda faltando/)).toBeVisible();
 
   await uploadResume(page, "cv-python-django.docx", { replacing: true });
-  await waitForJobMatch(page, REACT_JOB_TITLE, /0% match/);
+  await waitForJobMatch(page, REACT_JOB_TITLE, /0% de compatibilidade/);
 });

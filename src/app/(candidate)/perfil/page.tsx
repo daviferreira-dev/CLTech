@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ProfileForm } from "./ProfileForm";
 import { PrivacyCard } from "./PrivacyCard";
 
+export const metadata = { title: "Meu perfil" };
+
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
   const params = await searchParams;
   const user = await requirePageRole(CANDIDATE_ROLES, currentPath("/perfil", params));
@@ -19,7 +21,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   return (
     <PageContainer className="max-w-4xl">
-      <PageHeader title="Meu Perfil" subtitle="Mantenha seus dados e currículo atualizados — é deles que sai o seu match com as vagas." />
+      <PageHeader title="Meu perfil" subtitle="Mantenha seus dados e currículo atualizados — é deles que sai a sua compatibilidade com as vagas." />
       <ProfileForm
         next={safeInternalPath(params.next)}
         resumeParse={currentResume ? { resumeId: currentResume.id, parseStatus: currentResume.parseStatus } : null}

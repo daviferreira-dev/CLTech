@@ -8,13 +8,13 @@ export type ButtonSize = "sm" | "md";
 // Anel de foco de 2px em primary-600 com offset 2px em todo elemento interativo (spec 003,
 // "Estados obrigatórios"). Exportado para links e controles que não são <Button>.
 export const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-primary-600 text-surface hover:bg-primary-700",
-  secondary: "border border-ink-400/50 bg-surface text-ink-900 hover:bg-canvas",
-  ghost: "text-ink-900 hover:bg-brand-100/60",
-  danger: "border border-danger-600 bg-surface text-danger-600 hover:bg-danger-600/10",
+  primary: "bg-action text-on-color hover:bg-action-hover",
+  secondary: "border border-fg-subtle/50 bg-surface text-fg hover:bg-page",
+  ghost: "text-fg hover:bg-line/60",
+  danger: "border border-danger bg-surface text-danger hover:bg-danger/10",
 };
 
 const SIZE: Record<ButtonSize, string> = {
@@ -90,6 +90,6 @@ export function ButtonLink({
 
 /** Link de texto no padrão do produto (sublinhado, cor de marca, foco visível). */
 export const textLinkClasses = cn(
-  "rounded-sm font-semibold text-primary-700 underline-offset-2 hover:text-brand-900 hover:underline",
+  "rounded-sm font-semibold text-link underline-offset-2 hover:text-fg hover:underline",
   focusRing,
 );

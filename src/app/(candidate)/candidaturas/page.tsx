@@ -13,10 +13,12 @@ import { Badge, ButtonLink, Card, EmptyState, Notice, StageTrail, focusRing, tex
 // O que a candidatura significa para o candidato, sem expor score nem motivo interno de
 // reprovação (spec 004 US3.2, FR-108).
 const STATUS_MESSAGE: Record<string, string> = {
-  APPROVED: "Processo concluído: você foi aprovado(a) nesta vaga.",
+  APPROVED: "Processo concluído: sua candidatura foi aprovada nesta vaga.",
   REJECTED: "Processo encerrado para esta vaga. Obrigado por participar.",
   WITHDRAWN: "Candidatura retirada por você.",
 };
+
+export const metadata = { title: "Minhas candidaturas" };
 
 export default async function MyApplicationsPage({ searchParams }: { searchParams: Promise<PageSearchParams> }) {
   const params = await searchParams;
@@ -42,7 +44,7 @@ export default async function MyApplicationsPage({ searchParams }: { searchParam
     <PageContainer className="max-w-4xl">
       <RefreshOnFocus />
       <PageHeader
-        title="Minhas Candidaturas"
+        title="Minhas candidaturas"
         subtitle={
           applications.length > 0
             ? `${applications.length} ${applications.length === 1 ? "candidatura" : "candidaturas"}. Acompanhe em que etapa está cada processo.`
@@ -64,8 +66,8 @@ export default async function MyApplicationsPage({ searchParams }: { searchParam
       )}
 
       {newApplicationId && applications.some((app) => app.applicationId === newApplicationId) && (
-        <Notice tone="success" title="Candidatura registrada com sucesso!" className="mb-6">
-          Ela está destacada abaixo — acompanhe por aqui cada mudança de etapa.
+        <Notice tone="success" title="Candidatura enviada." className="mb-6">
+          Ela está destacada abaixo. Acompanhe aqui cada etapa.
         </Notice>
       )}
 
@@ -88,17 +90,17 @@ export default async function MyApplicationsPage({ searchParams }: { searchParam
                 as="li"
                 key={app.applicationId}
                 id={`candidatura-${app.applicationId}`}
-                className={cn("space-y-4 p-4 sm:p-6", isNew && "border-accent-600 ring-2 ring-accent-600/30")}
+                className={cn("space-y-4 p-4 sm:p-6", isNew && "border-success ring-2 ring-success/30")}
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 space-y-1">
                     <h2 className="text-h3">
                       {/* US3.5: o item leva ao detalhe da vaga correspondente. */}
-                      <Link href={`/vagas/${app.job.id}`} className={cn("break-words rounded-sm text-ink-900 hover:underline", focusRing)}>
+                      <Link href={`/vagas/${app.job.id}`} className={cn("break-words rounded-sm text-fg hover:underline", focusRing)}>
                         {app.job.title}
                       </Link>
                     </h2>
-                    <p className="text-body text-ink-600">
+                    <p className="text-body text-fg-muted">
                       {app.job.company} · Candidatura em {new Date(app.appliedAt).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
@@ -107,7 +109,7 @@ export default async function MyApplicationsPage({ searchParams }: { searchParam
 
                 {stages && stages.length > 0 && currentIndex >= 0 ? (
                   <div className="space-y-2">
-                    <p className="text-label text-ink-600">
+                    <p className="text-label text-fg-muted">
                       {finished
                         ? `Última etapa: ${STAGE_LABEL[app.currentStage.type] ?? app.currentStage.type}`
                         : `Etapa atual: ${STAGE_LABEL[app.currentStage.type] ?? app.currentStage.type} (${currentIndex + 1} de ${stages.length})`}
@@ -120,10 +122,10 @@ export default async function MyApplicationsPage({ searchParams }: { searchParam
                     />
                   </div>
                 ) : (
-                  <p className="text-body text-ink-600">Etapa atual: {STAGE_LABEL[app.currentStage.type] ?? app.currentStage.type}</p>
+                  <p className="text-body text-fg-muted">Etapa atual: {STAGE_LABEL[app.currentStage.type] ?? app.currentStage.type}</p>
                 )}
 
-                {STATUS_MESSAGE[app.status] && <p className="text-body text-ink-900">{STATUS_MESSAGE[app.status]}</p>}
+                {STATUS_MESSAGE[app.status] && <p className="text-body text-fg">{STATUS_MESSAGE[app.status]}</p>}
 
                 {app.status === "IN_PROGRESS" && app.currentStage.type === "CODE_TEST" && app.codeTestSubmitted && (
                   <Notice

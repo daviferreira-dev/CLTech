@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Tokens declarados em src/app/globals.css (spec 003, FR-001) e expostos aqui por nome.
+// Tokens por intenção declarados (claro e escuro) em src/app/globals.css (spec 003, FR-001) e expostos aqui por nome.
 const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 
 const config: Config = {
@@ -8,14 +8,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: { 900: token("brand-900"), 700: token("brand-700"), 100: token("brand-100") },
-        primary: { 700: token("primary-700"), 600: token("primary-600"), 100: token("primary-100") },
-        accent: { 900: token("accent-900"), 700: token("accent-700"), 600: token("accent-600"), 100: token("accent-100") },
-        surface: token("surface"),
-        canvas: token("canvas"),
-        ink: { 900: token("ink-900"), 600: token("ink-600"), 400: token("ink-400") },
-        danger: { 600: token("danger-600") },
-        warning: { 500: token("warning-500") },
+        "page": token("page"),
+        "surface": token("surface"),
+        "raised": token("raised"),
+        "fg": token("fg"),
+        "fg-muted": token("fg-muted"),
+        "fg-subtle": token("fg-subtle"),
+        "line": token("line"),
+        "action": token("action"),
+        "action-hover": token("action-hover"),
+        "action-soft": token("action-soft"),
+        "link": token("link"),
+        "focus": token("focus"),
+        "success": token("success"),
+        "success-strong": token("success-strong"),
+        "success-soft": token("success-soft"),
+        "success-ink": token("success-ink"),
+        "warning": token("warning"),
+        "danger": token("danger"),
+        "inverse": token("inverse"),
+        "inverse-raised": token("inverse-raised"),
+        "on-color": token("on-color"),
+        "on-color-muted": token("on-color-muted"),
       },
       borderRadius: {
         field: "var(--radius-field)",

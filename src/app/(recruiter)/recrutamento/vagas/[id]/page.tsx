@@ -2,6 +2,8 @@ import { requirePageRole, RECRUITER_ROLES, currentPath, type PageSearchParams } 
 import { PageContainer } from "@/components/layout/AppShell";
 import { JobBuilder } from "@/components/recruiter/JobBuilder";
 
+export const metadata = { title: "Editar vaga" };
+
 export default async function EditarVagaPage({
   params,
   searchParams,

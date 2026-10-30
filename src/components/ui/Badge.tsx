@@ -7,19 +7,19 @@ export type BadgeVariant = "match" | "success" | "warning" | "neutral" | "danger
 // Texto sempre em ink-900 sobre fundo claro: accent-600 e warning-500 não atingem 4.5:1 em
 // 12px sobre branco, então a cor do sinal vai no fundo/borda/ponto, não no texto (AA).
 const VARIANT: Record<BadgeVariant, string> = {
-  match: "border-accent-600/50 bg-accent-100 text-accent-900",
-  success: "border-accent-600/50 bg-accent-100 text-accent-900",
-  warning: "border-warning-500/50 bg-warning-500/10 text-ink-900",
-  neutral: "border-brand-100 bg-canvas text-ink-900",
-  danger: "border-danger-600/40 bg-danger-600/10 text-ink-900",
-  muted: "border-brand-100 bg-surface text-ink-600",
+  match: "border-success/50 bg-success-soft text-success-ink",
+  success: "border-success/50 bg-success-soft text-success-ink",
+  warning: "border-warning/50 bg-warning/10 text-fg",
+  neutral: "border-line bg-page text-fg",
+  danger: "border-danger/40 bg-danger/10 text-fg",
+  muted: "border-line bg-surface text-fg-muted",
 };
 
 const DOT: Partial<Record<BadgeVariant, string>> = {
-  match: "bg-accent-600",
-  success: "bg-accent-600",
-  warning: "bg-warning-500",
-  danger: "bg-danger-600",
+  match: "bg-success",
+  success: "bg-success",
+  warning: "bg-warning",
+  danger: "bg-danger",
 };
 
 export function Badge({
@@ -64,12 +64,12 @@ export function matchVariant(value: number): BadgeVariant {
 export function MatchBadge({ match, profileHref = "/perfil" }: { match: MatchState; profileHref?: string }) {
   switch (match.status) {
     case "CALCULATED":
-      return <Badge variant={matchVariant(match.value)}>{match.value}% match</Badge>;
+      return <Badge variant={matchVariant(match.value)}>{match.value}% de compatibilidade</Badge>;
     case "NEEDS_RESUME":
       return (
-        <p className="text-body text-ink-600">
+        <p className="text-body text-fg-muted">
           <Link href={profileHref} className={textLinkClasses}>
-            Complete seu perfil para ver seu match.
+            Complete seu perfil para ver sua compatibilidade.
           </Link>
         </p>
       );
@@ -77,8 +77,8 @@ export function MatchBadge({ match, profileHref = "/perfil" }: { match: MatchSta
     case "NOT_AVAILABLE_YET":
       return (
         <Badge variant="muted">
-          <span aria-hidden="true" className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink-400 motion-reduce:animate-none" />
-          Calculando match…
+          <span aria-hidden="true" className="h-1.5 w-1.5 animate-pulse rounded-full bg-fg-subtle motion-reduce:animate-none" />
+          Calculando compatibilidade…
         </Badge>
       );
     case "FAILED":

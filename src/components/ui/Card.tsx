@@ -8,7 +8,7 @@ export function Card({
   ...rest
 }: React.HTMLAttributes<HTMLElement> & { as?: "div" | "section" | "li" | "article" }) {
   return (
-    <Tag className={cn("rounded-card border border-brand-100 bg-surface", className)} {...rest}>
+    <Tag className={cn("rounded-card border border-line bg-surface", className)} {...rest}>
       {children}
     </Tag>
   );
@@ -30,10 +30,10 @@ export function CardHeader({
   return (
     <div className={cn("flex flex-wrap items-start justify-between gap-3 px-4 pt-4 sm:px-6 sm:pt-6", className)}>
       <div className="min-w-0">
-        <h2 id={titleId} className="break-words font-display text-h2 text-brand-900">
+        <h2 id={titleId} className="break-words font-display text-h2 text-fg">
           {title}
         </h2>
-        {description && <p className="mt-1 text-body text-ink-600">{description}</p>}
+        {description && <p className="mt-1 text-body text-fg-muted">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>

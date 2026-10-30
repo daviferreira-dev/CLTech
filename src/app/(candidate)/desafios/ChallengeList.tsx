@@ -27,15 +27,15 @@ export function ChallengeList({ items }: { items: PendingChallengeItem[] }) {
             <Card as="li" key={item.applicationId} className="space-y-3 p-4 sm:p-6">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 space-y-1">
-                  <h2 className="break-words text-h3 text-ink-900">{item.challengeTitle ?? "Desafio técnico"}</h2>
-                  <p className="text-body text-ink-600">
+                  <h2 className="break-words text-h3 text-fg">{item.challengeTitle ?? "Desafio técnico"}</h2>
+                  <p className="text-body text-fg-muted">
                     {item.job.title} · {item.job.company}
                   </p>
                 </div>
                 <Badge variant={state.variant}>{state.label}</Badge>
               </div>
               {item.state !== "NOT_CONFIGURED" && (
-                <p className="text-body text-ink-600">
+                <p className="text-body text-fg-muted">
                   {item.difficulty && `${DIFFICULTY_LABEL[item.difficulty] ?? item.difficulty} · `}
                   {item.timeLimitMinutes} minutos
                   {item.languages.length > 0 && ` · ${item.languages.map((l) => LANGUAGE_LABEL[l] ?? l).join(", ")}`}
@@ -50,7 +50,7 @@ export function ChallengeList({ items }: { items: PendingChallengeItem[] }) {
                   </ButtonLink>
                 )}
                 {item.state === "NOT_CONFIGURED" && (
-                  <p className="text-body text-ink-600">O desafio desta etapa ainda não foi configurado. Volte mais tarde.</p>
+                  <p className="text-body text-fg-muted">O desafio desta etapa ainda não foi configurado. Volte mais tarde.</p>
                 )}
               </div>
             </Card>

@@ -60,17 +60,17 @@ export function FileDropzone({
         }}
         className={cn(
           "flex cursor-pointer flex-col items-center justify-center gap-1 rounded-card border-2 border-dashed px-4 py-8 text-center transition-colors",
-          dragging ? "border-primary-600 bg-primary-100" : "border-brand-100 bg-surface hover:border-ink-400",
-          error && "border-danger-600/60",
+          dragging ? "border-action bg-action-soft" : "border-line bg-surface hover:border-fg-subtle",
+          error && "border-danger/60",
           (disabled || busy) && "cursor-not-allowed opacity-50",
           focusRing,
         )}
       >
-        <span aria-hidden="true" className="text-h2 text-ink-400">
+        <span aria-hidden="true" className="text-h2 text-fg-subtle">
           ⇪
         </span>
-        <span className="text-body font-medium text-ink-900">{busy ? "Enviando…" : label}</span>
-        <span id={hintId} className="text-label font-normal text-ink-600">
+        <span className="text-body font-medium text-fg">{busy ? "Enviando…" : label}</span>
+        <span id={hintId} className="text-label font-normal text-fg-muted">
           {hint}
         </span>
         <input
@@ -87,7 +87,7 @@ export function FileDropzone({
         />
       </div>
       {error && (
-        <p id={errorId} role="alert" className="text-body text-danger-600">
+        <p id={errorId} role="alert" className="text-body text-danger">
           {error}
         </p>
       )}

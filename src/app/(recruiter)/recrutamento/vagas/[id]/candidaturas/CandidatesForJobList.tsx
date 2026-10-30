@@ -41,8 +41,8 @@ interface JobSummary {
 function timeInStage(enteredAt: string | undefined): string | null {
   if (!enteredAt) return null;
   const hours = (Date.now() - new Date(enteredAt).getTime()) / 3_600_000;
-  if (hours < 1) return "menos de 1h";
-  if (hours < 48) return `${Math.floor(hours)}h`;
+  if (hours < 1) return "menos de 1 hora";
+  if (hours < 48) return Math.floor(hours) === 1 ? "1 hora" : `${Math.floor(hours)} horas`;
   return `${Math.floor(hours / 24)} dias`;
 }
 
@@ -90,12 +90,12 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
       {approvedName && (
         <Notice tone="success" className="mb-4">
           {approvedTo === "FINAL"
-            ? `${approvedName} foi aprovado(a) na última etapa.`
-            : `${approvedName} foi aprovado(a) e avançou para: ${approvedTo}.`}
+            ? `${approvedName} passou na última etapa. Processo concluído.`
+            : `${approvedName} passou de etapa e agora está em: ${approvedTo}.`}
         </Notice>
       )}
       {/* O título da vaga fica fixo no topo enquanto se percorre a lista (US5.2). */}
-      <div className="-mx-4 bg-canvas/95 px-4 pb-2 pt-2 backdrop-blur sm:-mx-6 sm:px-6 md:sticky md:top-16 md:z-10">
+      <div className="-mx-4 bg-page/95 px-4 pb-2 pt-2 backdrop-blur sm:-mx-6 sm:px-6 md:sticky md:top-16 md:z-10">
         <PageHeader
           className="mb-4 sm:mb-4"
           breadcrumb={
@@ -107,8 +107,8 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
               ]}
             />
           }
-          title={job ? `Candidatos — ${job.title}` : "Candidatos"}
-          subtitle={visible ? `${visible.length} ${visible.length === 1 ? "candidatura" : "candidaturas"}${stageFilter ? " nesta etapa" : ""}` : undefined}
+          title={job?.title ?? "Candidaturas"}
+          subtitle={visible ? `Candidaturas · ${visible.length} ${visible.length === 1 ? "pessoa" : "pessoas"}${stageFilter ? " nesta etapa" : ""}` : "Candidaturas"}
         />
       </div>
 
@@ -125,7 +125,7 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
         </Field>
         {stageFilter && (
           <div className="flex items-center gap-2">
-            <span className="text-label text-ink-600">Recorte:</span>
+            <span className="text-label text-fg-muted">Recorte:</span>
             <Chip tone="active" onRemove={() => setStage("")} removeLabel="Remover recorte de etapa">
               {STAGE_LABEL[stageFilter] ?? stageFilter}
             </Chip>
@@ -133,7 +133,7 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
         )}
       </div>
 
-      {failed && <ErrorState title="Não foi possível carregar as candidaturas." onRetry={load} />}
+      {failed && <ErrorState title="Não conseguimos carregar as candidaturas." onRetry={load} action={<ButtonLink href="/recrutamento/vagas" variant="ghost">Voltar para Minhas vagas</ButtonLink>} />}
       {!failed && visible === null && <CardListSkeleton label="Carregando candidaturas…" />}
 
       {visible !== null && visible.length === 0 && (
@@ -159,21 +159,21 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
           {visible.map((item) => {
             const elapsed = item.status === "IN_PROGRESS" ? timeInStage(enteredAtById[item.id]) : null;
             return (
-              <Card as="li" key={item.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <Card as="li" key={item.id} className="relative flex flex-col transition-colors hover:border-action/40 gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div className="min-w-0 space-y-1">
                   <Link
                     href={`/recrutamento/vagas/${jobId}/candidaturas/${item.id}${reportQuery}`}
-                    className={cn("break-words rounded-sm text-h3 text-ink-900 hover:underline", focusRing)}
+                    className={cn("break-words rounded-sm text-h3 text-fg after:absolute after:inset-0 hover:underline", focusRing)}
                   >
                     {item.candidateName}
                   </Link>
-                  <p className="text-body text-ink-600">
+                  <p className="text-body text-fg-muted">
                     {STAGE_LABEL[item.currentStageType] ?? item.currentStageType}
-                    {elapsed && ` · há ${elapsed} na etapa`}
+                    {elapsed && ` · na etapa há ${elapsed}`}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  {item.matchScore !== null && <Badge variant={matchVariant(item.matchScore)}>{item.matchScore}% match</Badge>}
+                  {item.matchScore !== null && <Badge variant={matchVariant(item.matchScore)}>{item.matchScore}% de compatibilidade</Badge>}
                   {item.status === "IN_PROGRESS" && item.matchScore !== null && (
                     item.matchScore >= RECOMMENDATION_THRESHOLD ? (
                       <Badge variant="success">Recomendado</Badge>

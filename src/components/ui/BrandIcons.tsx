@@ -48,7 +48,7 @@ export function Logo({ size = 32, tone = "dark", className }: { size?: number; t
         <Image src="/brand/cltech-mark.png" alt="" width={size} height={size} priority />
       </span>
       <span
-        className={cn("font-display font-bold tracking-tight", tone === "light" ? "text-surface" : "text-brand-900")}
+        className={cn("font-display font-bold tracking-tight", tone === "light" ? "text-on-color" : "text-fg")}
         style={{ fontSize: Math.round(size * 0.7) }}
       >
         CLTech

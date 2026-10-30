@@ -13,7 +13,7 @@ import { Card, CardBody, CardHeader, ChipList, textLinkClasses } from "@/compone
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <h3 className="text-label text-ink-600">{title}</h3>
+      <h3 className="text-label text-fg-muted">{title}</h3>
       {children}
     </div>
   );
@@ -33,12 +33,12 @@ export function ProfessionalProfileCard({ profile }: { profile: ProfileDetails }
       <CardHeader titleId="perfil-profissional" title="Perfil profissional" description={profile.headline ?? undefined} />
       <CardBody className="space-y-6">
         {isProfileEmpty(profile) ? (
-          <p className="text-body text-ink-600">O candidato ainda não preencheu o perfil profissional.</p>
+          <p className="text-body text-fg-muted">O candidato ainda não preencheu o perfil profissional.</p>
         ) : (
           <>
             {profile.summary && (
               <Section title="Resumo">
-                <p className="whitespace-pre-line break-words text-body text-ink-900">{profile.summary}</p>
+                <p className="whitespace-pre-line break-words text-body text-fg">{profile.summary}</p>
               </Section>
             )}
 
@@ -46,12 +46,12 @@ export function ProfessionalProfileCard({ profile }: { profile: ProfileDetails }
               <Section title="Experiências">
                 <ol className="space-y-4">
                   {byRecency(profile.experiences, (e) => e.isCurrent).map((e, i) => (
-                    <li key={i} className="border-l-2 border-brand-100 pl-3">
-                      <p className="break-words text-body font-medium text-ink-900">
+                    <li key={i} className="border-l-2 border-line pl-3">
+                      <p className="break-words text-body font-medium text-fg">
                         {e.role} · {e.company}
                       </p>
-                      <p className="text-label font-normal text-ink-600">{formatPeriod(e.startDate, e.endDate, e.isCurrent)}</p>
-                      {e.description && <p className="mt-1 whitespace-pre-line break-words text-body text-ink-900">{e.description}</p>}
+                      <p className="text-label font-normal text-fg-muted">{formatPeriod(e.startDate, e.endDate, e.isCurrent)}</p>
+                      {e.description && <p className="mt-1 whitespace-pre-line break-words text-body text-fg">{e.description}</p>}
                     </li>
                   ))}
                 </ol>
@@ -63,8 +63,8 @@ export function ProfessionalProfileCard({ profile }: { profile: ProfileDetails }
                 <ul className="space-y-3">
                   {byRecency(profile.educations, (e) => e.inProgress).map((e, i) => (
                     <li key={i}>
-                      <p className="break-words text-body font-medium text-ink-900">{e.course}</p>
-                      <p className="break-words text-body text-ink-600">
+                      <p className="break-words text-body font-medium text-fg">{e.course}</p>
+                      <p className="break-words text-body text-fg-muted">
                         {e.institution} · {EDUCATION_LEVEL_LABEL[e.level]}
                         {(e.startDate || e.endDate || e.inProgress) && ` · ${formatPeriod(e.startDate, e.endDate, e.inProgress) || "em andamento"}`}
                       </p>
@@ -88,10 +88,10 @@ export function ProfessionalProfileCard({ profile }: { profile: ProfileDetails }
 
             {profile.languages.length > 0 && (
               <Section title="Idiomas">
-                <ul className="flex flex-wrap gap-x-6 gap-y-1 text-body text-ink-900">
+                <ul className="flex flex-wrap gap-x-6 gap-y-1 text-body text-fg">
                   {profile.languages.map((l) => (
                     <li key={l.name}>
-                      {l.name} <span className="text-ink-600">· {LANGUAGE_LEVEL_LABEL[l.level]}</span>
+                      {l.name} <span className="text-fg-muted">· {LANGUAGE_LEVEL_LABEL[l.level]}</span>
                     </li>
                   ))}
                 </ul>
@@ -103,7 +103,7 @@ export function ProfessionalProfileCard({ profile }: { profile: ProfileDetails }
                 <ul className="space-y-1">
                   {profile.links.map((l) => (
                     <li key={l.url} className="break-all text-body">
-                      <span className="text-ink-600">{l.label}: </span>
+                      <span className="text-fg-muted">{l.label}: </span>
                       <a href={l.url} target="_blank" rel="noopener noreferrer nofollow" className={textLinkClasses}>
                         {l.url}
                       </a>
