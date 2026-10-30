@@ -13,7 +13,7 @@ um teste de código que se corrige sozinho, e o recrutador decide com dados na m
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma)
 
-**[cl-tech-pi.vercel.app](https://cl-tech-pi.vercel.app)**
+**[cl-tech-pi.vercel.app](https://cltech-3aq.vercel.app/)**
 
 </div>
 
