@@ -44,6 +44,10 @@ export function toErrorResponse(err: unknown): NextResponse {
   if (err instanceof ApiError) {
     return errorResponse(err);
   }
+  // `await req.json()` com corpo malformado lança SyntaxError: é erro do cliente, não 500.
+  if (err instanceof SyntaxError) {
+    return errorResponse(Errors.validation("Corpo da requisição não é um JSON válido."));
+  }
   logSafeError("api", err);
   return NextResponse.json(
     { error: { code: "INTERNAL_ERROR", message: "Erro inesperado. Tente novamente." } },
@@ -55,7 +59,9 @@ export function toErrorResponse(err: unknown): NextResponse {
 export const Errors = {
   unauthenticated: () => new ApiError(401, "UNAUTHENTICATED", "É necessário entrar para continuar."),
   forbidden: () => new ApiError(403, "FORBIDDEN", "Você não tem permissão para acessar este recurso."),
-  notFound: (what = "Recurso") => new ApiError(404, "NOT_FOUND", `${what} não encontrado.`),
+  /** `feminine` concorda o particípio: "Vaga não encontrada." */
+  notFound: (what = "Recurso", feminine = false) =>
+    new ApiError(404, "NOT_FOUND", `${what} não ${feminine ? "encontrada" : "encontrado"}.`),
   validation: (message: string) => new ApiError(400, "VALIDATION_ERROR", message),
   conflict: (code: string, message: string) => new ApiError(409, code, message),
   businessRule: (code: string, message: string) => new ApiError(422, code, message),

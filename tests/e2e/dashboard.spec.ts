@@ -13,11 +13,12 @@ test("painel mostra vagas com contagem por etapa e permite filtrar por vaga (RF0
   const jobSelect = page.getByRole("combobox");
   await expect(jobSelect).toBeVisible();
 
-  const options = await jobSelect.locator("option").allTextContents();
+  await jobSelect.click();
+  const options = await page.getByRole("option").allTextContents();
   expect(options.length).toBeGreaterThan(1); // "Todas as vagas" + ao menos uma vaga real
 
   const firstJobTitle = options[1] as string;
-  await jobSelect.selectOption({ label: firstJobTitle });
+  await page.getByRole("option", { name: firstJobTitle, exact: true }).click();
 
   await expect(page.getByRole("heading", { name: firstJobTitle, level: 2 })).toBeVisible();
 });

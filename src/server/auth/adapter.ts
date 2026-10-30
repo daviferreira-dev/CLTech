@@ -22,8 +22,10 @@ export function createAdapter(): Adapter {
     ...base,
     // Primeiro login por OAuth cria o User aqui, sem passar por registerCandidate: o perfil
     // de Candidate (1:1) precisa nascer junto, ou /perfil e a candidatura dão NOT_FOUND.
-    createUser: async (data) => {
-      const user = await base.createUser!(data);
+    // O provedor manda `image` (avatar), que o schema não tem; `name` vem nulo quando o
+    // perfil do GitHub não tem nome, mas User.name é obrigatório.
+    createUser: async ({ image: _image, ...data }) => {
+      const user = await base.createUser!({ ...data, name: data.name || data.email.split("@")[0] });
       await prisma.candidate.create({ data: { userId: user.id } });
       return user;
     },

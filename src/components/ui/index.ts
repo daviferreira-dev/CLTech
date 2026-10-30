@@ -9,6 +9,7 @@ export { TagInput } from "./TagInput";
 export { Badge, MatchBadge, matchVariant } from "./Badge";
 export type { BadgeVariant, MatchState } from "./Badge";
 export { Avatar } from "./Avatar";
+export { Markdown } from "./Markdown";
 export { EmptyState, ErrorState, Skeleton, CardListSkeleton, Notice } from "./States";
 export { Breadcrumb, Pagination, StageTrail } from "./Navigation";
 export type { Crumb, StageTrailItem } from "./Navigation";

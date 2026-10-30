@@ -4,6 +4,7 @@
 // o que se testa aqui é a tradução do código em ação, não a regra do servidor — essa já tem
 // teste de integração.
 import { test, expect, type Page } from "@playwright/test";
+import { chooseOption } from "./fixtures/select";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -18,7 +19,7 @@ async function signUpWithResume(page: Page, prefix: string) {
   await page.getByLabel("Nome").fill(`Pessoa ${prefix}`);
   await page.getByLabel("E-mail").fill(uniqueEmail(prefix));
   await page.getByLabel("Senha").fill("senhaSegura123");
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
   await page.goto("/perfil");
   await page.setInputFiles('input[type="file"]', path.join(__dirname, "fixtures", "cv-valido.pdf"));
@@ -67,7 +68,7 @@ test("RESUME_REQUIRED oferece enviar currículo e voltar à vaga", async ({ page
   await page.getByLabel("Nome").fill("Pessoa Sem CV");
   await page.getByLabel("E-mail").fill(uniqueEmail("nocv"));
   await page.getByLabel("Senha").fill("senhaSegura123");
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 
   await page.locator('a[href^="/vagas/"]').first().click();
@@ -130,7 +131,7 @@ test.describe("recrutador", () => {
     await page.getByLabel("Requisitos mínimos").fill("Go.");
     await page.getByRole("button", { name: "Salvar rascunho" }).click();
     await expect(page).toHaveURL(/\/recrutamento\/vagas\/[^/]+$/);
-    await page.getByLabel("Tipo de etapa").selectOption("RESUME_ANALYSIS");
+    await chooseOption(page.getByLabel("Tipo de etapa"), "Análise de Currículo");
     await page.getByRole("button", { name: "Adicionar etapa" }).click();
     await expect(page.getByRole("listitem").filter({ hasText: "Análise de Currículo" })).toBeVisible();
   }
@@ -148,7 +149,7 @@ test.describe("recrutador", () => {
     await loginAsRecruiter(page);
     await createDraftWithStage(page);
     await page.route("**/api/recruiter/jobs/*/stages", (route) => route.fulfill(fulfillError(409, "JOB_LOCKED")));
-    await page.getByLabel("Tipo de etapa").selectOption("TECH_INTERVIEW");
+    await chooseOption(page.getByLabel("Tipo de etapa"), "Entrevista Técnica");
     await page.getByRole("button", { name: "Adicionar etapa" }).click();
     await expect(page.getByText("Pipeline travado")).toBeVisible();
     await expect(page.getByText(/continuam editáveis/)).toBeVisible();
@@ -157,7 +158,7 @@ test.describe("recrutador", () => {
   test("INCOMPLETE_JOB aponta a etapa de teste de código sem desafio", async ({ page }) => {
     await loginAsRecruiter(page);
     await createDraftWithStage(page);
-    await page.getByLabel("Tipo de etapa").selectOption("CODE_TEST");
+    await chooseOption(page.getByLabel("Tipo de etapa"), "Teste de Código");
     await page.getByRole("button", { name: "Adicionar etapa" }).click();
     await expect(page.getByRole("listitem").filter({ hasText: "Teste de Código" })).toBeVisible();
     await page.getByRole("button", { name: "Publicar Vaga" }).click();

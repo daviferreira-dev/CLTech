@@ -18,7 +18,7 @@ async function signUpCandidate(page: Page, name: string) {
   await page.getByLabel("Nome").fill(name);
   await page.getByLabel("E-mail").fill(`e2e-detail-${Date.now()}@example.com`);
   await page.getByLabel("Senha").fill("senhaSegura123");
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page).toHaveURL(/\/vagas$/);
 }
 
@@ -62,5 +62,6 @@ test("recrutador abre relatório do candidato, vê score/currículo e avança a 
   // Decisão exige confirmação explícita (spec 004 US5.5). Na última etapa do pipeline,
   // avançar é aprovar — a vaga escolhida depende dos dados do banco.
   await page.getByRole("button", { name: /Confirmar (avanço|aprovação)/ }).click();
-  await expect(page.getByText(/Candidato (avançado|aprovado)/)).toBeVisible();
+  // Avançar volta para a lista da vaga, que anuncia o destino do candidato.
+  await expect(page.getByRole("status").filter({ hasText: `${CANDIDATE_NAME} foi aprovado(a)` })).toBeVisible();
 });

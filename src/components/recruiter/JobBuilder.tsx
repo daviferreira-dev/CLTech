@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { STAGE_TYPES, STAGE_LABEL, MIN_POSITIONS, MAX_POSITIONS, positionsOf } from "@/lib/processStages";
+import { STAGE_TYPES, STAGE_LABEL, MIN_POSITIONS, MAX_POSITIONS, INTERVIEW_STAGES, positionsOf } from "@/lib/processStages";
+import { EMAIL_BODY_MAX, EMAIL_SUBJECT_MAX, EMAIL_TEMPLATE_VARIABLES, fillTemplate, meetingValues } from "@/lib/emailTemplate";
 import {
   DEFAULT_TIME_LIMIT_MINUTES,
   DIFFICULTY_LABEL,
@@ -48,8 +49,11 @@ interface JobFields {
 type StageType = (typeof STAGE_TYPES)[number];
 
 interface StageItem {
+  id?: string;
   type: StageType;
   config?: Record<string, unknown>;
+  emailSubject?: string | null;
+  emailBody?: string | null;
 }
 
 interface JobBuilderView extends JobFields {
@@ -103,6 +107,8 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
   const [message, setMessage] = useState<Banner>(null);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [confirmPublish, setConfirmPublish] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [catalog, setCatalog] = useState<ChallengeOption[] | null>(null);
 
   // Alterações de campo ainda não salvas (spec 004 US4.7). O pipeline é salvo a cada ação,
@@ -172,7 +178,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     });
   }, [hasCodeTest, catalog]);
 
-  const locked = status === "PUBLISHED";
+  const locked = status !== "DRAFT";
 
   function updateField<K extends keyof JobFields>(key: K, value: JobFields[K]) {
     setFields((prev) => ({ ...prev, [key]: value }));
@@ -194,6 +200,11 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
         title: "Pipeline travado",
         text: "Esta vaga já foi publicada: tecnologias, requisitos mínimos e etapas não mudam mais. Título, descrição, empresa, localização, modalidade e senioridade continuam editáveis.",
       });
+      return;
+    }
+    if (code === "JOB_CLOSED") {
+      await load();
+      setMessage({ tone: "info", text: "Esta vaga já está encerrada. A tela foi atualizada com o estado atual." });
       return;
     }
     if (code === "ALREADY_PUBLISHED") {
@@ -273,6 +284,21 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     handleSaveStages(stages.map((stage, i) => (i === index ? { ...stage, config: config as Record<string, unknown> } : stage)));
   }
 
+  // Template do e-mail não trava com a vaga publicada: vai por PATCH, fora do PUT do pipeline.
+  async function saveStageEmail(stageId: string, email: { emailSubject: string; emailBody: string }) {
+    if (!jobId || savingStages) return;
+    setSavingStages(true);
+    setMessage(null);
+    const result = await apiFetch<{ stages: StageItem[] }>(`/api/recruiter/jobs/${jobId}/stages`, jsonInit("PATCH", { stageId, ...email }));
+    setSavingStages(false);
+    if (result.ok) {
+      setStages(result.data.stages);
+      setMessage({ tone: "success", text: "E-mail da entrevista salvo." });
+      return;
+    }
+    await handleFailure(result, "Não foi possível salvar o e-mail.");
+  }
+
   function removeStage(index: number) {
     handleSaveStages(stages.filter((_, i) => i !== index));
   }
@@ -314,6 +340,21 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
       return;
     }
     await handleFailure(result, "Não foi possível publicar.");
+  }
+
+  async function handleClose() {
+    if (!jobId || closing) return;
+    setClosing(true);
+    setMessage(null);
+    const result = await apiFetch<{ status: JobBuilderView["status"] }>(`/api/recruiter/jobs/${jobId}/close`, { method: "POST" });
+    setClosing(false);
+    setConfirmClose(false);
+    if (result.ok) {
+      setStatus(result.data.status ?? "CLOSED");
+      setMessage({ tone: "success", text: "Vaga encerrada." });
+      return;
+    }
+    await handleFailure(result, "Não foi possível encerrar a vaga.");
   }
 
   const breadcrumb = (
@@ -368,8 +409,9 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
 
       {locked && (
         <Notice tone="info">
-          Vaga publicada: tecnologias, requisitos mínimos e etapas do pipeline ficam travados para preservar o processo
-          que os candidatos já veem.
+          {status === "CLOSED"
+            ? "Vaga encerrada: não recebe novas candidaturas, e tecnologias, requisitos mínimos e etapas do pipeline ficam travados."
+            : "Vaga publicada: tecnologias, requisitos mínimos e etapas do pipeline ficam travados para preservar o processo que os candidatos já veem. O e-mail das entrevistas continua editável."}
         </Notice>
       )}
 
@@ -517,6 +559,17 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                           onSave={(config) => updateStageConfig(index, config)}
                         />
                       )}
+                      {INTERVIEW_STAGES.includes(stage.type) && stage.id && (
+                        <InterviewEmailPanel
+                          stageIndex={index}
+                          stageLabel={label ?? stage.type}
+                          jobTitle={fields.title}
+                          subject={stage.emailSubject ?? ""}
+                          body={stage.emailBody ?? ""}
+                          saving={savingStages}
+                          onSave={(email) => saveStageEmail(stage.id!, email)}
+                        />
+                      )}
                       {stage.type === "FINAL_OFFER" && (
                         <FinalOfferPanel
                           stageIndex={index}
@@ -568,6 +621,25 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
       {jobId && !locked && dirty && (
         <p className="text-body text-ink-600">Salve as alterações antes de publicar.</p>
       )}
+
+      {status === "PUBLISHED" && (
+        <div className="flex flex-col gap-3 rounded-card border border-brand-100 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <p className="text-body text-ink-600">Ao encerrar, a vaga deixa de aceitar candidaturas.</p>
+          <Button variant="secondary" onClick={() => setConfirmClose(true)} disabled={closing}>
+            Encerrar vaga
+          </Button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmClose}
+        title="Encerrar esta vaga?"
+        description="Ela deixa de aparecer para os candidatos e não recebe novas candidaturas. Não dá para reabrir depois."
+        confirmLabel="Confirmar encerramento"
+        loading={closing}
+        onCancel={() => setConfirmClose(false)}
+        onConfirm={handleClose}
+      />
 
       <ConfirmDialog
         open={confirmPublish}
@@ -758,6 +830,74 @@ function FinalOfferPanel({
           Salvar quantidade
         </Button>
       )}
+    </div>
+  );
+}
+
+// Dados de exemplo da pré-visualização: a reunião é amanhã às 14h (Brasília).
+const PREVIEW_MEETING = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + 1, 17));
+
+/** E-mail que o candidato recebe ao avançar para esta entrevista; vazio usa o texto padrão. */
+function InterviewEmailPanel({
+  stageIndex,
+  stageLabel,
+  jobTitle,
+  subject,
+  body,
+  saving,
+  onSave,
+}: {
+  stageIndex: number;
+  stageLabel: string;
+  jobTitle: string;
+  subject: string;
+  body: string;
+  saving: boolean;
+  onSave: (email: { emailSubject: string; emailBody: string }) => void;
+}) {
+  const [draftSubject, setDraftSubject] = useState(subject);
+  const [draftBody, setDraftBody] = useState(body);
+  useEffect(() => setDraftSubject(subject), [subject]);
+  useEffect(() => setDraftBody(body), [body]);
+
+  const values = {
+    candidato: "Maria Silva",
+    vaga: jobTitle || "Vaga",
+    etapa: stageLabel,
+    ...meetingValues(PREVIEW_MEETING),
+    link: "https://meet.google.com/abc-defg-hij",
+  };
+  const changed = draftSubject !== subject || draftBody !== body;
+
+  return (
+    <div className="mt-3 space-y-3 rounded-card border border-brand-100 bg-canvas p-3">
+      <p className="text-label text-ink-600">E-mail ao candidato que entra nesta etapa</p>
+      <Field id={`assunto-email-etapa-${stageIndex}`} label="Assunto">
+        <Input maxLength={EMAIL_SUBJECT_MAX} value={draftSubject} onChange={(e) => setDraftSubject(e.target.value)} placeholder="Entrevista marcada — {{vaga}}" />
+      </Field>
+      <Field
+        id={`corpo-email-etapa-${stageIndex}`}
+        label="Mensagem"
+        hint={`Variáveis: ${EMAIL_TEMPLATE_VARIABLES.map((v) => `{{${v}}}`).join(", ")}. Data e horário no fuso de Brasília. Deixe em branco para usar o e-mail padrão.`}
+      >
+        <Textarea
+          rows={5}
+          maxLength={EMAIL_BODY_MAX}
+          value={draftBody}
+          onChange={(e) => setDraftBody(e.target.value)}
+          placeholder={"Olá, {{candidato}}! Sua entrevista para {{vaga}} será em {{data}}, às {{horario}}.\nLink da reunião: {{link}}"}
+        />
+      </Field>
+      {(draftSubject.trim() || draftBody.trim()) && (
+        <div className="rounded-card border border-brand-100 bg-surface p-3" aria-label="Pré-visualização do e-mail">
+          <p className="text-label text-ink-600">Pré-visualização (dados de exemplo)</p>
+          {draftSubject.trim() && <p className="mt-1 break-words text-body font-medium text-ink-900">{fillTemplate(draftSubject.trim(), values)}</p>}
+          {draftBody.trim() && <p className="mt-1 whitespace-pre-wrap break-words text-body text-ink-900">{fillTemplate(draftBody.trim(), values)}</p>}
+        </div>
+      )}
+      <Button size="sm" variant="secondary" loading={saving} disabled={!changed} onClick={() => onSave({ emailSubject: draftSubject, emailBody: draftBody })}>
+        Salvar e-mail
+      </Button>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { registerCandidate } from "@/server/auth/register";
 import { encrypt } from "@/server/crypto";
 import { getResumeFile } from "@/server/candidates/resume-access";
+import { getPrivateObject } from "@/server/storage";
 import { ApiError } from "@/lib/errors";
 
 // O bucket guarda o currículo como uploadResume grava: base64 do original, cifrado.
@@ -67,6 +68,18 @@ describe("getResumeFile (Princípio I, FR-017)", () => {
     await expect(
       getResumeFile({ id: "qualquer", role: "ADMIN" }, "00000000-0000-0000-0000-000000000000"),
     ).rejects.toSatisfy((err: unknown) => {
+      expect((err as ApiError).status).toBe(404);
+      return true;
+    });
+  });
+});
+
+// Relatório E2E item 7: linha Resume sem arquivo no storage (seed antigo) dava 500.
+describe("getResumeFile sem arquivo no storage", () => {
+  it("devolve 404 em vez de propagar o ENOENT", async () => {
+    const { user, resume } = await createCandidateWithResume("sem-arquivo@example.com");
+    vi.mocked(getPrivateObject).mockRejectedValueOnce(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
+    await expect(getResumeFile({ id: user.id, role: "CANDIDATE" }, resume.id)).rejects.toSatisfy((err: unknown) => {
       expect((err as ApiError).status).toBe(404);
       return true;
     });

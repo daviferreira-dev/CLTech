@@ -34,7 +34,11 @@ export async function getResumeFile(requester: Requester, resumeId: string): Pro
 
   // O bucket guarda o arquivo cifrado (R4, ver uploadResume): base64 do original, cifrado em
   // AES-256-GCM. Decifra aqui, depois da checagem de papel, e entrega o arquivo original.
-  const stored = await getPrivateObject(resume.storageKey);
+  // Linha sem arquivo (seed antigo, objeto apagado à mão): 404 amigável, não 500.
+  const stored = await getPrivateObject(resume.storageKey).catch((err: { code?: string; name?: string }) => {
+    if (err?.code === "ENOENT" || err?.name === "NoSuchKey") throw Errors.notFound("Arquivo do currículo");
+    throw err;
+  });
   const content = Buffer.from(decrypt(stored.toString("utf8")), "base64");
   return { filename: resume.originalFilename, mimeType: resume.mimeType, content };
 }

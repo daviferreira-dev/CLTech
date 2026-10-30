@@ -4,9 +4,9 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Errors, ApiError } from "@/lib/errors";
 import { recomputeJobMatchesForJob } from "@/server/matching/recompute";
-import type { CreateJobInput, UpdateJobInput, SetStagesInput } from "@/lib/validation/jobs";
+import type { CreateJobInput, UpdateJobInput, SetStagesInput, StageEmailInput } from "@/lib/validation/jobs";
 import { codeTestConfigSchema } from "@/lib/validation/challenges";
-import { MAX_POSITIONS, MIN_POSITIONS } from "@/lib/processStages";
+import { INTERVIEW_STAGES, MAX_POSITIONS, MIN_POSITIONS } from "@/lib/processStages";
 import { isCodeTestConfigComplete, MAX_TEST_RUNS, type CodeTestStageConfig } from "@/lib/codeTest";
 import { keepAlive } from "@/server/background";
 
@@ -24,13 +24,13 @@ export interface RecruiterJobView {
   minimumRequirements: string;
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
   publishedAt: Date | null;
-  stages: Array<{ id: string; type: string; order: number; config: unknown }>;
+  stages: Array<{ id: string; type: string; order: number; config: unknown; emailSubject: string | null; emailBody: string | null }>;
 }
 
 async function toView(jobId: string): Promise<RecruiterJobView> {
   const job = await prisma.job.findUniqueOrThrow({
     where: { id: jobId },
-    include: { stages: { orderBy: { order: "asc" }, select: { id: true, type: true, order: true, config: true } } },
+    include: { stages: { orderBy: { order: "asc" }, select: { id: true, type: true, order: true, config: true, emailSubject: true, emailBody: true } } },
   });
   return job;
 }
@@ -75,12 +75,12 @@ export async function createJob(userId: string, input: CreateJobInput): Promise<
 
 export async function updateDraftJob(jobId: string, input: UpdateJobInput): Promise<RecruiterJobView> {
   const job = await prisma.job.findUnique({ where: { id: jobId }, select: { status: true } });
-  if (!job) throw Errors.notFound("Vaga");
+  if (!job) throw Errors.notFound("Vaga", true);
 
-  if (job.status === "PUBLISHED") {
+  if (job.status !== "DRAFT") {
     const touchesLockedField = LOCKED_FIELDS.some((field) => input[field] !== undefined);
     if (touchesLockedField) {
-      throw Errors.conflict("JOB_LOCKED", "Vagas publicadas têm tecnologias e requisitos travados.");
+      throw Errors.conflict("JOB_LOCKED", "Vagas publicadas ou encerradas têm tecnologias e requisitos travados.");
     }
   }
 
@@ -91,9 +91,9 @@ export async function updateDraftJob(jobId: string, input: UpdateJobInput): Prom
 /** Substitui o conjunto inteiro de etapas, já ordenado (FR-039/042, R16). */
 export async function setStages(jobId: string, input: SetStagesInput): Promise<RecruiterJobView> {
   const job = await prisma.job.findUnique({ where: { id: jobId }, select: { status: true } });
-  if (!job) throw Errors.notFound("Vaga");
-  if (job.status === "PUBLISHED") {
-    throw Errors.conflict("JOB_LOCKED", "Vagas publicadas têm o pipeline travado.");
+  if (!job) throw Errors.notFound("Vaga", true);
+  if (job.status !== "DRAFT") {
+    throw Errors.conflict("JOB_LOCKED", "Vagas publicadas ou encerradas têm o pipeline travado.");
   }
 
   if (input.stages.filter((stage) => stage.type === "FINAL_OFFER").length > 1) {
@@ -121,12 +121,28 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
           type: stage.type,
           order: index,
           config: configs[index] as Prisma.InputJsonValue,
+          ...(INTERVIEW_STAGES.includes(stage.type) ? { emailSubject: stage.emailSubject || null, emailBody: stage.emailBody || null } : {}),
         })),
       });
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
 
+  return toView(jobId);
+}
+
+/**
+ * Template do e-mail de entrevista. Diferente do pipeline, não trava com a vaga publicada:
+ * é só texto e vale para os próximos avanços, sem mudar o processo que o candidato percorre.
+ */
+export async function setStageEmail(jobId: string, input: StageEmailInput): Promise<RecruiterJobView> {
+  const stage = await prisma.processStage.findFirst({ where: { id: input.stageId, jobId }, select: { type: true } });
+  if (!stage) throw Errors.notFound("Etapa", true);
+  if (!INTERVIEW_STAGES.includes(stage.type)) throw Errors.validation("Só etapas de entrevista têm e-mail personalizado.");
+  await prisma.processStage.update({
+    where: { id: input.stageId },
+    data: { emailSubject: input.emailSubject || null, emailBody: input.emailBody || null },
+  });
   return toView(jobId);
 }
 
@@ -142,7 +158,8 @@ export async function publishJob(jobId: string): Promise<RecruiterJobView> {
       stages: { where: { type: "CODE_TEST" }, select: { config: true } },
     },
   });
-  if (!job) throw Errors.notFound("Vaga");
+  if (!job) throw Errors.notFound("Vaga", true);
+  if (job.status === "CLOSED") throw Errors.conflict("JOB_CLOSED", "Vaga encerrada.");
   if (job.status !== "DRAFT") {
     throw Errors.conflict("ALREADY_PUBLISHED", "Esta vaga já foi publicada.");
   }
@@ -171,6 +188,16 @@ export async function publishJob(jobId: string): Promise<RecruiterJobView> {
   return toView(jobId);
 }
 
+/** Encerramento manual PUBLISHED -> CLOSED; o automático fica em decision.ts (Proposta Final). */
+export async function closeJob(jobId: string): Promise<RecruiterJobView> {
+  const job = await prisma.job.findUnique({ where: { id: jobId }, select: { status: true } });
+  if (!job) throw Errors.notFound("Vaga", true);
+  if (job.status === "CLOSED") throw Errors.conflict("JOB_CLOSED", "Vaga encerrada.");
+  if (job.status !== "PUBLISHED") throw Errors.conflict("NOT_PUBLISHED", "Só vagas publicadas podem ser encerradas.");
+  await prisma.job.update({ where: { id: jobId }, data: { status: "CLOSED" } });
+  return toView(jobId);
+}
+
 export interface RecruiterJobListItem {
   id: string;
   title: string;
@@ -195,6 +222,6 @@ export async function listRecruiterJobs(): Promise<RecruiterJobListItem[]> {
 
 export async function getRecruiterJobView(jobId: string): Promise<RecruiterJobView> {
   const job = await prisma.job.findUnique({ where: { id: jobId } });
-  if (!job) throw Errors.notFound("Vaga");
+  if (!job) throw Errors.notFound("Vaga", true);
   return toView(jobId);
 }
