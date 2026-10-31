@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "./providers";
 import { THEME_SCRIPT } from "@/lib/csp";
 
-// Fontes servidas pelo próprio app (next/font baixa no build): nenhuma requisição externa em runtime.
-const body = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-body", display: "swap" });
-const display = Outfit({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-display", display: "swap" });
-const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono", display: "swap" });
+// Fontes no repositório (src/app/fonts, Google Fonts, OFL, subset latin, variáveis): o build
+// não depende do Google Fonts, que às vezes falha no CI, e nada externo carrega em runtime.
+const body = localFont({ src: "./fonts/PlusJakartaSans.woff2", weight: "200 800", variable: "--font-body", display: "swap" });
+const display = localFont({ src: "./fonts/Outfit.woff2", weight: "100 900", variable: "--font-display", display: "swap" });
+const mono = localFont({ src: "./fonts/JetBrainsMono.woff2", weight: "100 800", variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
   title: { template: "%s — CLTech", default: "CLTech — Seleção técnica da 3aq" },
