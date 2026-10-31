@@ -9,7 +9,8 @@ export async function oauthEmailVerified(account: Pick<Account, "provider" | "ac
   if (account.provider !== "github" && account.provider !== "linkedin") return true;
   const email = profile?.email?.toLowerCase();
   if (!email) return false;
-  if (account.provider === "linkedin") return profile?.email_verified === true;
+  // O id_token do LinkedIn manda `email_verified` como string ("true"), não booleano.
+  if (account.provider === "linkedin") return String(profile?.email_verified) === "true";
 
   // O access_token só é usado aqui; o adapter descarta os tokens antes de gravar (stripOAuthTokens).
   if (!account.access_token) return false;

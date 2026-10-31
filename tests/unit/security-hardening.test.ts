@@ -34,6 +34,9 @@ describe("A1: OAuth só com e-mail verificado", () => {
 
   it("LinkedIn: exige email_verified === true; credentials passa", async () => {
     expect(await oauthEmailVerified({ provider: "linkedin" }, { email: "a@b.dev", email_verified: true })).toBe(true);
+    // O id_token real do LinkedIn traz a string "true".
+    expect(await oauthEmailVerified({ provider: "linkedin" }, { email: "a@b.dev", email_verified: "true" } as never)).toBe(true);
+    expect(await oauthEmailVerified({ provider: "linkedin" }, { email: "a@b.dev", email_verified: "false" } as never)).toBe(false);
     expect(await oauthEmailVerified({ provider: "linkedin" }, { email: "a@b.dev" })).toBe(false);
     expect(await oauthEmailVerified({ provider: "credentials" })).toBe(true);
   });
