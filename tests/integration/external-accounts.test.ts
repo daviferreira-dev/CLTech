@@ -5,6 +5,7 @@ import { registerCandidate } from "@/server/auth/register";
 import {
   connectExternalAccount,
   disconnectExternalAccount,
+  linkedInLinkMissing,
   recordOAuthIdentity,
   retrySync,
 } from "@/server/candidates/external-accounts";
@@ -100,6 +101,18 @@ describe("conectar contas externas exige OAuth", () => {
       verifiedName: "octocat",
     });
     expect(await account(candidateId, "LINKEDIN")).toMatchObject({ status: "DISCONNECTED", verifiedName: "Ana Souza" });
+  });
+
+  it("login com LinkedIn pede o link do perfil uma vez só", async () => {
+    const { userId } = await candidate();
+    expect(await linkedInLinkMissing(userId)).toBe(false); // nunca entrou com LinkedIn
+    await authorize(userId, "linkedin");
+    await recordOAuthIdentity(userId, "linkedin", "Ana Souza");
+    expect(await linkedInLinkMissing(userId)).toBe(true); // entrou, falta o link
+    await connectExternalAccount(userId, { provider: "LINKEDIN", url: "https://www.linkedin.com/in/ana-souza" });
+    expect(await linkedInLinkMissing(userId)).toBe(false);
+    await disconnectExternalAccount(userId, "LINKEDIN");
+    expect(await linkedInLinkMissing(userId)).toBe(false); // desconectou por escolha: não insiste
   });
 
   it("login com GitHub depois de desconectar não reconecta", async () => {

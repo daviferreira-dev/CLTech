@@ -114,6 +114,19 @@ export async function recordOAuthIdentity(userId: string, oauthProvider: string,
   if (provider === "GITHUB" && firstTime) await connectExternalAccount(userId, { provider: "GITHUB" });
 }
 
+/**
+ * Login pelo LinkedIn sem o link do perfil ainda informado: o pós-login manda o candidato
+ * ao perfil para colar o link. Só uma vez — depois de conectar, o `url` fica mesmo que ele
+ * desconecte.
+ */
+export async function linkedInLinkMissing(userId: string): Promise<boolean> {
+  const account = await prisma.externalAccount.findFirst({
+    where: { provider: "LINKEDIN", candidate: { userId } },
+    select: { url: true },
+  });
+  return !!account && !account.url;
+}
+
 export async function disconnectExternalAccount(userId: string, provider: Provider): Promise<void> {
   const candidateId = await getCandidateIdForUser(userId);
   await prisma.externalAccount.update({

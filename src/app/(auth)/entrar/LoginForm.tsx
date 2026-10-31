@@ -103,7 +103,7 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
         {linkedInEnabled && (
           <button
             type="button"
-            onClick={() => signIn("linkedin", { callbackUrl: callbackUrl ?? "/api/auth/post-login" })}
+            onClick={() => signIn("linkedin", { callbackUrl: callbackUrl ?? "/api/auth/post-login?via=linkedin" })}
             className={cn(oauthClasses, "border border-fg-subtle/50 bg-surface text-fg hover:bg-page")}
           >
             <LinkedInIcon className="text-[#0A66C2]" />
