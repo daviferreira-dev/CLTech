@@ -24,6 +24,7 @@ const DOMAIN_TABLES = [
   "Account",
   "VerificationToken",
   "RateLimit",
+  "PasswordResetToken",
   "User",
   "EmailTemplate",
 ];

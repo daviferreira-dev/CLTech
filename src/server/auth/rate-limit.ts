@@ -19,6 +19,10 @@ export const LIMITS = {
   // Cadastro conta toda tentativa: cada uma custa um hash Argon2.
   registerIp: (ip: string): Limit => ({ key: `register:ip:${ip}`, max: 30, windowMs: WINDOW }),
   registerEmail: (email: string): Limit => ({ key: `register:email:${email}`, max: 5, windowMs: WINDOW }),
+  // Senha: conta todo pedido (cada um manda e-mail ou custa um Argon2).
+  resetIp: (ip: string): Limit => ({ key: `reset:ip:${ip}`, max: 20, windowMs: WINDOW }),
+  resetEmail: (email: string): Limit => ({ key: `reset:email:${email}`, max: 3, windowMs: WINDOW }),
+  changePassword: (userId: string): Limit => ({ key: `password:user:${userId}`, max: 5, windowMs: WINDOW }),
 };
 
 /** Na Vercel o primeiro valor do x-forwarded-for é o IP real (a plataforma reescreve o cabeçalho). */

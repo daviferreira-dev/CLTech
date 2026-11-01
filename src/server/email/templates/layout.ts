@@ -44,6 +44,8 @@ export interface EmailLayoutInput {
   /** HTML extra entre o destaque e o botão (já escapado). */
   section?: string;
   cta: { label: string; href: string };
+  /** Rodapé no lugar do padrão de candidatura (texto puro). */
+  footer?: string;
 }
 
 export function renderEmailLayout(input: EmailLayoutInput): string {
@@ -70,7 +72,7 @@ export function renderEmailLayout(input: EmailLayoutInput): string {
           <td style="background:${COLOR.brand};border-radius:12px 12px 0 0;padding:28px 32px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
               <td style="font-family:${FONT};font-size:22px;font-weight:800;letter-spacing:-.3px;color:#FFFFFF;">CL<span style="color:#34D399;">Tech</span></td>
-              <td align="right" style="font-family:${FONT};font-size:12px;color:${COLOR.inkMuted};">Processo seletivo</td>
+              <td align="right" style="font-family:${FONT};font-size:12px;color:${COLOR.inkMuted};">${input.footer ? "Sua conta" : "Processo seletivo"}</td>
             </tr></table>
           </td>
         </tr>
@@ -106,7 +108,7 @@ export function renderEmailLayout(input: EmailLayoutInput): string {
         </tr>
         <tr>
           <td align="center" style="padding:24px 16px 0;font-family:${FONT};font-size:12px;line-height:18px;color:${COLOR.inkMuted};">
-            Você recebe este e-mail porque se candidatou a uma vaga pela CLTech.<br>
+            ${escapeHtml(input.footer ?? "Você recebe este e-mail porque se candidatou a uma vaga pela CLTech.")}<br>
             Esta é uma mensagem automática — não precisa responder.
           </td>
         </tr>
