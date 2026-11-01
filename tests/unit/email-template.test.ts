@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { fillTemplate, meetingValues } from "@/lib/emailTemplate";
 import { stageAdvancedEmail } from "@/server/email/templates/stage-advanced";
 import { passwordChangedEmail, passwordResetEmail } from "@/server/email/templates/password";
+import { DEFAULT_EMAIL_TEMPLATES } from "@/lib/emailMoments";
 
 describe("e-mails de senha", () => {
   const appUrl = "http://localhost:3000/";
