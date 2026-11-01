@@ -14,6 +14,10 @@ export const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Builds dentro de um git worktree (varios `pnpm-lock.yaml` acima desta pasta) faziam o
+  // Next.js inferir a raiz errada e o build falhar depois de compilar (manifest fora do lugar).
+  // Producao (Vercel/CI) so tem um checkout, entao isto e inocuo la.
+  outputFileTracingRoot: __dirname,
   // pdf-parse usa o pdfjs-dist, que carrega `pdf.worker.mjs` por caminho relativo ao próprio
   // arquivo. Empacotado em .next/server/chunks, o worker não vai junto e TODO PDF caía em
   // parseStatus FAILED ("Setting up fake worker failed"). Fora do bundle, roda do node_modules.
