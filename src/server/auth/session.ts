@@ -27,6 +27,9 @@ export interface AuthedUser {
  *
  * O papel também vem do banco, não do token: um JWT emitido antes de uma mudança de papel
  * carrega o papel antigo, e FR-008 exige verificar a permissão no servidor a cada acesso.
+ *
+ * Pelo mesmo motivo, trocar a senha derruba as sessões abertas: JWT não se revoga, então
+ * o login anterior a User.passwordChangedAt deixa de valer aqui, na leitura que já existe.
  */
 export async function requireSession(): Promise<AuthedUser> {
   const session = await auth();
@@ -37,11 +40,14 @@ export async function requireSession(): Promise<AuthedUser> {
 
   const user = await prisma.user.findUnique({
     where: { id: claimedId },
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, email: true, role: true, passwordChangedAt: true },
   });
   if (!user) throw Errors.unauthenticated();
+  const authAt = session.user.authAt ?? 0;
+  if (user.passwordChangedAt && user.passwordChangedAt.getTime() > authAt) throw Errors.unauthenticated();
 
-  return user as AuthedUser;
+  const { passwordChangedAt: _changedAt, ...authed } = user;
+  return authed as AuthedUser;
 }
 
 /** Lança 401/403. Use em toda rota restrita por papel (ex.: área de recrutamento). */

@@ -97,6 +97,9 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: "CANDIDATE" | "RECRUITER" | "ADMIN" }).role ?? "CANDIDATE";
+        // Instante do login. Não é o `iat`: o Auth.js regrava o cookie (e o iat) a cada
+        // renovação da sessão. requireSession recusa o token se a senha mudou depois disto.
+        token.authAt = Date.now();
       }
       // Login ou vínculo OAuth (com sessão ativa, o Auth.js vincula o provedor ao usuário
       // logado): guarda o nome verificado pelo provedor para "Conecte suas contas".
@@ -110,6 +113,7 @@ export const authConfig: NextAuthConfig = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "CANDIDATE" | "RECRUITER" | "ADMIN";
+        session.user.authAt = token.authAt as number | undefined;
       }
       return session;
     },

@@ -128,6 +128,11 @@ export function LoginForm({ linkedInEnabled }: { linkedInEnabled: boolean }) {
         <Field id="password" label="Senha" error={fieldErrors.password}>
           <PasswordInput required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
+        <p className="-mt-2 text-right text-label">
+          <Link href="/esqueci-senha" className={textLinkClasses}>
+            Esqueci minha senha
+          </Link>
+        </p>
 
         {error && (
           <p role="alert" className="text-body text-danger">

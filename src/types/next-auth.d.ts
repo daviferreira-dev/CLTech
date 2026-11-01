@@ -7,6 +7,8 @@ declare module "next-auth" {
     user: {
       id: string;
       role: Role;
+      /** Login (ms); sessão anterior à última troca de senha não vale — session.ts. */
+      authAt?: number;
     } & DefaultSession["user"];
   }
 

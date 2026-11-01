@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Porta fixa por padrão (3000); E2E_PORT troca tudo — build, start e baseURL — para um
+// worktree com dev server próprio rodar sem disputar a 3000 com outra sessão.
+const port = process.env.E2E_PORT || "3000";
+const baseURL = `http://localhost:${port}`;
+
 // SC-006 / FR-030: os três fluxos P1 precisam passar em 360px (mobile) e 1280px (desktop).
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -15,7 +20,7 @@ export default defineConfig({
   timeout: 60_000,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
   },
   projects: [
@@ -32,8 +37,8 @@ export default defineConfig({
     // Produção, não `pnpm dev`: compilação lazy do dev server corre contra o hidratação do
     // React — clique do Playwright pode acontecer antes do bundle carregar, caindo em
     // submit nativo do HTML (sem `name` nos inputs, vira GET para a própria URL sem dados).
-    command: "pnpm build && pnpm start",
-    url: "http://localhost:3000",
+    command: `pnpm build && pnpm start -p ${port}`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     // Build cold leva ~2m40s neste ambiente — folga generosa acima disso.
     timeout: 300000,

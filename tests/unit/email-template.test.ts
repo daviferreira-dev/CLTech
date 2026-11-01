@@ -1,6 +1,34 @@
 import { describe, it, expect } from "vitest";
 import { fillTemplate, meetingValues } from "@/lib/emailTemplate";
 import { stageAdvancedEmail } from "@/server/email/templates/stage-advanced";
+import { passwordChangedEmail, passwordResetEmail } from "@/server/email/templates/password";
+
+describe("e-mails de senha", () => {
+  const appUrl = "http://localhost:3000/";
+
+  it("redefinição leva o link com o token e usa só o primeiro nome", () => {
+    const mail = passwordResetEmail({ to: "a@x.com", name: "Ana Souza", token: "abc_-123", appUrl });
+    expect(mail.subject).toBe("Redefina sua senha da CLTech");
+    expect(mail.html).toContain('href="http://localhost:3000/redefinir-senha?token=abc_-123"');
+    expect(mail.html).toContain("Olá, Ana");
+    expect(mail.html).not.toContain("Souza");
+    expect(mail.html).not.toContain("se candidatou");
+    expect(mail.text).toContain("http://localhost:3000/redefinir-senha?token=abc_-123");
+    expect(mail.text).toContain("1 hora");
+  });
+
+  it("escapa o primeiro nome se vier com HTML", () => {
+    const mail = passwordResetEmail({ to: "a@x.com", name: "<script>", token: "abc", appUrl });
+    expect(mail.html).not.toContain("<script>");
+  });
+
+  it("confirmação de troca avisa para redefinir se não foi a pessoa", () => {
+    const mail = passwordChangedEmail({ to: "a@x.com", name: "Ana", appUrl });
+    expect(mail.subject).toBe("Sua senha da CLTech foi alterada");
+    expect(mail.text).toContain("Se não foi você, redefina a senha agora");
+    expect(mail.html).toContain('href="http://localhost:3000/esqueci-senha"');
+  });
+});
 
 const VALUES = { candidato: "Ana", vaga: "Dev", etapa: "Entrevista Técnica", data: "sexta", horario: "14:00", link: "https://meet.x/1" };
 

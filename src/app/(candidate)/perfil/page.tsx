@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePageRole, CANDIDATE_ROLES, currentPath, safeInternalPath, type PageSearchParams } from "@/lib/guards";
 import { PageContainer } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProfileForm } from "./ProfileForm";
 import { PrivacyCard } from "./PrivacyCard";
+import { textLinkClasses } from "@/components/ui";
 
 export const metadata = { title: "Meu perfil" };
 
@@ -31,6 +33,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <div className="mt-6">
         <PrivacyCard />
       </div>
+      <p className="mt-6 text-body text-fg-muted">
+        <Link href="/perfil/senha" className={textLinkClasses}>
+          Trocar senha
+        </Link>
+      </p>
     </PageContainer>
   );
 }
