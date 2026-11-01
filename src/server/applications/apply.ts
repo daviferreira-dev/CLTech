@@ -13,6 +13,7 @@ import { getCandidateSignals } from "@/server/matching/recompute";
 import { computeScore } from "@/server/matching/score";
 import { keepAlive } from "@/server/background";
 import { runStageAnalysis } from "@/server/applications/stage-analysis";
+import { notifyApplicationReceived } from "@/server/email/notify";
 
 export interface ApplyResult {
   applicationId: string;
@@ -24,7 +25,7 @@ export interface ApplyResult {
 export async function applyToJob(userId: string, jobId: string): Promise<ApplyResult> {
   const candidate = await prisma.candidate.findUnique({
     where: { userId },
-    include: { resumes: { where: { isCurrent: true }, take: 1 } },
+    include: { user: { select: { name: true, email: true } }, resumes: { where: { isCurrent: true }, take: 1 } },
   });
   if (!candidate) throw Errors.notFound("Perfil");
 
@@ -101,6 +102,15 @@ export async function applyToJob(userId: string, jobId: string): Promise<ApplyRe
 
     // Se o processo abre direto numa etapa de GitHub, atualiza a coleta e reavalia em segundo plano.
     if (firstStage.type === "GITHUB_ANALYSIS") keepAlive(runStageAnalysis(application.id, firstStage.type));
+    // RN005: confirma o recebimento. Sem await e sem bloquear a candidatura — notify.ts só loga falha.
+    keepAlive(
+      notifyApplicationReceived({
+        to: candidate.user,
+        jobTitle: job.title,
+        company: job.company,
+        appUrl: process.env.NEXTAUTH_URL ?? "http://localhost:3000",
+      }),
+    );
 
     return {
       applicationId: application.id,

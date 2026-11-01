@@ -1,6 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // SC-006 / FR-030: os três fluxos P1 precisam passar em 360px (mobile) e 1280px (desktop).
+// PORT: `next start` já respeita a variável; aqui só repetimos o mesmo valor na baseURL e no
+// endereço que o Playwright espera responder, para rodar em paralelo com outro worktree.
+const PORT = process.env.PORT ?? "3000";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   // Um único server + pool de conexões Supabase compartilhado: alta concorrência
@@ -15,7 +19,7 @@ export default defineConfig({
   timeout: 60_000,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: `http://localhost:${PORT}`,
     trace: "on-first-retry",
   },
   projects: [
@@ -33,7 +37,7 @@ export default defineConfig({
     // React — clique do Playwright pode acontecer antes do bundle carregar, caindo em
     // submit nativo do HTML (sem `name` nos inputs, vira GET para a própria URL sem dados).
     command: "pnpm build && pnpm start",
-    url: "http://localhost:3000",
+    url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     // Build cold leva ~2m40s neste ambiente — folga generosa acima disso.
     timeout: 300000,

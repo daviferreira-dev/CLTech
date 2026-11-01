@@ -5,10 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { createJob, setStages, publishJob, updateDraftJob, closeJob } from "@/server/jobs/builder";
 import { ApiError } from "@/lib/errors";
 
-async function createDraftJob() {
-  const recruiter = await prisma.user.create({
+async function createRecruiter() {
+  return prisma.user.create({
     data: { name: "Recrutador Teste", email: `recrutador-${Date.now()}-${Math.random()}@example.com`, role: "RECRUITER" },
   });
+}
+
+async function createDraftJob() {
+  const recruiter = await createRecruiter();
   return createJob(recruiter.id, {
     title: "Vaga de Teste",
     description: "Descrição",
@@ -22,9 +26,7 @@ async function createDraftJob() {
 }
 
 async function createPublishedJob() {
-  const recruiter = await prisma.user.create({
-    data: { name: "Recrutador Teste", email: `recrutador-${Date.now()}-${Math.random()}@example.com`, role: "RECRUITER" },
-  });
+  const recruiter = await createRecruiter();
   const job = await createJob(recruiter.id, {
     title: "Vaga de Teste",
     description: "Descrição",
@@ -113,15 +115,17 @@ describe("vaga CLOSED", () => {
   };
 
   it("closeJob encerra a publicada e recusa rascunho e repetição", async () => {
-    const closed = await closeJob((await createPublishedJob()).id);
+    const recruiter = await createRecruiter();
+    const closed = await closeJob((await createPublishedJob()).id, recruiter.id);
     expect(closed.status).toBe("CLOSED");
-    await expect(closeJob(closed.id)).rejects.toSatisfy(withCode("JOB_CLOSED"));
+    await expect(closeJob(closed.id, recruiter.id)).rejects.toSatisfy(withCode("JOB_CLOSED"));
     const draft = await createDraftJob();
-    await expect(closeJob(draft.id)).rejects.toSatisfy(withCode("NOT_PUBLISHED"));
+    await expect(closeJob(draft.id, recruiter.id)).rejects.toSatisfy(withCode("NOT_PUBLISHED"));
   });
 
   it("trava tecnologias, pipeline e publicação", async () => {
-    const job = await closeJob((await createPublishedJob()).id);
+    const recruiter = await createRecruiter();
+    const job = await closeJob((await createPublishedJob()).id, recruiter.id);
     await expect(updateDraftJob(job.id, { technologies: ["COBOL"] })).rejects.toSatisfy(withCode("JOB_LOCKED"));
     await expect(setStages(job.id, { stages: [{ type: "RESUME_ANALYSIS" }] })).rejects.toSatisfy(withCode("JOB_LOCKED"));
     await expect(publishJob(job.id)).rejects.toSatisfy(withCode("JOB_CLOSED"));

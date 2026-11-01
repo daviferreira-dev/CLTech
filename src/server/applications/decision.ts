@@ -1,12 +1,13 @@
 // RF08 / FR-049 / FR-050 — avançar/reprovar. Nunca aceita nem grava score (Princípio II).
 import { prisma } from "@/lib/prisma";
 import { INTERVIEW_STAGES, positionsOf } from "@/lib/processStages";
+import { stageAdvancedMoment } from "@/lib/emailMoments";
+import type { CodeTestStageConfig } from "@/lib/codeTest";
 import { Errors } from "@/lib/errors";
 import type { MeetingInput } from "@/lib/validation/applications";
 import { keepAlive } from "@/server/background";
-import { sendMail } from "@/server/email/mailer";
-import { stageAdvancedEmail } from "@/server/email/templates/stage-advanced";
-import { rejectedEmail } from "@/server/email/templates/rejected";
+import { notifyApplicationClosed, notifyStageAdvanced } from "@/server/email/notify";
+import { closeStragglers } from "@/server/jobs/closeStragglers";
 import { runStageAnalysis } from "@/server/applications/stage-analysis";
 
 export interface DecisionResult {
@@ -34,46 +35,12 @@ export async function recordDecision(
   }
 
   const now = new Date();
+  const job = application.job;
 
   // RN005: avisa o candidato que passou de etapa, foi aprovado ou reprovado. Sem await — o
-  // e-mail não segura a resposta ao recrutador, e falha de SMTP só vai pro log.
+  // e-mail não segura a resposta ao recrutador, e falha de envio só vai pro log (notify.ts).
   const appUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  const notifyAdvanced = (
-    newStageOrder: number | null,
-    scheduled?: MeetingInput,
-    template?: { subject: string | null; body: string | null },
-  ) =>
-    keepAlive(
-      sendMail(
-        stageAdvancedEmail({
-          to: application.candidate.user.email,
-          candidateName: application.candidate.user.name,
-          jobTitle: application.job.title,
-          stages: application.job.stages,
-          newStageOrder,
-          meeting: scheduled ? { at: new Date(scheduled.scheduledAt), url: scheduled.url } : undefined,
-          template,
-          appUrl,
-        }),
-      ),
-    );
-  const notifyRejected = (
-    candidate: { name: string; email: string },
-    stageType: string,
-    reason: "REJECTED" | "JOB_FILLED",
-  ) =>
-    keepAlive(
-      sendMail(
-        rejectedEmail({
-          to: candidate.email,
-          candidateName: candidate.name,
-          jobTitle: application.job.title,
-          stageType,
-          reason,
-          appUrl,
-        }),
-      ),
-    );
+  const to = application.candidate.user;
 
   if (decision === "REJECT") {
     await prisma.$transaction([
@@ -83,11 +50,26 @@ export async function recordDecision(
         data: { exitedAt: now, decidedByUserId },
       }),
     ]);
-    notifyRejected(application.candidate.user, application.currentStage.type, "REJECTED");
+    keepAlive(
+      notifyApplicationClosed({
+        to,
+        jobTitle: job.title,
+        company: job.company,
+        stageType: application.currentStage.type,
+        moment: "REJECTED",
+        override: {
+          emailMode: job.rejectedEmailMode,
+          emailTemplateId: job.rejectedEmailTemplateId,
+          emailSubject: job.rejectedEmailSubject,
+          emailBody: job.rejectedEmailBody,
+        },
+        appUrl,
+      }),
+    );
     return { currentStage: { type: application.currentStage.type, order: application.currentStage.order }, status: "REJECTED" };
   }
 
-  const nextStage = application.job.stages.find((stage) => stage.order === application.currentStage.order + 1);
+  const nextStage = job.stages.find((stage) => stage.order === application.currentStage.order + 1);
 
   if (!nextStage) {
     // Última etapa (ex.: proposta final) — avançar aprova de fato. A vaga fecha quando todas as
@@ -97,8 +79,8 @@ export async function recordDecision(
     const outcome = await prisma.$transaction(async (tx) => {
       // Trava a linha da vaga: aprovações simultâneas são contadas uma de cada vez.
       await tx.$queryRaw`SELECT id FROM "Job" WHERE id = ${application.jobId} FOR UPDATE`;
-      const job = await tx.job.findUniqueOrThrow({ where: { id: application.jobId }, select: { status: true } });
-      if (job.status === "CLOSED") {
+      const lockedJob = await tx.job.findUniqueOrThrow({ where: { id: application.jobId }, select: { status: true } });
+      if (lockedJob.status === "CLOSED") {
         throw Errors.conflict("JOB_CLOSED", "Esta vaga já foi encerrada com todas as posições preenchidas.");
       }
 
@@ -112,24 +94,38 @@ export async function recordDecision(
       if (approved < positions) return { filled: false, affected: [] };
 
       await tx.job.update({ where: { id: application.jobId }, data: { status: "CLOSED" } });
-      const others = { jobId: application.jobId, status: "IN_PROGRESS" as const, id: { not: applicationId } };
-      // Lidos antes de reprovar: quem estava em andamento recebe o aviso de vaga preenchida.
-      const affected = await tx.application.findMany({
-        where: others,
-        select: {
-          currentStage: { select: { type: true } },
-          candidate: { select: { user: { select: { name: true, email: true } } } },
-        },
-      });
-      await tx.applicationStageHistory.updateMany({
-        where: { exitedAt: null, application: others },
-        data: { exitedAt: now, decidedByUserId },
-      });
-      await tx.application.updateMany({ where: others, data: { status: "REJECTED" } });
+      const affected = await closeStragglers(tx, application.jobId, now, { excludeApplicationId: applicationId, decidedByUserId });
       return { filled: true, affected };
     });
-    notifyAdvanced(null);
-    for (const other of outcome.affected) notifyRejected(other.candidate.user, other.currentStage.type, "JOB_FILLED");
+    keepAlive(
+      notifyStageAdvanced({
+        to,
+        jobTitle: job.title,
+        company: job.company,
+        stages: job.stages,
+        newStageOrder: null,
+        moment: "APPROVED",
+        override: {
+          emailMode: job.approvedEmailMode,
+          emailTemplateId: job.approvedEmailTemplateId,
+          emailSubject: job.approvedEmailSubject,
+          emailBody: job.approvedEmailBody,
+        },
+        appUrl,
+      }),
+    );
+    for (const other of outcome.affected) {
+      keepAlive(
+        notifyApplicationClosed({
+          to: other.candidate.user,
+          jobTitle: job.title,
+          company: job.company,
+          stageType: other.currentStage.type,
+          moment: "JOB_CLOSED",
+          appUrl,
+        }),
+      );
+    }
     return { currentStage: { type: application.currentStage.type, order: application.currentStage.order }, status: "APPROVED" };
   }
 
@@ -159,7 +155,25 @@ export async function recordDecision(
       },
     }),
   ]);
-  notifyAdvanced(nextStage.order, scheduled, needsMeeting ? { subject: nextStage.emailSubject, body: nextStage.emailBody } : undefined);
+  keepAlive(
+    notifyStageAdvanced({
+      to,
+      jobTitle: job.title,
+      company: job.company,
+      stages: job.stages,
+      newStageOrder: nextStage.order,
+      meeting: scheduled ? { at: new Date(scheduled.scheduledAt), url: scheduled.url } : undefined,
+      codeTestMinutes: (nextStage.config as CodeTestStageConfig)?.timeLimitMinutes,
+      moment: stageAdvancedMoment(nextStage.type as Parameters<typeof stageAdvancedMoment>[0]),
+      override: {
+        emailMode: nextStage.emailMode,
+        emailTemplateId: nextStage.emailTemplateId,
+        emailSubject: nextStage.emailSubject,
+        emailBody: nextStage.emailBody,
+      },
+      appUrl,
+    }),
+  );
   // Etapas automáticas (currículo/GitHub) analisam ao entrar, com os dados mais recentes.
   keepAlive(runStageAnalysis(applicationId, nextStage.type));
 
