@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // SC-006 / FR-030: os três fluxos P1 precisam passar em 360px (mobile) e 1280px (desktop).
+// E2E_BASE_URL aponta os testes para outra porta (ex.: worktree isolado) sem mudar o padrão.
+const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   // Um único server + pool de conexões Supabase compartilhado: alta concorrência
@@ -15,7 +18,7 @@ export default defineConfig({
   timeout: 60_000,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
   },
   projects: [
@@ -33,7 +36,7 @@ export default defineConfig({
     // React — clique do Playwright pode acontecer antes do bundle carregar, caindo em
     // submit nativo do HTML (sem `name` nos inputs, vira GET para a própria URL sem dados).
     command: "pnpm build && pnpm start",
-    url: "http://localhost:3000",
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     // Build cold leva ~2m40s neste ambiente — folga generosa acima disso.
     timeout: 300000,
