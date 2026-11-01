@@ -320,10 +320,24 @@ model Job {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  createdBy    User           @relation("JobCreatedBy", fields: [createdById], references: [id])
-  stages       ProcessStage[]
-  applications Application[]
-  jobMatches   JobMatch[]
+  // E-mail dos momentos "reprovado" e "aprovado" desta vaga — mesmo esquema de
+  // modo/modelo/texto próprio das etapas (ProcessStage), só que não há uma etapa fixa para
+  // guardar. Igual ao e-mail de etapa, vale mesmo com a vaga publicada (RF-E2).
+  rejectedEmailMode       StageEmailMode @default(DEFAULT)
+  rejectedEmailTemplateId String?
+  rejectedEmailSubject    String?
+  rejectedEmailBody       String?
+  approvedEmailMode       StageEmailMode @default(DEFAULT)
+  approvedEmailTemplateId String?
+  approvedEmailSubject    String?
+  approvedEmailBody       String?
+
+  createdBy             User           @relation("JobCreatedBy", fields: [createdById], references: [id])
+  rejectedEmailTemplate EmailTemplate? @relation("JobRejectedEmailTemplate", fields: [rejectedEmailTemplateId], references: [id], onDelete: Restrict)
+  approvedEmailTemplate EmailTemplate? @relation("JobApprovedEmailTemplate", fields: [approvedEmailTemplateId], references: [id], onDelete: Restrict)
+  stages                ProcessStage[]
+  applications          Application[]
+  jobMatches            JobMatch[]
 
   @@map("Job")
 }
@@ -339,22 +353,73 @@ enum ProcessStageType {
 
 /// 🟢 Etapa ordenada do pipeline de uma vaga.
 model ProcessStage {
-  id           String           @id @default(uuid())
-  jobId        String
-  type         ProcessStageType
-  order        Int
-  config       Json             @default("{}")
-  // E-mail ao candidato que entra nesta etapa (entrevistas); nulo usa o texto padrão.
-  emailSubject String?
-  emailBody    String?
+  id              String           @id @default(uuid())
+  jobId           String
+  type            ProcessStageType
+  order           Int
+  config          Json             @default("{}")
+  // E-mail ao candidato que entra nesta etapa: modelo padrão do momento, modelo escolhido da
+  // biblioteca, ou texto próprio (emailSubject/emailBody). OFF não envia nada.
+  emailMode       StageEmailMode   @default(DEFAULT)
+  emailTemplateId String?
+  emailSubject    String?
+  emailBody       String?
 
   job            Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  emailTemplate  EmailTemplate?            @relation(fields: [emailTemplateId], references: [id], onDelete: Restrict)
   applicationsAt Application[]
   stageHistoryAt ApplicationStageHistory[]
   codeDrafts     CodeDraft[]
 
   @@unique([jobId, order])
   @@map("ProcessStage")
+}
+
+// ---------------------------------------------------------------------------
+// E-mail automático por momento do processo seletivo — biblioteca do RH.
+// ---------------------------------------------------------------------------
+
+/// Cada momento que dispara e-mail ao candidato (spec 008). Um por tipo de etapa (o avanço
+/// para ela), mais candidatura recebida, reprovado, aprovado e vaga encerrada.
+enum EmailMoment {
+  APPLICATION_RECEIVED
+  STAGE_ADVANCED_RESUME_ANALYSIS
+  STAGE_ADVANCED_CODE_TEST
+  STAGE_ADVANCED_GITHUB_ANALYSIS
+  STAGE_ADVANCED_HR_INTERVIEW
+  STAGE_ADVANCED_TECH_INTERVIEW
+  STAGE_ADVANCED_FINAL_OFFER
+  REJECTED
+  APPROVED
+  JOB_CLOSED
+}
+
+/// Como uma etapa (ou o "reprovado"/"aprovado" da vaga) resolve o e-mail do seu momento.
+enum StageEmailMode {
+  DEFAULT // usa o modelo padrão da biblioteca para este momento
+  TEMPLATE // usa o modelo da biblioteca apontado por emailTemplateId
+  CUSTOM // usa emailSubject/emailBody próprios desta etapa/vaga
+  OFF // não envia e-mail neste momento
+}
+
+/// Biblioteca de modelos de e-mail do RH (spec 008 /recrutamento/modelos-de-email).
+/// `defaultFor` marca o modelo padrão de cada momento — semeado pela migration, um por
+/// valor; o RH edita o texto, mas não apaga (resolve.ts sempre precisa de uma folha de
+/// segurança). Modelo sem `defaultFor` é de uso livre, criado pelo RH.
+model EmailTemplate {
+  id         String       @id @default(uuid())
+  name       String
+  subject    String
+  body       String
+  defaultFor EmailMoment? @unique
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  stages       ProcessStage[]
+  jobsRejected Job[]          @relation("JobRejectedEmailTemplate")
+  jobsApproved Job[]          @relation("JobApprovedEmailTemplate")
+
+  @@map("EmailTemplate")
 }
 
 enum ApplicationStatus {

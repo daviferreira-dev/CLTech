@@ -27,6 +27,7 @@ export const RECRUITER_NAV: NavItem[] = [
   { href: "/recrutamento/vagas", label: "Minhas vagas", matchPrefix: "/recrutamento/vagas" },
   { href: "/recrutamento/candidatos", label: "Candidatos", matchPrefix: "/recrutamento/candidatos" },
   { href: "/recrutamento/desafios", label: "Desafios", matchPrefix: "/recrutamento/desafios" },
+  { href: "/recrutamento/modelos-de-email", label: "Modelos de e-mail", matchPrefix: "/recrutamento/modelos-de-email" },
 ];
 
 export const VISITOR_NAV: NavItem[] = [{ href: "/vagas", label: "Vagas", matchPrefix: "/vagas" }];
