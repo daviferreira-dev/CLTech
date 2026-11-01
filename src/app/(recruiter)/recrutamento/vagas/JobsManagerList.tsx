@@ -7,6 +7,7 @@ import { JOB_STATUS_BADGE, JOB_STATUS_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge, ButtonLink, Card, CardListSkeleton, EmptyState, ErrorState, focusRing } from "@/components/ui";
+import { ViewSwitcher } from "./ViewSwitcher";
 
 interface RecruiterJobListItem {
   id: string;
@@ -35,6 +36,7 @@ export function JobsManagerList() {
 
   return (
     <>
+      <ViewSwitcher />
       <PageHeader
         title="Minhas vagas"
         subtitle={items ? `${items.length} ${items.length === 1 ? "vaga" : "vagas"}` : undefined}
