@@ -6,11 +6,53 @@ import { Errors, ApiError } from "@/lib/errors";
 import { recomputeJobMatchesForJob } from "@/server/matching/recompute";
 import type { CreateJobInput, UpdateJobInput, SetStagesInput, StageEmailInput } from "@/lib/validation/jobs";
 import { codeTestConfigSchema } from "@/lib/validation/challenges";
-import { INTERVIEW_STAGES, MAX_POSITIONS, MIN_POSITIONS } from "@/lib/processStages";
+import { MAX_POSITIONS, MIN_POSITIONS } from "@/lib/processStages";
 import { isCodeTestConfigComplete, MAX_TEST_RUNS, type CodeTestStageConfig } from "@/lib/codeTest";
 import { keepAlive } from "@/server/background";
+import { notifyApplicationClosed } from "@/server/email/notify";
+import { closeStragglers } from "@/server/jobs/closeStragglers";
 
 const LOCKED_FIELDS = ["technologies", "minimumRequirements"] as const;
+
+// Campos de e-mail (modo/modelo/texto) comuns a uma ProcessStage e, com outro prefixo, ao
+// "reprovado"/"aprovado" da vaga — ver normalizeEmailOverride.
+interface EmailOverrideInput {
+  emailMode?: "DEFAULT" | "TEMPLATE" | "CUSTOM" | "OFF";
+  emailTemplateId?: string | null;
+  emailSubject?: string | null;
+  emailBody?: string | null;
+}
+interface NormalizedEmailOverride {
+  emailMode: "DEFAULT" | "TEMPLATE" | "CUSTOM" | "OFF";
+  emailTemplateId: string | null;
+  emailSubject: string | null;
+  emailBody: string | null;
+}
+
+/**
+ * Spec 008: valida e normaliza modo/modelo/texto de um momento (etapa, ou reprovado/aprovado
+ * da vaga). Sem `emailMode` explícito, infere CUSTOM quando assunto ou corpo vêm preenchidos
+ * (compatível com a tela antiga, que só mandava o texto) — senão é DEFAULT. TEMPLATE exige um
+ * modelo que exista na biblioteca; CUSTOM exige assunto e corpo preenchidos.
+ */
+async function normalizeEmailOverride(input: EmailOverrideInput): Promise<NormalizedEmailOverride> {
+  const hasText = Boolean(input.emailSubject?.trim() || input.emailBody?.trim());
+  const mode = input.emailMode ?? (hasText ? "CUSTOM" : "DEFAULT");
+
+  if (mode === "TEMPLATE") {
+    if (!input.emailTemplateId) throw Errors.validation("Escolha um modelo da biblioteca.");
+    const template = await prisma.emailTemplate.findUnique({ where: { id: input.emailTemplateId }, select: { id: true } });
+    if (!template) throw Errors.validation("O modelo escolhido não existe mais na biblioteca.");
+    return { emailMode: "TEMPLATE", emailTemplateId: input.emailTemplateId, emailSubject: null, emailBody: null };
+  }
+  if (mode === "CUSTOM") {
+    if (!input.emailSubject?.trim() || !input.emailBody?.trim()) {
+      throw Errors.validation("Informe o assunto e o texto do e-mail.");
+    }
+    return { emailMode: "CUSTOM", emailTemplateId: null, emailSubject: input.emailSubject, emailBody: input.emailBody };
+  }
+  return { emailMode: mode, emailTemplateId: null, emailSubject: null, emailBody: null };
+}
 
 export interface RecruiterJobView {
   id: string;
@@ -24,13 +66,35 @@ export interface RecruiterJobView {
   minimumRequirements: string;
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
   publishedAt: Date | null;
-  stages: Array<{ id: string; type: string; order: number; config: unknown; emailSubject: string | null; emailBody: string | null }>;
+  rejectedEmailMode: string;
+  rejectedEmailTemplateId: string | null;
+  rejectedEmailSubject: string | null;
+  rejectedEmailBody: string | null;
+  approvedEmailMode: string;
+  approvedEmailTemplateId: string | null;
+  approvedEmailSubject: string | null;
+  approvedEmailBody: string | null;
+  stages: Array<{
+    id: string;
+    type: string;
+    order: number;
+    config: unknown;
+    emailMode: string;
+    emailTemplateId: string | null;
+    emailSubject: string | null;
+    emailBody: string | null;
+  }>;
 }
 
 async function toView(jobId: string): Promise<RecruiterJobView> {
   const job = await prisma.job.findUniqueOrThrow({
     where: { id: jobId },
-    include: { stages: { orderBy: { order: "asc" }, select: { id: true, type: true, order: true, config: true, emailSubject: true, emailBody: true } } },
+    include: {
+      stages: {
+        orderBy: { order: "asc" },
+        select: { id: true, type: true, order: true, config: true, emailMode: true, emailTemplateId: true, emailSubject: true, emailBody: true },
+      },
+    },
   });
   return job;
 }
@@ -84,8 +148,38 @@ export async function updateDraftJob(jobId: string, input: UpdateJobInput): Prom
     }
   }
 
-  await prisma.job.update({ where: { id: jobId }, data: input });
+  // Spec 008: e-mail de "reprovado"/"aprovado" é só texto — vale mesmo com a vaga publicada,
+  // igual ao e-mail de etapa (não entra em LOCKED_FIELDS).
+  const { rejected, approved, ...fields } = await normalizeJobEmailFields(input);
+
+  await prisma.job.update({ where: { id: jobId }, data: { ...fields, ...rejected, ...approved } });
   return toView(jobId);
+}
+
+type RejectedCols = { rejectedEmailMode: NormalizedEmailOverride["emailMode"]; rejectedEmailTemplateId: string | null; rejectedEmailSubject: string | null; rejectedEmailBody: string | null };
+type ApprovedCols = { approvedEmailMode: NormalizedEmailOverride["emailMode"]; approvedEmailTemplateId: string | null; approvedEmailSubject: string | null; approvedEmailBody: string | null };
+
+/** Separa os campos de e-mail do resto do PATCH e normaliza cada momento, só quando enviado. */
+async function normalizeJobEmailFields(
+  input: UpdateJobInput,
+): Promise<Omit<UpdateJobInput, keyof RejectedCols | keyof ApprovedCols> & { rejected: Partial<RejectedCols>; approved: Partial<ApprovedCols> }> {
+  const { rejectedEmailMode, rejectedEmailTemplateId, rejectedEmailSubject, rejectedEmailBody, approvedEmailMode, approvedEmailTemplateId, approvedEmailSubject, approvedEmailBody, ...fields } = input;
+
+  const touchesRejected = [rejectedEmailMode, rejectedEmailTemplateId, rejectedEmailSubject, rejectedEmailBody].some((v) => v !== undefined);
+  const touchesApproved = [approvedEmailMode, approvedEmailTemplateId, approvedEmailSubject, approvedEmailBody].some((v) => v !== undefined);
+
+  const rejected: Partial<RejectedCols> = {};
+  if (touchesRejected) {
+    const n = await normalizeEmailOverride({ emailMode: rejectedEmailMode, emailTemplateId: rejectedEmailTemplateId, emailSubject: rejectedEmailSubject, emailBody: rejectedEmailBody });
+    Object.assign(rejected, { rejectedEmailMode: n.emailMode, rejectedEmailTemplateId: n.emailTemplateId, rejectedEmailSubject: n.emailSubject, rejectedEmailBody: n.emailBody });
+  }
+  const approved: Partial<ApprovedCols> = {};
+  if (touchesApproved) {
+    const n = await normalizeEmailOverride({ emailMode: approvedEmailMode, emailTemplateId: approvedEmailTemplateId, emailSubject: approvedEmailSubject, emailBody: approvedEmailBody });
+    Object.assign(approved, { approvedEmailMode: n.emailMode, approvedEmailTemplateId: n.emailTemplateId, approvedEmailSubject: n.emailSubject, approvedEmailBody: n.emailBody });
+  }
+
+  return { ...fields, rejected, approved };
 }
 
 /** Substitui o conjunto inteiro de etapas, já ordenado (FR-039/042, R16). */
@@ -104,13 +198,16 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
   // entrelaçam o delete de um com o insert do outro e colidem no índice único
   // (jobId, order). Serializable faz o banco recusar o entrelaçamento em vez de
   // gravar um pipeline pela metade.
-  const configs = await Promise.all(
-    input.stages.map((stage) => {
-      if (stage.type === "CODE_TEST") return normalizeCodeTestConfig(stage.config);
-      if (stage.type === "FINAL_OFFER") return normalizeFinalOfferConfig(stage.config);
-      return stage.config ?? {};
-    }),
-  );
+  const [configs, emails] = await Promise.all([
+    Promise.all(
+      input.stages.map((stage) => {
+        if (stage.type === "CODE_TEST") return normalizeCodeTestConfig(stage.config);
+        if (stage.type === "FINAL_OFFER") return normalizeFinalOfferConfig(stage.config);
+        return stage.config ?? {};
+      }),
+    ),
+    Promise.all(input.stages.map((stage) => normalizeEmailOverride(stage))),
+  ]);
 
   await prisma.$transaction(
     async (tx) => {
@@ -121,7 +218,7 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
           type: stage.type,
           order: index,
           config: configs[index] as Prisma.InputJsonValue,
-          ...(INTERVIEW_STAGES.includes(stage.type) ? { emailSubject: stage.emailSubject || null, emailBody: stage.emailBody || null } : {}),
+          ...emails[index],
         })),
       });
     },
@@ -132,17 +229,15 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
 }
 
 /**
- * Template do e-mail de entrevista. Diferente do pipeline, não trava com a vaga publicada:
- * é só texto e vale para os próximos avanços, sem mudar o processo que o candidato percorre.
+ * E-mail de uma etapa: padrão, modelo da biblioteca ou texto próprio — para todo tipo de
+ * etapa (spec 008; antes só entrevista). Não trava com a vaga publicada: é só texto, vale
+ * para os próximos avanços sem mudar o processo que o candidato percorre.
  */
 export async function setStageEmail(jobId: string, input: StageEmailInput): Promise<RecruiterJobView> {
-  const stage = await prisma.processStage.findFirst({ where: { id: input.stageId, jobId }, select: { type: true } });
+  const stage = await prisma.processStage.findFirst({ where: { id: input.stageId, jobId }, select: { id: true } });
   if (!stage) throw Errors.notFound("Etapa", true);
-  if (!INTERVIEW_STAGES.includes(stage.type)) throw Errors.validation("Só etapas de entrevista têm e-mail personalizado.");
-  await prisma.processStage.update({
-    where: { id: input.stageId },
-    data: { emailSubject: input.emailSubject || null, emailBody: input.emailBody || null },
-  });
+  const normalized = await normalizeEmailOverride(input);
+  await prisma.processStage.update({ where: { id: input.stageId }, data: normalized });
   return toView(jobId);
 }
 
@@ -188,13 +283,36 @@ export async function publishJob(jobId: string): Promise<RecruiterJobView> {
   return toView(jobId);
 }
 
-/** Encerramento manual PUBLISHED -> CLOSED; o automático fica em decision.ts (Proposta Final). */
-export async function closeJob(jobId: string): Promise<RecruiterJobView> {
-  const job = await prisma.job.findUnique({ where: { id: jobId }, select: { status: true } });
+/**
+ * Encerramento manual PUBLISHED -> CLOSED; o automático fica em decision.ts (Proposta Final).
+ * Quem ainda estava em andamento é reprovado e avisado (JOB_CLOSED), um e-mail por candidato.
+ */
+export async function closeJob(jobId: string, decidedByUserId: string): Promise<RecruiterJobView> {
+  const job = await prisma.job.findUnique({ where: { id: jobId }, select: { status: true, title: true, company: true } });
   if (!job) throw Errors.notFound("Vaga", true);
   if (job.status === "CLOSED") throw Errors.conflict("JOB_CLOSED", "Vaga encerrada.");
   if (job.status !== "PUBLISHED") throw Errors.conflict("NOT_PUBLISHED", "Só vagas publicadas podem ser encerradas.");
-  await prisma.job.update({ where: { id: jobId }, data: { status: "CLOSED" } });
+
+  const now = new Date();
+  const affected = await prisma.$transaction(async (tx) => {
+    await tx.job.update({ where: { id: jobId }, data: { status: "CLOSED" } });
+    return closeStragglers(tx, jobId, now, { decidedByUserId });
+  });
+
+  const appUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  for (const straggler of affected) {
+    keepAlive(
+      notifyApplicationClosed({
+        to: straggler.candidate.user,
+        jobTitle: job.title,
+        company: job.company,
+        stageType: straggler.currentStage.type,
+        moment: "JOB_CLOSED",
+        appUrl,
+      }),
+    );
+  }
+
   return toView(jobId);
 }
 

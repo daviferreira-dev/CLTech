@@ -1,31 +1,33 @@
-// E-mail de encerramento da candidatura (RN005: feedback obrigatório também na reprovação).
+// E-mail de encerramento da candidatura — reprovação (RN005) ou vaga encerrada com a
+// candidatura ainda em andamento (momentos distintos na biblioteca, mesmo layout). Assunto e
+// corpo vêm do modelo já resolvido (vaga → biblioteca → padrão — ver resolve.ts/notify.ts).
 // Tom acolhedor e sem nota: Princípio I (research.md R11) — nunca score, currículo ou GitHub.
 import type { MailMessage } from "../mailer";
+import { fillTemplate } from "@/lib/emailTemplate";
 import { escapeHtml, firstName, joinUrl, renderEmailLayout, stageLabel } from "./layout";
 
 export interface RejectedEmailInput {
   to: string;
   candidateName: string;
   jobTitle: string;
+  company: string;
   /** Etapa em que a candidatura estava quando foi encerrada. */
   stageType: string;
-  /** `REJECTED`: decisão do recrutador. `JOB_FILLED`: a vaga foi preenchida por outra pessoa. */
-  reason: "REJECTED" | "JOB_FILLED";
+  /** Assunto/corpo já resolvidos para este momento (REJECTED ou JOB_CLOSED). */
+  template: { subject: string; body: string };
   appUrl: string;
 }
 
 export function rejectedEmail(input: RejectedEmailInput): MailMessage {
   const name = firstName(input.candidateName);
-  const job = escapeHtml(input.jobTitle);
   const stage = stageLabel(input.stageType);
-  const filled = input.reason === "JOB_FILLED";
   const ctaHref = joinUrl(input.appUrl, "/vagas");
-
-  const subject = `Atualização sobre sua candidatura — ${input.jobTitle}`;
-  const intro = filled
-    ? `Obrigado por participar do processo seletivo da vaga <strong>${job}</strong>. A vaga acabou de ser preenchida, e por isso sua candidatura foi encerrada.`
-    : `Obrigado por participar do processo seletivo da vaga <strong>${job}</strong>. Depois de uma análise cuidadosa, decidimos não seguir com a sua candidatura neste momento.`;
   const closing = "Essa decisão vale só para esta vaga. Seu perfil continua salvo na CLTech, e você pode se candidatar a outras oportunidades quando quiser.";
+
+  const values = { candidato: input.candidateName, vaga: input.jobTitle, empresa: input.company, etapa: stage, link: ctaHref };
+  const subject = fillTemplate(input.template.subject, values).replace(/[\r\n]+/g, " ").trim() || `Atualização sobre sua candidatura — ${input.jobTitle}`;
+  const bodyText = fillTemplate(input.template.body, values).trim() || closing;
+  const intro = escapeHtml(bodyText).replace(/\n/g, "<br>");
 
   const html = renderEmailLayout({
     subject,
@@ -36,20 +38,7 @@ export function rejectedEmail(input: RejectedEmailInput): MailMessage {
     cta: { label: "Ver outras vagas", href: ctaHref },
   });
 
-  const text = [
-    `Olá, ${name}`,
-    "",
-    filled
-      ? `Obrigado por participar do processo seletivo da vaga ${input.jobTitle}. A vaga acabou de ser preenchida, e por isso sua candidatura foi encerrada.`
-      : `Obrigado por participar do processo seletivo da vaga ${input.jobTitle}. Depois de uma análise cuidadosa, decidimos não seguir com a sua candidatura neste momento.`,
-    "",
-    `Você chegou até: ${stage}.`,
-    closing,
-    "",
-    `Ver outras vagas: ${ctaHref}`,
-    "",
-    "— CLTech",
-  ].join("\n");
+  const text = [`Olá, ${name}`, "", bodyText, "", `Você chegou até: ${stage}.`, closing, "", `Ver outras vagas: ${ctaHref}`, "", "— CLTech"].join("\n");
 
   return { to: input.to, subject, html, text };
 }

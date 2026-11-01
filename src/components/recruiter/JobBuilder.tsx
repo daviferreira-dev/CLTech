@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { STAGE_TYPES, STAGE_LABEL, MIN_POSITIONS, MAX_POSITIONS, INTERVIEW_STAGES, positionsOf } from "@/lib/processStages";
-import { EMAIL_BODY_MAX, EMAIL_SUBJECT_MAX, EMAIL_TEMPLATE_VARIABLES, fillTemplate, meetingValues } from "@/lib/emailTemplate";
+import { STAGE_TYPES, STAGE_LABEL, MIN_POSITIONS, MAX_POSITIONS, positionsOf } from "@/lib/processStages";
+import { stageAdvancedMoment } from "@/lib/emailMoments";
+import { EmailMomentEditor, type EmailMomentValue, type EmailTemplateOption } from "./EmailMomentEditor";
 import {
   DEFAULT_TIME_LIMIT_MINUTES,
   DIFFICULTY_LABEL,
@@ -53,11 +54,26 @@ interface StageItem {
   id?: string;
   type: StageType;
   config?: Record<string, unknown>;
+  emailMode?: EmailMomentValue["emailMode"];
+  emailTemplateId?: string | null;
   emailSubject?: string | null;
   emailBody?: string | null;
 }
 
-interface JobBuilderView extends JobFields {
+// Momentos "reprovado"/"aprovado" da vaga — mesmo formato de uma etapa, com outro prefixo
+// (ver RecruiterJobView em server/jobs/builder.ts).
+interface JobDecisionEmails {
+  rejectedEmailMode: EmailMomentValue["emailMode"];
+  rejectedEmailTemplateId: string | null;
+  rejectedEmailSubject: string | null;
+  rejectedEmailBody: string | null;
+  approvedEmailMode: EmailMomentValue["emailMode"];
+  approvedEmailTemplateId: string | null;
+  approvedEmailSubject: string | null;
+  approvedEmailBody: string | null;
+}
+
+interface JobBuilderView extends JobFields, JobDecisionEmails {
   id: string;
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
   stages: StageItem[];
@@ -111,6 +127,9 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
   const [confirmClose, setConfirmClose] = useState(false);
   const [closing, setClosing] = useState(false);
   const [catalog, setCatalog] = useState<ChallengeOption[] | null>(null);
+  const [templates, setTemplates] = useState<EmailTemplateOption[] | null>(null);
+  const [decisionEmails, setDecisionEmails] = useState<JobDecisionEmails | null>(null);
+  const [savingJobEmail, setSavingJobEmail] = useState(false);
 
   // Alterações de campo ainda não salvas (spec 004 US4.7). O pipeline é salvo a cada ação,
   // então só os campos do formulário contam.
@@ -124,6 +143,16 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     setTechnologiesText(job.technologies.join(", "));
     setStatus(job.status);
     setStages(job.stages);
+    setDecisionEmails({
+      rejectedEmailMode: job.rejectedEmailMode,
+      rejectedEmailTemplateId: job.rejectedEmailTemplateId,
+      rejectedEmailSubject: job.rejectedEmailSubject,
+      rejectedEmailBody: job.rejectedEmailBody,
+      approvedEmailMode: job.approvedEmailMode,
+      approvedEmailTemplateId: job.approvedEmailTemplateId,
+      approvedEmailSubject: job.approvedEmailSubject,
+      approvedEmailBody: job.approvedEmailBody,
+    });
   }, []);
 
   const load = useCallback(async () => {
@@ -178,6 +207,14 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
       setCatalog(result.ok && Array.isArray(result.data?.items) ? result.data.items : []);
     });
   }, [hasCodeTest, catalog]);
+
+  // Biblioteca de modelos (spec 008) — para o seletor "Modelo da biblioteca" de cada momento.
+  useEffect(() => {
+    if (!jobId || templates !== null) return;
+    apiFetch<{ items: EmailTemplateOption[] }>("/api/recruiter/email-templates").then((result) => {
+      setTemplates(result.ok && Array.isArray(result.data?.items) ? result.data.items : []);
+    });
+  }, [jobId, templates]);
 
   const locked = status !== "DRAFT";
 
@@ -285,8 +322,8 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     handleSaveStages(stages.map((stage, i) => (i === index ? { ...stage, config: config as Record<string, unknown> } : stage)));
   }
 
-  // Template do e-mail não trava com a vaga publicada: vai por PATCH, fora do PUT do pipeline.
-  async function saveStageEmail(stageId: string, email: { emailSubject: string; emailBody: string }) {
+  // Modo/modelo/texto não trava com a vaga publicada: vai por PATCH, fora do PUT do pipeline.
+  async function saveStageEmail(stageId: string, email: EmailMomentValue) {
     if (!jobId || savingStages) return;
     setSavingStages(true);
     setMessage(null);
@@ -294,7 +331,39 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     setSavingStages(false);
     if (result.ok) {
       setStages(result.data.stages);
-      setMessage({ tone: "success", text: "E-mail da entrevista salvo." });
+      setMessage({ tone: "success", text: "E-mail da etapa salvo." });
+      return;
+    }
+    await handleFailure(result, "Não foi possível salvar o e-mail.");
+  }
+
+  // "Reprovado"/"aprovado" são da vaga, não de uma etapa — vai pelo PATCH geral da vaga.
+  async function saveJobEmail(prefix: "rejected" | "approved", email: EmailMomentValue) {
+    if (!jobId || savingJobEmail) return;
+    setSavingJobEmail(true);
+    setMessage(null);
+    const payload = {
+      [`${prefix}EmailMode`]: email.emailMode,
+      [`${prefix}EmailTemplateId`]: email.emailTemplateId,
+      [`${prefix}EmailSubject`]: email.emailSubject,
+      [`${prefix}EmailBody`]: email.emailBody,
+    };
+    const result = await apiFetch<JobBuilderView>(`/api/recruiter/jobs/${jobId}`, jsonInit("PATCH", payload));
+    setSavingJobEmail(false);
+    if (result.ok) {
+      // Só os campos de e-mail: `fields`/`technologiesText` não mudam, para não descartar
+      // uma edição ainda não salva dos dados da vaga (US4.7).
+      setDecisionEmails({
+        rejectedEmailMode: result.data.rejectedEmailMode,
+        rejectedEmailTemplateId: result.data.rejectedEmailTemplateId,
+        rejectedEmailSubject: result.data.rejectedEmailSubject,
+        rejectedEmailBody: result.data.rejectedEmailBody,
+        approvedEmailMode: result.data.approvedEmailMode,
+        approvedEmailTemplateId: result.data.approvedEmailTemplateId,
+        approvedEmailSubject: result.data.approvedEmailSubject,
+        approvedEmailBody: result.data.approvedEmailBody,
+      });
+      setMessage({ tone: "success", text: "E-mail salvo." });
       return;
     }
     await handleFailure(result, "Não foi possível salvar o e-mail.");
@@ -560,13 +629,20 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                           onSave={(config) => updateStageConfig(index, config)}
                         />
                       )}
-                      {INTERVIEW_STAGES.includes(stage.type) && stage.id && (
-                        <InterviewEmailPanel
-                          stageIndex={index}
+                      {stage.id && (
+                        <EmailMomentEditor
+                          id={`email-etapa-${index}`}
+                          moment={stageAdvancedMoment(stage.type)}
                           stageLabel={label ?? stage.type}
                           jobTitle={fields.title}
-                          subject={stage.emailSubject ?? ""}
-                          body={stage.emailBody ?? ""}
+                          company={fields.company}
+                          templates={templates}
+                          value={{
+                            emailMode: stage.emailMode ?? "DEFAULT",
+                            emailTemplateId: stage.emailTemplateId ?? null,
+                            emailSubject: stage.emailSubject ?? null,
+                            emailBody: stage.emailBody ?? null,
+                          }}
                           saving={savingStages}
                           onSave={(email) => saveStageEmail(stage.id!, email)}
                         />
@@ -607,6 +683,50 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                 </Button>
               </div>
             )}
+          </CardBody>
+        </Card>
+      )}
+
+      {jobId && decisionEmails && (
+        <Card as="section" aria-labelledby="emails-decisao">
+          <CardHeader
+            titleId="emails-decisao"
+            title="E-mails de reprovação e aprovação"
+            description="Enviados quando o recrutador reprova ou aprova a candidatura — editáveis mesmo com a vaga publicada."
+          />
+          <CardBody className="space-y-4">
+            <EmailMomentEditor
+              id="email-reprovado"
+              moment="REJECTED"
+              stageLabel="Reprovado"
+              jobTitle={fields.title}
+              company={fields.company}
+              templates={templates}
+              value={{
+                emailMode: decisionEmails.rejectedEmailMode,
+                emailTemplateId: decisionEmails.rejectedEmailTemplateId,
+                emailSubject: decisionEmails.rejectedEmailSubject,
+                emailBody: decisionEmails.rejectedEmailBody,
+              }}
+              saving={savingJobEmail}
+              onSave={(email) => saveJobEmail("rejected", email)}
+            />
+            <EmailMomentEditor
+              id="email-aprovado"
+              moment="APPROVED"
+              stageLabel="Aprovado"
+              jobTitle={fields.title}
+              company={fields.company}
+              templates={templates}
+              value={{
+                emailMode: decisionEmails.approvedEmailMode,
+                emailTemplateId: decisionEmails.approvedEmailTemplateId,
+                emailSubject: decisionEmails.approvedEmailSubject,
+                emailBody: decisionEmails.approvedEmailBody,
+              }}
+              saving={savingJobEmail}
+              onSave={(email) => saveJobEmail("approved", email)}
+            />
           </CardBody>
         </Card>
       )}
@@ -835,70 +955,3 @@ function FinalOfferPanel({
   );
 }
 
-// Dados de exemplo da pré-visualização: a reunião é amanhã às 14h (Brasília).
-const PREVIEW_MEETING = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + 1, 17));
-
-/** E-mail que o candidato recebe ao avançar para esta entrevista; vazio usa o texto padrão. */
-function InterviewEmailPanel({
-  stageIndex,
-  stageLabel,
-  jobTitle,
-  subject,
-  body,
-  saving,
-  onSave,
-}: {
-  stageIndex: number;
-  stageLabel: string;
-  jobTitle: string;
-  subject: string;
-  body: string;
-  saving: boolean;
-  onSave: (email: { emailSubject: string; emailBody: string }) => void;
-}) {
-  const [draftSubject, setDraftSubject] = useState(subject);
-  const [draftBody, setDraftBody] = useState(body);
-  useEffect(() => setDraftSubject(subject), [subject]);
-  useEffect(() => setDraftBody(body), [body]);
-
-  const values = {
-    candidato: "Maria Silva",
-    vaga: jobTitle || "Vaga",
-    etapa: stageLabel,
-    ...meetingValues(PREVIEW_MEETING),
-    link: "https://meet.google.com/abc-defg-hij",
-  };
-  const changed = draftSubject !== subject || draftBody !== body;
-
-  return (
-    <div className="mt-3 space-y-3 rounded-card border border-line bg-page p-3">
-      <p className="text-label text-fg-muted">E-mail ao candidato que entra nesta etapa</p>
-      <Field id={`assunto-email-etapa-${stageIndex}`} label="Assunto">
-        <Input maxLength={EMAIL_SUBJECT_MAX} value={draftSubject} onChange={(e) => setDraftSubject(e.target.value)} placeholder="Entrevista marcada — {{vaga}}" />
-      </Field>
-      <Field
-        id={`corpo-email-etapa-${stageIndex}`}
-        label="Mensagem"
-        hint={`Variáveis: ${EMAIL_TEMPLATE_VARIABLES.map((v) => `{{${v}}}`).join(", ")}. Data e horário no fuso de Brasília. Deixe em branco para usar o e-mail padrão.`}
-      >
-        <Textarea
-          rows={5}
-          maxLength={EMAIL_BODY_MAX}
-          value={draftBody}
-          onChange={(e) => setDraftBody(e.target.value)}
-          placeholder={"Olá, {{candidato}}! Sua entrevista para {{vaga}} será em {{data}}, às {{horario}}.\nLink da reunião: {{link}}"}
-        />
-      </Field>
-      {(draftSubject.trim() || draftBody.trim()) && (
-        <div className="rounded-card border border-line bg-surface p-3" aria-label="Pré-visualização do e-mail">
-          <p className="text-label text-fg-muted">Pré-visualização (dados de exemplo)</p>
-          {draftSubject.trim() && <p className="mt-1 break-words text-body font-medium text-fg">{fillTemplate(draftSubject.trim(), values)}</p>}
-          {draftBody.trim() && <p className="mt-1 whitespace-pre-wrap break-words text-body text-fg">{fillTemplate(draftBody.trim(), values)}</p>}
-        </div>
-      )}
-      <Button size="sm" variant="secondary" loading={saving} disabled={!changed} onClick={() => onSave({ emailSubject: draftSubject, emailBody: draftBody })}>
-        Salvar e-mail
-      </Button>
-    </div>
-  );
-}

@@ -4,7 +4,14 @@ import { EMAIL_BODY_MAX, EMAIL_SUBJECT_MAX } from "@/lib/emailTemplate";
 // Vazio/ausente: a etapa usa o e-mail padrão (o builder grava null).
 const optionalText = (max: number, label: string) =>
   z.string().trim().max(max, `${label} pode ter no máximo ${max} caracteres.`).nullish();
-const stageEmailFields = {
+const EMAIL_MODES = ["DEFAULT", "TEMPLATE", "CUSTOM", "OFF"] as const;
+
+// Modo + modelo/texto próprio de um momento (etapa, ou "reprovado"/"aprovado" da vaga).
+// Validação cruzada (TEMPLATE exige emailTemplateId, CUSTOM exige subject+body) fica no
+// servidor (builder.ts), junto da checagem de que o modelo escolhido existe.
+const emailOverrideFields = {
+  emailMode: z.enum(EMAIL_MODES).optional(),
+  emailTemplateId: z.string().uuid().nullish(),
   // B5: quebra de linha no assunto viraria cabeçalho novo no e-mail.
   emailSubject: optionalText(EMAIL_SUBJECT_MAX, "O assunto do e-mail").refine(
     (v) => !v || !/[\r\n]/.test(v),
@@ -41,9 +48,27 @@ const jobFieldsSchema = {
 export const createJobSchema = z.object(jobFieldsSchema);
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 
-export const updateJobSchema = z.object(
-  Object.fromEntries(Object.entries(jobFieldsSchema).map(([key, schema]) => [key, schema.optional()])),
-) as z.ZodType<Partial<CreateJobInput>>;
+// Spec 008: e-mail de "reprovado" e "aprovado" — igual ao de etapa, mas da vaga como um todo
+// (não há uma etapa fixa para guardar a escolha). Editável mesmo com a vaga publicada.
+export const jobEmailSchema = z.object({
+  rejectedEmailMode: z.enum(EMAIL_MODES).optional(),
+  rejectedEmailTemplateId: z.string().uuid().nullish(),
+  rejectedEmailSubject: optionalText(EMAIL_SUBJECT_MAX, "O assunto do e-mail de reprovação").refine(
+    (v) => !v || !/[\r\n]/.test(v),
+    "O assunto do e-mail não pode ter quebra de linha.",
+  ),
+  rejectedEmailBody: optionalText(EMAIL_BODY_MAX, "O texto do e-mail de reprovação"),
+  approvedEmailMode: z.enum(EMAIL_MODES).optional(),
+  approvedEmailTemplateId: z.string().uuid().nullish(),
+  approvedEmailSubject: optionalText(EMAIL_SUBJECT_MAX, "O assunto do e-mail de aprovação").refine(
+    (v) => !v || !/[\r\n]/.test(v),
+    "O assunto do e-mail não pode ter quebra de linha.",
+  ),
+  approvedEmailBody: optionalText(EMAIL_BODY_MAX, "O texto do e-mail de aprovação"),
+});
+export type JobEmailInput = z.infer<typeof jobEmailSchema>;
+
+export const updateJobSchema = createJobSchema.partial().merge(jobEmailSchema.partial());
 export type UpdateJobInput = z.infer<typeof updateJobSchema>;
 
 // FR-039/FR-042: substituição completa e ordenada das etapas de uma vaga em rascunho (R16).
@@ -61,12 +86,12 @@ export const setStagesSchema = z.object({
     z.object({
       type: z.enum(PROCESS_STAGE_TYPES),
       config: z.record(z.string(), z.unknown()).optional(),
-      ...stageEmailFields,
+      ...emailOverrideFields,
     }),
   ),
 });
 export type SetStagesInput = z.infer<typeof setStagesSchema>;
 
-// Template do e-mail de entrevista: editável mesmo com a vaga publicada (é só texto).
-export const stageEmailSchema = z.object({ stageId: z.string().uuid(), ...stageEmailFields });
+// E-mail de uma etapa: editável mesmo com a vaga publicada (é só texto).
+export const stageEmailSchema = z.object({ stageId: z.string().uuid(), ...emailOverrideFields });
 export type StageEmailInput = z.infer<typeof stageEmailSchema>;
