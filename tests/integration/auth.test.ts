@@ -1,6 +1,6 @@
 // User Story 1 — ver quickstart.md "Fluxo 1" e spec.md Acceptance Scenarios 1-4.
 import { describe, it, expect } from "vitest";
-import * as argon2 from "argon2";
+import * as argon2 from "@node-rs/argon2";
 import { prisma } from "@/lib/prisma";
 import { registerCandidate } from "@/server/auth/register";
 import { destinationForRole } from "@/server/auth/redirect";

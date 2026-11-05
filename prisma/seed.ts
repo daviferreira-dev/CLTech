@@ -3,7 +3,7 @@
 // sem isso não há como demonstrar as histórias P1 (busca e candidatura).
 
 import { Prisma, PrismaClient, type ProcessStageType, type WorkMode, type Seniority } from "@prisma/client";
-import * as argon2 from "argon2";
+import * as argon2 from "@node-rs/argon2";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { CHALLENGES } from "./challenges";

@@ -1,7 +1,7 @@
 // FR-001 / FR-004 / FR-007: cadastro de candidato.
 // Função pura (sem HTTP) para ser testável diretamente — ver tests/integration/auth.test.ts.
 
-import * as argon2 from "argon2";
+import * as argon2 from "@node-rs/argon2";
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
 import { registerSchema, type RegisterInput } from "@/lib/validation/auth";

@@ -2,7 +2,7 @@
 // invalida o anterior, sem enumeração, rate limit e sessões antigas derrubadas.
 import { createHash } from "node:crypto";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import * as argon2 from "argon2";
+import * as argon2 from "@node-rs/argon2";
 import { prisma } from "@/lib/prisma";
 import type { ApiError } from "@/lib/errors";
 

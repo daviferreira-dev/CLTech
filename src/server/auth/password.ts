@@ -2,7 +2,7 @@
 // O token vai só no e-mail; o banco guarda o SHA-256 dele (vazou a tabela, não vazou o link).
 // Toda troca grava passwordChangedAt, que derruba as sessões JWT anteriores (session.ts).
 import { createHash, randomBytes } from "node:crypto";
-import * as argon2 from "argon2";
+import * as argon2 from "@node-rs/argon2";
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
 import { changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from "@/lib/validation/auth";

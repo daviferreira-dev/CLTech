@@ -2,7 +2,7 @@
 // M2 (papel das páginas relido no banco) e M4 (re-cifragem com a chave nova).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { randomBytes } from "node:crypto";
-import * as argon2 from "argon2";
+import * as argon2 from "@node-rs/argon2";
 import { prisma } from "@/lib/prisma";
 
 const authMock = vi.fn();

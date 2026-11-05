@@ -1,5 +1,5 @@
 // Login por e-mail e senha (provedor Credentials), separado do config.ts para ser testável.
-import * as argon2 from "argon2";
+import * as argon2 from "@node-rs/argon2";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validation/auth";
 import { LIMITS, blockedUntil, clear, hit, minutesUntil } from "@/server/auth/rate-limit";
