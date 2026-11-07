@@ -1,7 +1,7 @@
 // Biblioteca de modelos de e-mail do RH (spec 008, /recrutamento/modelos-de-email). Modelo
 // padrão de cada momento (defaultFor != null) é semeado pela migration — o RH edita o texto,
 // mas não duplica nem apaga (sempre precisa haver um, ver resolve.ts). Modelo livre
-// (defaultFor null) é criado/editado/duplicado/excluído sem restrição, a não ser em uso.
+// (defaultFor null) é criado/editado/duplicado/excluído sem restrição; ao excluir, quem o usava volta ao padrão.
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
 import type { EmailTemplateInput, UpdateEmailTemplateInput } from "@/lib/validation/emailTemplates";
@@ -27,13 +27,38 @@ export async function deleteEmailTemplate(id: string): Promise<void> {
     throw Errors.conflict("TEMPLATE_IS_DEFAULT", "O modelo padrão de um momento não pode ser excluído — edite o texto dele.");
   }
 
-  const [stage, job] = await Promise.all([
-    prisma.processStage.findFirst({ where: { emailTemplateId: id }, select: { id: true } }),
-    prisma.job.findFirst({ where: { OR: [{ rejectedEmailTemplateId: id }, { approvedEmailTemplateId: id }] }, select: { id: true } }),
+  // Quem usa o modelo volta ao padrão do momento, na mesma transação da exclusão (o banco tem
+  // ON DELETE RESTRICT: sem isso o delete falharia).
+  const toDefault = { emailMode: "DEFAULT", emailTemplateId: null } as const;
+  await prisma.$transaction([
+    prisma.processStage.updateMany({ where: { emailTemplateId: id }, data: toDefault }),
+    prisma.job.updateMany({
+      where: { rejectedEmailTemplateId: id },
+      data: { rejectedEmailMode: "DEFAULT", rejectedEmailTemplateId: null },
+    }),
+    prisma.job.updateMany({
+      where: { approvedEmailTemplateId: id },
+      data: { approvedEmailMode: "DEFAULT", approvedEmailTemplateId: null },
+    }),
+    prisma.emailTemplate.delete({ where: { id } }),
   ]);
-  if (stage || job) {
-    throw Errors.conflict("TEMPLATE_IN_USE", "Este modelo está em uso por alguma vaga. Troque o modelo nela antes de excluir.");
-  }
+}
 
-  await prisma.emailTemplate.delete({ where: { id } });
+/** Títulos das vagas que usam cada modelo (etapa, "reprovado" ou "aprovado"), por id do modelo. */
+export async function listTemplateUsage(): Promise<Record<string, string[]>> {
+  const templates = await prisma.emailTemplate.findMany({
+    where: { defaultFor: null },
+    select: {
+      id: true,
+      stages: { select: { job: { select: { title: true } } } },
+      jobsRejected: { select: { title: true } },
+      jobsApproved: { select: { title: true } },
+    },
+  });
+  return Object.fromEntries(
+    templates.map((t) => [
+      t.id,
+      [...new Set([...t.stages.map((s) => s.job.title), ...t.jobsRejected.map((j) => j.title), ...t.jobsApproved.map((j) => j.title)])],
+    ]),
+  );
 }

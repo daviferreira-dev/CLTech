@@ -10,6 +10,7 @@ import { setStageEmail, setStages } from "@/server/jobs/builder";
 import { encrypt } from "@/server/crypto";
 import { stageEmailSchema } from "@/lib/validation/jobs";
 import { sendMail } from "@/server/email/mailer";
+import { deleteEmailTemplate, listTemplateUsage } from "@/server/email/library";
 
 vi.mock("@/server/email/mailer", () => ({ sendMail: vi.fn(async () => {}) }));
 
@@ -145,5 +146,24 @@ describe("e-mail de etapa (qualquer tipo, não só entrevista)", () => {
 
     await new Promise((r) => setTimeout(r, 50));
     expect(sendMail).not.toHaveBeenCalled();
+  });
+});
+
+describe("excluir modelo em uso (P1)", () => {
+  it("vagas e etapas que usavam o modelo voltam ao padrão, e a lista de uso mostra a vaga", async () => {
+    const { job, interview } = await createJob("PUBLISHED");
+    const template = await prisma.emailTemplate.create({ data: { name: "Meu", subject: "Oi", body: "Oi {{candidato}}" } });
+    await prisma.processStage.update({ where: { id: interview.id }, data: { emailMode: "TEMPLATE", emailTemplateId: template.id } });
+    await prisma.job.update({ where: { id: job.id }, data: { rejectedEmailMode: "TEMPLATE", rejectedEmailTemplateId: template.id } });
+
+    expect((await listTemplateUsage())[template.id]).toEqual(["Vaga Teste"]);
+
+    await deleteEmailTemplate(template.id);
+
+    expect(await prisma.emailTemplate.findUnique({ where: { id: template.id } })).toBeNull();
+    const stage = await prisma.processStage.findUniqueOrThrow({ where: { id: interview.id } });
+    expect(stage).toMatchObject({ emailMode: "DEFAULT", emailTemplateId: null });
+    const after = await prisma.job.findUniqueOrThrow({ where: { id: job.id } });
+    expect(after).toMatchObject({ rejectedEmailMode: "DEFAULT", rejectedEmailTemplateId: null });
   });
 });

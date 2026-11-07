@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 }
 
-// TEMPLATE_IS_DEFAULT / TEMPLATE_IN_USE: modelo padrão ou em uso por alguma vaga não pode ser excluído.
+// TEMPLATE_IS_DEFAULT: modelo padrão não pode ser excluído. Vagas que usavam o modelo voltam ao padrão.
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireRole(["RECRUITER", "ADMIN"]);
