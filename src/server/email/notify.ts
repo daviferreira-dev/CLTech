@@ -79,6 +79,9 @@ export async function notifyApplicationClosed(input: {
   /** JOB_CLOSED não tem configuração por vaga (ver JOB_CONFIGURABLE_MOMENTS). */
   override?: EmailOverride | null;
   appUrl: string;
+  /** Spec 009: motivo (rótulo) e retorno do recrutador, só na reprovação. */
+  reasonLabel?: string;
+  feedback?: string | null;
 }): Promise<void> {
   try {
     const resolved = await resolveEmail(input.moment, input.override);
@@ -92,6 +95,8 @@ export async function notifyApplicationClosed(input: {
         stageType: input.stageType,
         template: resolved,
         appUrl: input.appUrl,
+        reasonLabel: input.reasonLabel,
+        feedback: input.feedback,
       }),
     );
   } catch (err) {

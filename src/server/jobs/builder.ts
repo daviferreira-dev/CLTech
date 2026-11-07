@@ -296,7 +296,7 @@ export async function closeJob(jobId: string, decidedByUserId: string): Promise<
   const now = new Date();
   const affected = await prisma.$transaction(async (tx) => {
     await tx.job.update({ where: { id: jobId }, data: { status: "CLOSED" } });
-    return closeStragglers(tx, jobId, now, { decidedByUserId });
+    return closeStragglers(tx, jobId, now, { decidedByUserId, rejectionReason: "JOB_CLOSED" });
   });
 
   const appUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";

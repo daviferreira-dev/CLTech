@@ -4,13 +4,17 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { STAGE_LABEL, RECOMMENDATION_THRESHOLD } from "@/lib/processStages";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, jsonInit, NETWORK_ERROR_MESSAGE } from "@/lib/api-client";
+import { BULK_DECISION_MAX, type RejectionInput } from "@/lib/validation/applications";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { RejectDialog } from "@/components/recruiter/RejectDialog";
 import { APPLICATION_STATUS_BADGE, RECRUITER_APPLICATION_STATUS_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/cn";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Badge,
   Breadcrumb,
+  Button,
   ButtonLink,
   Card,
   CardListSkeleton,
@@ -38,6 +42,26 @@ interface JobSummary {
   stages: Array<{ type: string; order: number }>;
 }
 
+interface BulkDecisionResult {
+  done: Array<{ id: string; name: string }>;
+  skipped: Array<{ id: string; name: string }>;
+  failed: Array<{ id: string; name: string; message: string }>;
+}
+
+/** Resumo do lote em uma frase: "12 reprovados, 2 ignorados (já finalizados)…". */
+function bulkSummary(result: BulkDecisionResult, decision: "ADVANCE" | "REJECT"): string {
+  const plural = (n: number) => (n === 1 ? "" : "s");
+  const verb = decision === "REJECT" ? "reprovado" : "avançado";
+  const parts = [`${result.done.length} ${verb}${plural(result.done.length)}`];
+  if (result.skipped.length > 0) {
+    parts.push(`${result.skipped.length} ignorado${plural(result.skipped.length)} (já finalizado${plural(result.skipped.length)})`);
+  }
+  if (result.failed.length > 0) {
+    parts.push(`${result.failed.length} com erro: ${result.failed.map((f) => `${f.name} (${f.message})`).join("; ")}`);
+  }
+  return `${parts.join(", ")}.`;
+}
+
 function timeInStage(enteredAt: string | undefined): string | null {
   if (!enteredAt) return null;
   const hours = (Date.now() - new Date(enteredAt).getTime()) / 3_600_000;
@@ -59,6 +83,11 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
   const [items, setItems] = useState<JobApplicationListItem[] | null>(null);
   const [job, setJob] = useState<JobSummary | null>(null);
   const [failed, setFailed] = useState(false);
+  // Spec 009: seleção para decisão em lote (só candidaturas em andamento).
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkPending, setBulkPending] = useState<"ADVANCE" | "REJECT" | null>(null);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState<{ tone: "success" | "warning" | "danger"; text: string } | null>(null);
 
   const load = useCallback(async () => {
     setFailed(false);
@@ -82,6 +111,47 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
   }
 
   const visible = items?.filter((item) => !stageFilter || item.currentStageType === stageFilter) ?? null;
+  const selectable = visible?.filter((item) => item.status === "IN_PROGRESS") ?? [];
+  const selectedVisible = selectable.filter((item) => selected.has(item.id));
+  const allSelected = selectable.length > 0 && selectedVisible.length === selectable.length;
+  const overLimit = selectedVisible.length > BULK_DECISION_MAX;
+  const countLabel = `${selectedVisible.length} candidato${selectedVisible.length === 1 ? "" : "s"}`;
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(selectable.map((item) => item.id)));
+  }
+
+  async function runBulk(decision: "ADVANCE" | "REJECT", rejection?: RejectionInput) {
+    if (bulkSaving) return;
+    setBulkSaving(true);
+    setBulkMessage(null);
+    const result = await apiFetch<BulkDecisionResult>(
+      `/api/recruiter/jobs/${jobId}/applications/bulk-decision`,
+      jsonInit("POST", { applicationIds: selectedVisible.map((item) => item.id), decision, rejection }),
+    );
+    setBulkSaving(false);
+    setBulkPending(null);
+    if (result.ok) {
+      setBulkMessage({ tone: result.data.failed.length > 0 ? "warning" : "success", text: bulkSummary(result.data, decision) });
+      setSelected(new Set());
+      await load();
+      return;
+    }
+    if (result.status === 401) return;
+    setBulkMessage({
+      tone: "danger",
+      text: result.networkError ? NETWORK_ERROR_MESSAGE : (result.error?.message ?? "Não foi possível registrar a decisão."),
+    });
+  }
   const stageTypes = job ? [...new Set(job.stages.map((s) => s.type))] : [];
   const reportQuery = stageFilter ? `?etapa=${stageFilter}` : "";
 
@@ -154,23 +224,66 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
         />
       )}
 
+      {bulkMessage && (
+        <Notice tone={bulkMessage.tone} className="mb-4">
+          {bulkMessage.text}
+        </Notice>
+      )}
+
+      {selectable.length > 0 && (
+        <div className="mb-3 flex flex-col gap-3 rounded-card border border-line bg-surface p-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <label className="flex items-center gap-2 text-body text-fg">
+            <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 accent-action" />
+            Selecionar todos em andamento
+            {selectedVisible.length > 0 && <span className="text-fg-muted">· {selectedVisible.length} selecionado{selectedVisible.length === 1 ? "" : "s"}</span>}
+          </label>
+          {selectedVisible.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="secondary" onClick={() => setBulkPending("ADVANCE")} disabled={bulkSaving || overLimit}>
+                Avançar selecionados
+              </Button>
+              <Button size="sm" variant="danger" onClick={() => setBulkPending("REJECT")} disabled={bulkSaving || overLimit}>
+                Reprovar selecionados
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {overLimit && (
+        <p role="alert" className="mb-3 text-body text-danger">
+          Selecione no máximo {BULK_DECISION_MAX} candidatos por vez.
+        </p>
+      )}
+
       {visible && visible.length > 0 && (
         <ul className="space-y-3">
           {visible.map((item) => {
             const elapsed = item.status === "IN_PROGRESS" ? timeInStage(enteredAtById[item.id]) : null;
             return (
               <Card as="li" key={item.id} className="relative flex flex-col transition-colors hover:border-action/40 gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                <div className="min-w-0 space-y-1">
-                  <Link
-                    href={`/recrutamento/vagas/${jobId}/candidaturas/${item.id}${reportQuery}`}
-                    className={cn("break-words rounded-sm text-h3 text-fg after:absolute after:inset-0 hover:underline", focusRing)}
-                  >
-                    {item.candidateName}
-                  </Link>
-                  <p className="text-body text-fg-muted">
-                    {STAGE_LABEL[item.currentStageType] ?? item.currentStageType}
-                    {elapsed && ` · na etapa há ${elapsed}`}
-                  </p>
+                <div className="flex min-w-0 items-start gap-3">
+                  {item.status === "IN_PROGRESS" && (
+                    // z-10: acima do link que cobre o cartão inteiro (after:inset-0).
+                    <input
+                      type="checkbox"
+                      checked={selected.has(item.id)}
+                      onChange={() => toggle(item.id)}
+                      aria-label={`Selecionar ${item.candidateName}`}
+                      className="relative z-10 mt-1.5 h-4 w-4 shrink-0 accent-action"
+                    />
+                  )}
+                  <div className="min-w-0 space-y-1">
+                    <Link
+                      href={`/recrutamento/vagas/${jobId}/candidaturas/${item.id}${reportQuery}`}
+                      className={cn("break-words rounded-sm text-h3 text-fg after:absolute after:inset-0 hover:underline", focusRing)}
+                    >
+                      {item.candidateName}
+                    </Link>
+                    <p className="text-body text-fg-muted">
+                      {STAGE_LABEL[item.currentStageType] ?? item.currentStageType}
+                      {elapsed && ` · na etapa há ${elapsed}`}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   {item.matchScore !== null && <Badge variant={matchVariant(item.matchScore)}>{item.matchScore}% de compatibilidade</Badge>}
@@ -188,6 +301,25 @@ export function CandidatesForJobList({ jobId, enteredAtById }: { jobId: string; 
           })}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={bulkPending === "ADVANCE"}
+        title={`Avançar ${countLabel}?`}
+        description="Cada um vai para a próxima etapa e recebe o e-mail dela. Quem estiver na última etapa é aprovado."
+        confirmLabel="Confirmar avanço"
+        loading={bulkSaving}
+        onCancel={() => setBulkPending(null)}
+        onConfirm={() => runBulk("ADVANCE")}
+      />
+      <RejectDialog
+        open={bulkPending === "REJECT"}
+        title={`Reprovar ${countLabel}?`}
+        description="O mesmo motivo e o mesmo retorno valem para todos. Cada um recebe o e-mail de reprovação. Não dá para desfazer."
+        confirmLabel="Confirmar reprovação"
+        loading={bulkSaving}
+        onCancel={() => setBulkPending(null)}
+        onConfirm={(rejection) => runBulk("REJECT", rejection)}
+      />
     </>
   );
 }

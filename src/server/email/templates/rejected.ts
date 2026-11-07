@@ -16,6 +16,9 @@ export interface RejectedEmailInput {
   /** Assunto/corpo já resolvidos para este momento (REJECTED ou JOB_CLOSED). */
   template: { subject: string; body: string };
   appUrl: string;
+  /** Spec 009: rótulo do motivo (`{{motivo}}`) e retorno escrito pelo recrutador (`{{retorno}}`). */
+  reasonLabel?: string;
+  feedback?: string | null;
 }
 
 export function rejectedEmail(input: RejectedEmailInput): MailMessage {
@@ -24,9 +27,21 @@ export function rejectedEmail(input: RejectedEmailInput): MailMessage {
   const ctaHref = joinUrl(input.appUrl, "/vagas");
   const closing = "Essa decisão vale só para esta vaga. Seu perfil continua salvo na CLTech, e você pode se candidatar a outras oportunidades quando quiser.";
 
-  const values = { candidato: input.candidateName, vaga: input.jobTitle, empresa: input.company, etapa: stage, link: ctaHref };
+  const feedback = input.feedback?.trim() ?? "";
+  const values = {
+    candidato: input.candidateName,
+    vaga: input.jobTitle,
+    empresa: input.company,
+    etapa: stage,
+    link: ctaHref,
+    motivo: input.reasonLabel ?? "",
+    retorno: feedback,
+  };
   const subject = fillTemplate(input.template.subject, values).replace(/[\r\n]+/g, " ").trim() || `Atualização sobre sua candidatura — ${input.jobTitle}`;
-  const bodyText = fillTemplate(input.template.body, values).trim() || closing;
+  // O recrutador escreveu o retorno para o candidato ler: se o modelo não tem `{{retorno}}`
+  // (o padrão não tem), ele vai num bloco próprio no fim, em vez de se perder.
+  const feedbackBlock = feedback && !input.template.body.includes("{{retorno}}") ? `\n\nRetorno do recrutador:\n${feedback}` : "";
+  const bodyText = (fillTemplate(input.template.body, values).trim() || closing) + feedbackBlock;
   const intro = escapeHtml(bodyText).replace(/\n/g, "<br>");
 
   const html = renderEmailLayout({

@@ -61,7 +61,7 @@ export const EMAIL_MOMENT_VARIABLES: Record<EmailMoment, readonly string[]> = {
   STAGE_ADVANCED_HR_INTERVIEW: ["candidato", "vaga", "empresa", "etapa", "data", "horario", "link"],
   STAGE_ADVANCED_TECH_INTERVIEW: ["candidato", "vaga", "empresa", "etapa", "data", "horario", "link"],
   STAGE_ADVANCED_FINAL_OFFER: ["candidato", "vaga", "empresa", "etapa", "link"],
-  REJECTED: ["candidato", "vaga", "empresa", "etapa", "link"],
+  REJECTED: ["candidato", "vaga", "empresa", "etapa", "motivo", "retorno", "link"],
   APPROVED: ["candidato", "vaga", "empresa", "link"],
   JOB_CLOSED: ["candidato", "vaga", "empresa", "etapa", "link"],
 };
@@ -83,6 +83,8 @@ export function sampleEmailValues(stageLabel: string, jobTitle: string, company:
     prazo: "60 minutos",
     link_teste: "https://cltech.exemplo/desafios",
     link_candidatura: "https://cltech.exemplo/candidaturas",
+    motivo: "Conhecimentos técnicos abaixo do que a vaga pede",
+    retorno: "Recomendamos aprofundar testes automatizados antes do próximo processo.",
   };
 }
 

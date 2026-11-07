@@ -3,7 +3,7 @@
 // etapa aberta é fechada, na mesma transação do fechamento da vaga. O e-mail de "vaga
 // encerrada" é enviado por quem chama, FORA da transação (notify.ts já não lança, mas e-mail
 // nunca deve rodar dentro de uma transação de banco).
-import type { Prisma } from "@prisma/client";
+import type { Prisma, RejectionReason } from "@prisma/client";
 
 export interface Straggler {
   currentStage: { type: string };
@@ -14,7 +14,8 @@ export async function closeStragglers(
   tx: Prisma.TransactionClient,
   jobId: string,
   now: Date,
-  opts: { excludeApplicationId?: string; decidedByUserId?: string | null } = {},
+  // Spec 009: JOB_CLOSED (recrutador encerrou) ou POSITION_FILLED (vagas preenchidas).
+  opts: { excludeApplicationId?: string; decidedByUserId?: string | null; rejectionReason?: RejectionReason } = {},
 ): Promise<Straggler[]> {
   const where = {
     jobId,
@@ -34,6 +35,6 @@ export async function closeStragglers(
     where: { exitedAt: null, application: where },
     data: { exitedAt: now, decidedByUserId: opts.decidedByUserId ?? null },
   });
-  await tx.application.updateMany({ where, data: { status: "REJECTED" } });
+  await tx.application.updateMany({ where, data: { status: "REJECTED", rejectionReason: opts.rejectionReason ?? "JOB_CLOSED" } });
   return affected;
 }
