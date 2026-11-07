@@ -79,7 +79,7 @@ const CONNECT_INPUT: Record<LinkProvider, { label: string; placeholder: string; 
   LATTES: {
     label: "Link do currículo Lattes",
     placeholder: "http://lattes.cnpq.br/0000000000000000",
-    error: "Informe o link do seu currículo Lattes (lattes.cnpq.br/…).",
+    error: "Informe o link do seu currículo Lattes, com os 16 dígitos (lattes.cnpq.br/0000000000000000).",
     parse: parseLattesProfile,
   },
 };

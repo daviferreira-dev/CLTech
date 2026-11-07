@@ -60,6 +60,9 @@ export function parseLinkedinProfile(input: string): ParsedExternalProfile | nul
   return { username: slug, url: `https://www.linkedin.com/in/${encodeURIComponent(slug)}` };
 }
 
+// ID do Lattes: 16 dígitos no link curto (lattes.cnpq.br/…) ou o código "K" do buscatextual (?id=K1234567A8).
+const LATTES_ID = /^(\d{16}|K\d{7}[A-Z]\d)$/i;
+
 export function parseLattesProfile(input: string): ParsedExternalProfile | null {
   const trimmed = input.trim();
   const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`;
@@ -67,7 +70,7 @@ export function parseLattesProfile(input: string): ParsedExternalProfile | null 
     const url = new URL(withScheme);
     if (!/^((www\.)?lattes|buscatextual)\.cnpq\.br$/i.test(url.hostname)) return null;
     const id = url.searchParams.get("id") ?? url.pathname.split("/").filter(Boolean).pop() ?? "";
-    if (!id) return null;
+    if (!LATTES_ID.test(id)) return null;
     return { username: id, url: url.toString() };
   } catch {
     return null;

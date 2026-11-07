@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { STAGE_TYPES, STAGE_LABEL, MIN_POSITIONS, MAX_POSITIONS, positionsOf } from "@/lib/processStages";
 import { stageAdvancedMoment } from "@/lib/emailMoments";
@@ -629,7 +630,18 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
                           onSave={(config) => updateStageConfig(index, config)}
                         />
                       )}
-                      {stage.id && (
+                      {/* A 1ª etapa é onde a candidatura entra: o candidato nunca "avança" para ela,
+                          então o e-mail que vale ali é o "Candidatura recebida" da biblioteca. */}
+                      {stage.id && index === 0 && (
+                        <p className="mt-3 rounded-card border border-line bg-page p-3 text-label text-fg-muted">
+                          Na 1ª etapa o candidato recebe o e-mail “Candidatura recebida”, que você edita em{" "}
+                          <Link href="/recrutamento/modelos-de-email" className="font-medium text-link underline underline-offset-2">
+                            Modelos de e-mail
+                          </Link>
+                          .
+                        </p>
+                      )}
+                      {stage.id && index > 0 && (
                         <EmailMomentEditor
                           id={`email-etapa-${index}`}
                           moment={stageAdvancedMoment(stage.type)}
@@ -745,7 +757,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
 
       {status === "PUBLISHED" && (
         <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <p className="text-body text-fg-muted">Ao encerrar, a vaga deixa de aceitar candidaturas.</p>
+          <p className="text-body text-fg-muted">Ao encerrar, a vaga deixa de aceitar candidaturas e quem está em andamento é reprovado.</p>
           <Button variant="secondary" onClick={() => setConfirmClose(true)} disabled={closing}>
             Encerrar vaga
           </Button>
@@ -755,7 +767,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
       <ConfirmDialog
         open={confirmClose}
         title="Encerrar esta vaga?"
-        description="Ela deixa de aparecer para os candidatos e não recebe novas candidaturas. Não dá para reabrir depois."
+        description="Ela deixa de aparecer para os candidatos e não recebe novas candidaturas. Todos os candidatos ainda em andamento serão reprovados e recebem o e-mail “Vaga encerrada”. Não dá para reabrir depois."
         confirmLabel="Confirmar encerramento"
         loading={closing}
         onCancel={() => setConfirmClose(false)}

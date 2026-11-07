@@ -41,7 +41,8 @@ test.describe("e-mail e senha", () => {
     await expect(page).toHaveURL(/\/vagas$/);
 
     // `next dev` hidrata depois do primeiro clique às vezes: repete até o menu abrir.
-    const menu = page.getByRole("button", { name: /Candidato/ });
+    // Em 360px o botão da conta se chama "Menu do usuário".
+    const menu = page.getByRole("button", { name: /Candidato|Menu do usuário/ });
     await expect(async () => {
       await menu.click();
       await expect(menu).toHaveAttribute("aria-expanded", "true", { timeout: 1000 });
@@ -134,7 +135,7 @@ test.describe("botões OAuth", () => {
       // ponytail: /cadastro só tem o botão do GitHub; o LinkedIn cria conta pelo /entrar.
       if (path === "/cadastro" && p.id === "linkedin") continue;
 
-      test(`${path}: ${p.id} redireciona com client_id, redirect_uri, scope e state/PKCE`, async ({ page }) => {
+      test(`${path}: ${p.id} redireciona com client_id, redirect_uri, scope e state/PKCE`, async ({ page, baseURL }) => {
         // Nunca sai para o provedor real: a navegação é capturada e respondida aqui.
         await page.route(`${new URL(p.authorize).origin}/**`, (route) => route.fulfill({ body: "interceptado" }));
         await page.goto(path);
@@ -146,7 +147,7 @@ test.describe("botões OAuth", () => {
         const url = new URL(req.url());
         expect(`${url.origin}${url.pathname}`).toBe(p.authorize);
         expect(url.searchParams.get("client_id")).toBeTruthy();
-        expect(url.searchParams.get("redirect_uri")).toBe(`http://localhost:3000/api/auth/callback/${p.id}`);
+        expect(url.searchParams.get("redirect_uri")).toBe(new URL(`/api/auth/callback/${p.id}`, baseURL).href);
         expect(url.searchParams.get("response_type")).toBe("code");
         expect(url.searchParams.get("scope")!.split(/[ ,]+/)).toEqual(expect.arrayContaining(p.scopes));
         // Auth.js: GitHub usa PKCE; o provedor LinkedIn declara checks: ["state"].

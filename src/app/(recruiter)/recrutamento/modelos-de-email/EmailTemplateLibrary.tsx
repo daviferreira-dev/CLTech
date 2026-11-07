@@ -13,8 +13,17 @@ import { Badge, Breadcrumb, Button, Card, CardBody, CardHeader, EmptyState, Fiel
 
 // Variáveis de um modelo livre: não está preso a um momento, então mostra as mais comuns.
 const GENERIC_VARIABLES = ["candidato", "vaga", "empresa", "etapa", "link"] as const;
+// Só valem quando o modelo é usado na etapa de teste de código.
+const CODE_TEST_VARIABLES = ["prazo", "link_teste"] as const;
 
-export function EmailTemplateLibrary({ initial }: { initial: EmailTemplateOption[] }) {
+export function EmailTemplateLibrary({
+  initial,
+  usage,
+}: {
+  initial: EmailTemplateOption[];
+  /** Títulos das vagas que usam cada modelo livre, por id. */
+  usage: Record<string, string[]>;
+}) {
   const [items, setItems] = useState(initial);
   const [creating, setCreating] = useState(false);
 
@@ -76,6 +85,7 @@ export function EmailTemplateLibrary({ initial }: { initial: EmailTemplateOption
                 key={template.id}
                 template={template}
                 moment={null}
+                usedBy={usage[template.id] ?? []}
                 onCreated={handleCreated}
                 onUpdated={handleUpdated}
                 onDeleted={handleDeleted}
@@ -91,12 +101,14 @@ export function EmailTemplateLibrary({ initial }: { initial: EmailTemplateOption
 function EmailTemplateCard({
   template,
   moment,
+  usedBy = [],
   onCreated,
   onUpdated,
   onDeleted,
 }: {
   template: EmailTemplateOption;
   moment: EmailMoment | null;
+  usedBy?: string[];
   onCreated: (t: EmailTemplateOption) => void;
   onUpdated: (t: EmailTemplateOption) => void;
   onDeleted: (id: string) => void;
@@ -156,6 +168,9 @@ function EmailTemplateCard({
       </div>
       <p className="break-words text-body font-medium text-fg">{template.subject}</p>
       <p className="whitespace-pre-wrap break-words text-body text-fg-muted">{template.body}</p>
+      {usedBy.length > 0 && (
+        <p className="break-words text-label text-fg-muted">Em uso em: {usedBy.join(", ")}</p>
+      )}
       {error && <Notice tone="danger">{error}</Notice>}
       <div className="flex flex-wrap gap-2 pt-1">
         <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
@@ -173,7 +188,11 @@ function EmailTemplateCard({
       <ConfirmDialog
         open={confirmDelete}
         title="Excluir este modelo?"
-        description="Vagas que o usam voltam a usar o padrão do momento. Isso não pode ser desfeito."
+        description={
+          usedBy.length > 0
+            ? `Usado em: ${usedBy.join(", ")}. Essas vagas voltam a usar o modelo padrão do momento. Isso não pode ser desfeito.`
+            : "Nenhuma vaga usa este modelo. Isso não pode ser desfeito."
+        }
         confirmLabel="Excluir"
         tone="danger"
         loading={deleting}
@@ -202,6 +221,10 @@ function EmailTemplateForm({
   const [error, setError] = useState<string | null>(null);
 
   const variables = moment ? EMAIL_MOMENT_VARIABLES[moment] : GENERIC_VARIABLES;
+  const toTags = (list: readonly string[]) => list.map((v) => `{{${v}}}`).join(", ");
+  const variablesHint = moment
+    ? `Variáveis: ${toTags(variables)}.`
+    : `Variáveis: ${toTags(variables)}. Na etapa de teste de código também: ${toTags(CODE_TEST_VARIABLES)}.`;
   const values = sampleEmailValues(moment ? EMAIL_MOMENT_LABEL[moment] : "Entrevista Técnica", "Desenvolvedor(a) Backend", "3aq");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -237,7 +260,7 @@ function EmailTemplateForm({
           <Field id="modelo-assunto" label="Assunto">
             <Input value={subject} maxLength={EMAIL_SUBJECT_MAX} onChange={(e) => setSubject(e.target.value)} required />
           </Field>
-          <Field id="modelo-corpo" label="Mensagem" hint={`Variáveis: ${variables.map((v) => `{{${v}}}`).join(", ")}.`}>
+          <Field id="modelo-corpo" label="Mensagem" hint={variablesHint}>
             <Textarea rows={6} maxLength={EMAIL_BODY_MAX} value={body} onChange={(e) => setBody(e.target.value)} required />
           </Field>
           {(subject.trim() || body.trim()) && (

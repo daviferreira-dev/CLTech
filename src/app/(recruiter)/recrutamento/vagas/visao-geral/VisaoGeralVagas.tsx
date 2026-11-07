@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { STAGE_LABEL } from "@/lib/processStages";
 import { apiFetch } from "@/lib/api-client";
 import { JOB_STATUS_BADGE, JOB_STATUS_LABEL } from "@/lib/labels";
@@ -137,12 +138,14 @@ function SortButton({ label, active, dir, onClick }: { label: string; active: bo
 }
 
 export function VisaoGeralVagas() {
-  const [status, setStatus] = useState("");
-  const [recruiterId, setRecruiterId] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+  // Os filtros vivem na URL (mesmos nomes da API): recarregar ou mandar o link mantém o recorte.
+  const searchParams = useSearchParams();
+  const [status, setStatus] = useState(searchParams.get("status") ?? "");
+  const [recruiterId, setRecruiterId] = useState(searchParams.get("recrutador") ?? "");
+  const [from, setFrom] = useState(searchParams.get("de") ?? "");
+  const [to, setTo] = useState(searchParams.get("ate") ?? "");
+  const [searchInput, setSearchInput] = useState(searchParams.get("busca") ?? "");
+  const [search, setSearch] = useState(searchParams.get("busca") ?? "");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "activity", dir: "desc" });
 
   const [data, setData] = useState<OverviewResult | null>(null);
@@ -161,7 +164,10 @@ export function VisaoGeralVagas() {
     if (from) params.set("de", from);
     if (to) params.set("ate", to);
     if (search) params.set("busca", search);
-    const result = await apiFetch<OverviewResult>(`/api/recruiter/jobs/overview?${params.toString()}`);
+    const qs = params.toString();
+    // replaceState nativo: o Next 15 sincroniza com useSearchParams sem refazer a página no servidor.
+    window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+    const result = await apiFetch<OverviewResult>(`/api/recruiter/jobs/overview?${qs}`);
     if (id !== requestId.current) return; // uma requisição mais nova já está em andamento
     if (result.ok && Array.isArray(result.data?.jobs)) setData(result.data);
     else setFailed(true);
