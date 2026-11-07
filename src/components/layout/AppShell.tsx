@@ -12,7 +12,7 @@ import { navFor, type HeaderUser, type NavItem } from "./nav";
 export async function AppShell({ children, candidateExtraNav = [] }: { children: React.ReactNode; candidateExtraNav?: NavItem[] }) {
   const session = await auth();
   const user: HeaderUser | null = session?.user?.role
-    ? { name: session.user.name ?? session.user.email ?? "Usuário", role: session.user.role }
+    ? { name: session.user.name ?? session.user.email ?? "Usuário", image: session.user.image, role: session.user.role }
     : null;
 
   return (

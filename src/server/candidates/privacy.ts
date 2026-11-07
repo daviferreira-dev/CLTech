@@ -20,6 +20,7 @@ export async function exportMyData(userId: string) {
     select: {
       name: true,
       email: true,
+      image: true,
       role: true,
       createdAt: true,
       accounts: { select: { provider: true } },
@@ -50,6 +51,7 @@ export async function exportMyData(userId: string) {
     account: {
       name: user.name,
       email: user.email,
+      image: user.image,
       createdAt: user.createdAt,
       loginProviders: user.accounts.map((a) => a.provider),
     },

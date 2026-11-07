@@ -26,6 +26,8 @@ model User {
   email             String    @unique
   emailVerified     DateTime?
   name              String
+  /// Foto do GitHub/LinkedIn (só https desses hosts — src/server/auth/avatar.ts). Não aparece ao recrutador.
+  image             String?
   passwordHash      String?
   /// Sessões (JWT) emitidas antes disto caem — src/server/auth/session.ts.
   passwordChangedAt DateTime?

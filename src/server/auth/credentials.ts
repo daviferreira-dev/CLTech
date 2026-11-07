@@ -32,5 +32,5 @@ export async function authorizeCredentials(raw: unknown, ip: string) {
   }
 
   await clear(LIMITS.loginEmail(email));
-  return { id: user.id, name: user.name, email: user.email, role: user.role };
+  return { id: user.id, name: user.name, email: user.email, image: user.image, role: user.role };
 }

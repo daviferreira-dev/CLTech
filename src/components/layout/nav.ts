@@ -4,6 +4,7 @@ export type HeaderRole = "CANDIDATE" | "RECRUITER" | "ADMIN";
 
 export interface HeaderUser {
   name: string;
+  image?: string | null;
   role: HeaderRole;
 }
 
