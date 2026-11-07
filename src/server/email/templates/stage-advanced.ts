@@ -1,6 +1,7 @@
 // E-mail "você passou de etapa" / "você foi aprovado" (RN005). Assunto e corpo vêm do modelo
 // já resolvido (vaga → biblioteca → padrão — ver resolve.ts/notify.ts); o resto do layout
 // (destaque, linha do tempo, reunião, botão) é sempre o mesmo, como já era para entrevistas.
+// O cabeçalho do avanço é neutro ("Olá"): o texto do recrutador pode ter outro tom.
 // Princípio I (research.md R11): leva nome, vaga e etapa — nunca score, currículo ou GitHub.
 import type { MailMessage } from "../mailer";
 import { fillTemplate, meetingValues } from "@/lib/emailTemplate";
@@ -131,7 +132,7 @@ export function stageAdvancedEmail(input: StageAdvancedEmailInput): MailMessage 
   const html = renderEmailLayout({
     subject,
     preheader: approved ? "Você foi aprovado(a)! Veja os próximos passos." : `Nova etapa: ${stageLabel(newStage!.type)}. Veja o que vem agora.`,
-    headline: approved ? `Parabéns, ${name}!` : `Boa notícia, ${name}!`,
+    headline: approved ? `Parabéns, ${name}!` : `Olá, ${name}!`,
     intro,
     highlight: approved
       ? { tone: "success", eyebrow: "RESULTADO", title: "Aprovado(a) 🎉", text: highlightText }
@@ -141,7 +142,7 @@ export function stageAdvancedEmail(input: StageAdvancedEmailInput): MailMessage 
   });
 
   const text = [
-    approved ? `Parabéns, ${name}!` : `Boa notícia, ${name}!`,
+    approved ? `Parabéns, ${name}!` : `Olá, ${name}!`,
     "",
     bodyText,
     "",

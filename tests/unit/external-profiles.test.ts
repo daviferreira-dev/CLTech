@@ -53,4 +53,10 @@ describe("parseLattesProfile", () => {
     expect(parseLattesProfile("https://example.com/1234")).toBeNull();
     expect(parseLattesProfile("")).toBeNull();
   });
+
+  it("rejeita ID que não tem 16 dígitos (nem o código K)", () => {
+    expect(parseLattesProfile("lattes.cnpq.br/123")).toBeNull();
+    expect(parseLattesProfile("lattes.cnpq.br/12345678901234567")).toBeNull();
+    expect(parseLattesProfile("lattes.cnpq.br/abcdabcdabcdabcd")).toBeNull();
+  });
 });

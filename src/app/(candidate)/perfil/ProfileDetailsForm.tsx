@@ -83,10 +83,17 @@ export function ProfileDetailsForm<P extends EditableProfile>({
   const set = <K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
   const isFilled = (field: DraftField) => filled.includes(field);
+  // Texto direto no <label> (sem <span> em volta): alguns leitores de tela não tiravam o nome
+  // acessível do campo quando o texto ficava dentro de um span inline-flex.
   const label = (text: string, field: DraftField) => (
-    <span className="inline-flex flex-wrap items-center gap-2">
-      {text} <FromResumeBadge show={isFilled(field)} />
-    </span>
+    <>
+      {text}
+      {isFilled(field) && (
+        <span className="ml-2 align-middle">
+          <FromResumeBadge show />
+        </span>
+      )}
+    </>
   );
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
