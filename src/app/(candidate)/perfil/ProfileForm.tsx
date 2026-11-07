@@ -43,6 +43,7 @@ interface ExternalAccountView {
 
 interface ProfileView {
   name: string;
+  image: string | null;
   email: string;
   phone: string | null;
   city: string | null;
@@ -285,7 +286,7 @@ export function ProfileForm({
       {/* Identidade */}
       <Card as="section" aria-label="Identidade">
         <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <Avatar name={profile.name} size="lg" />
+          <Avatar name={profile.name} src={profile.image} size="lg" />
           <div className="min-w-0 flex-1 space-y-2">
             <div>
               <p className="break-words text-h2 text-fg">{profile.name}</p>

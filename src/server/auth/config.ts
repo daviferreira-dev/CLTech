@@ -15,6 +15,7 @@
 
 import NextAuth, { CredentialsSignin, type NextAuthConfig } from "next-auth";
 import { createAdapter } from "@/server/auth/adapter";
+import { syncOAuthAvatar } from "@/server/auth/avatar";
 import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import LinkedIn from "next-auth/providers/linkedin";
@@ -106,6 +107,8 @@ export const authConfig: NextAuthConfig = {
       if (user?.id && account && (account.type === "oauth" || account.type === "oidc")) {
         const name = (profile?.name as string | null | undefined) ?? (profile?.login as string | undefined);
         await recordOAuthIdentity(user.id, account.provider, name).catch(() => {});
+        // GitHub manda `avatar_url`; LinkedIn OIDC, `picture`. O token leva a foto gravada.
+        token.picture = await syncOAuthAvatar(user.id, profile?.avatar_url ?? profile?.picture).catch(() => token.picture);
       }
       return token;
     },

@@ -10,6 +10,8 @@ import { keepAlive } from "@/server/background";
 
 export interface ProfileView {
   name: string;
+  /** Foto do GitHub/LinkedIn (src/server/auth/avatar.ts). */
+  image: string | null;
   email: string;
   phone: string | null;
   city: string | null;
@@ -61,6 +63,7 @@ export async function getProfile(userId: string): Promise<ProfileView> {
 
   return {
     name: candidate.user.name,
+    image: candidate.user.image,
     email: candidate.user.email,
     phone: decryptOrNull(candidate.phone),
     city: candidate.city,

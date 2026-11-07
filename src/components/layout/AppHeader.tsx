@@ -117,7 +117,7 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
                 onClick={() => setUserMenuOpen((open) => !open)}
                 className={cn("flex items-center gap-2 rounded-field p-1 hover:bg-page", focusRing)}
               >
-                <Avatar name={user.name} size="sm" />
+                <Avatar name={user.name} src={user.image} size="sm" />
                 <span className="hidden min-w-0 text-left sm:block">
                   <span className="block max-w-40 truncate text-body font-medium text-fg">{user.name}</span>
                   <span className="block text-label font-normal text-fg-muted">{ROLE_LABEL[user.role]}</span>

@@ -15,7 +15,8 @@ export function contentSecurityPolicy(nonce: string, dev: boolean): string {
     `script-src 'self' 'nonce-${nonce}' '${THEME_SCRIPT_HASH}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
     // GSAP e o React escrevem atributos style; next/font injeta <style>.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    // Foto de perfil do GitHub/LinkedIn — mesmos hosts de AVATAR_HOSTS (src/server/auth/avatar.ts).
+    "img-src 'self' data: blob: https://avatars.githubusercontent.com https://media.licdn.com",
     "font-src 'self' data:",
     `connect-src 'self'${dev ? " ws:" : ""}`,
     "frame-src https://vercel.live",
