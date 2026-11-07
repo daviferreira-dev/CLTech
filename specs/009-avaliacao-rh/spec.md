@@ -126,9 +126,20 @@ Em `/recrutamento/vagas/[id]/candidaturas`, o recrutador marca vários candidato
   `{ applicationIds: string[] (1..50), decision: "ADVANCE" | "REJECT", rejection? }`.
   Chama `recordDecision` em sequência e devolve `{ done: [...], skipped: [...], failed: [...] }`.
   Recusa `ADVANCE` quando a próxima etapa de algum item é entrevista.
-- **FR-909** Export LGPD (`/api/me/data-export`) inclui `rejectionReason` (rótulo) e
-  `rejectionFeedback`. **Decisão em aberto**: incluir ou não as fichas de entrevista
-  (LGPD art. 18 dá acesso aos dados; a equipe decide com o orientador).
+- **FR-909** Export LGPD (`exportMyData` em `src/server/candidates/privacy.ts`) passa a
+  incluir, por candidatura:
+  - `rejectionReason` (rótulo amigável) e `rejectionFeedback`;
+  - **as fichas de entrevista**: etapa, notas por critério, recomendação e comentário, com o
+    avaliador **anonimizado** ("Avaliador 1", "Avaliador 2", na ordem de criação; nunca nome
+    nem e-mail do funcionário);
+  - **as notas automáticas** (`Evaluation`: tipo, nota, justificativa, versão, data). Hoje o
+    export não traz nenhuma nota, só o código enviado; corrigir junto para tratar nota humana
+    e automática do mesmo jeito.
+
+  Decisão de 07/11 (LGPD art. 18, II: a avaliação é dado pessoal do candidato). Leitura
+  técnica da equipe, **a confirmar com o orientador** antes do merge.
+- **FR-909a** O formulário da ficha mostra, acima do comentário: "O candidato pode ter acesso
+  a esta avaliação se pedir os dados dele (LGPD)."
 - **FR-910** Relatório da candidatura mostra o motivo e o retorno de quem foi reprovado, e o
   histórico de fichas por etapa.
 
@@ -147,6 +158,7 @@ Em `/recrutamento/vagas/[id]/candidaturas`, o recrutador marca vários candidato
 - `.../candidaturas/[applicationId]/` — novo componente `InterviewEvaluationCard.tsx`;
   em `ApplicationDetailView.tsx` só a linha que o inclui e o diálogo de reprovar
 - `.../candidaturas/CandidatesForJobList.tsx` (seleção e barra de ações em lote)
+- `src/server/candidates/privacy.ts` (só o bloco de candidaturas do `exportMyData`)
 
 **Não mexe**: `src/server/matching/**`, `Evaluation`, telas do candidato (são da spec 011).
 
@@ -161,5 +173,7 @@ Em `/recrutamento/vagas/[id]/candidaturas`, o recrutador marca vários candidato
 - Unitário: validação da ficha contra os critérios da etapa; preenchimento de `{{motivo}}`/`{{retorno}}`.
 - Integração: ficha única por avaliador/etapa, ficha congelada após sair da etapa, reprovar
   exige motivo, encerrar vaga grava `JOB_CLOSED`, lote com itens ignorados e com falha,
-  lote recusa avançar para entrevista, isolamento (candidato recebe 403 nas rotas novas).
+  lote recusa avançar para entrevista, isolamento (candidato recebe 403 nas rotas novas),
+  export traz fichas com avaliador anonimizado (sem nome/e-mail do recrutador) e as notas
+  automáticas (`lgpd-rights`).
 - E2E: reprovar com motivo → e-mail no Mailpit com o retorno; reprovar 3 em lote.

@@ -29,8 +29,8 @@ e de receber informação sobre os **critérios** usados. Isso hoje não existe.
 | D2 | Avisos no sistema são criados **no mesmo ponto onde sai o e-mail** (`src/server/email/notify.ts`), por um módulo próprio chamado de lá. Se o e-mail falhar, o aviso existe mesmo assim. | Um lugar só decide "o candidato deve saber disto"; o aviso é o canal que nunca cai no spam. |
 | D3 | Aviso tem texto curto e um link; **nunca** score, ficha ou motivo interno. | Princípio I e spec 004 FR-108. |
 | D4 | Revisão humana **não altera a nota** automática. O RH responde por escrito e, se for o caso, muda a *decisão* (ex.: reverte a reprovação pelo fluxo normal). | Princípio II: score é imutável; a decisão humana é campo separado. |
-| D5 | **Explicação ao candidato, versão segura (padrão)**: texto fixo explicando como a triagem funciona (compara as tecnologias exigidas pela vaga com currículo, perfil e GitHub; teste de código corrigido por casos de teste iguais para todos). Sem números nem dados do candidato. | Atende ao art. 20 (critérios e procedimentos) sem expor relatório detalhado, que a constituição (Princípio I) reserva ao RH. |
-| D6 | **Explicação por candidato (opcional, bloqueada)**: mostrar quais tecnologias exigidas foram encontradas ou não no perfil dele. **Só implementar depois de a equipe e o orientador aprovarem uma emenda** no Princípio I e no FR-108. | É o retorno mais útil para o candidato, mas muda uma regra não negociável do projeto. |
+| D5 | **Texto geral "Como avaliamos"**: explica como a triagem funciona (compara as tecnologias exigidas pela vaga com currículo, perfil e GitHub; teste de código corrigido por casos de teste iguais para todos). | Atende ao art. 20 (critérios e procedimentos) para todos, inclusive quem ainda não foi avaliado. |
+| D6 | **Explicação por candidato, limitada (decidido em 07/11)**: o candidato vê, da própria candidatura, só a lista das tecnologias exigidas pela vaga separadas em "Encontramos no seu perfil" e "Não encontramos". **Nunca**: número, percentual, ranking, comparação com outros, detalhes do GitHub. Aparece só depois que a triagem terminou (`matchScoreStatus = CALCULATED`). | É o "retorno automático e imediato" que a 3aq pediu, e o art. 20 pede os critérios. Risco baixo: as tecnologias exigidas já são públicas na página da vaga, e a regra de privacidade protege o candidato de terceiros, não esconde dele os dados dele. **Exige emenda** de uma frase no Princípio I e no FR-108 (FR-1109), **a confirmar com o orientador** antes do merge. |
 | D7 | Um pedido de revisão **por candidatura**, até 30 dias depois da decisão. | Evita uso repetido como canal de reclamação; prazo dá previsibilidade ao RH. |
 
 ---
@@ -66,7 +66,20 @@ e de receber informação sobre os **critérios** usados. Isso hoje não existe.
 5. **Given** SMTP desligado, **Then** o aviso é criado mesmo assim.
 6. **Given** outro usuário, **Then** nunca vê avisos alheios (403/lista vazia).
 
-### User Story 3 — Pedir revisão humana (Priority: P2)
+### User Story 3 — Ver o que a triagem encontrou no meu perfil (Priority: P2)
+
+**Acceptance Scenarios**:
+
+1. **Given** vaga que exige React, Node.js e Docker e triagem concluída, **When** o candidato
+   abre `/candidaturas`, **Then** vê "Encontramos no seu perfil: React, Node.js" e "Não
+   encontramos: Docker", sem nenhum número.
+2. **Given** triagem ainda em processamento ou com falha, **Then** o bloco não aparece
+   (vale o texto geral "Como avaliamos").
+3. **Given** a resposta da API, **Then** ela não contém `matchScore`, `score` nem dados do
+   GitHub (teste de integração confere as chaves).
+4. **Given** outro candidato, **Then** 403 (só o dono vê a própria lista).
+
+### User Story 4 — Pedir revisão humana (Priority: P2)
 
 **Acceptance Scenarios**:
 
@@ -105,6 +118,15 @@ e de receber informação sobre os **critérios** usados. Isso hoje não existe.
   linkado também em `/privacidade`.
 - **FR-1108** Relatório da candidatura ganha o componente `ReviewRequestCard.tsx`; em
   `ApplicationDetailView.tsx` entra só a linha que o inclui.
+- **FR-1109** Emenda (mesmo PR, depois do OK do orientador):
+  - `.specify/memory/constitution.md`, Princípio I, acrescentar: "Exceção: o candidato vê, da
+    própria candidatura, quais competências exigidas pela vaga foram encontradas ou não no
+    perfil dele, sem nota nem comparação." Subir a versão da constituição e registrar a data.
+  - `specs/004-fluxo-funcional-telas/spec.md`, FR-108: a mesma exceção.
+- **FR-1110** `src/server/applications/list.ts` (lista do candidato) devolve, por
+  candidatura com triagem concluída, `triage: { found: string[], notFound: string[] }`,
+  montado a partir de `Evaluation.justification` (`matched`/`missing`) da versão mais recente
+  de `RESUME_MATCH`. Só nomes de tecnologia; nada de nota.
 
 ## Migration
 
@@ -126,7 +148,9 @@ aviso de reprovação. Enquanto a 009 não estiver no `main`, o aviso sai sem o 
   `api/me/applications/[id]/withdraw`, `.../review-request`, e o `answer` do RH
 - `src/server/email/notify.ts` (só uma chamada por função), `src/server/code-test/**`
   (ignorar candidatura não ativa), rota `code-tests/expire`
-- `src/app/(candidate)/candidaturas/page.tsx`, cabeçalho (`src/components/layout/`), `/privacidade`
+- `src/app/(candidate)/candidaturas/page.tsx`, `src/server/applications/list.ts`, cabeçalho
+  (`src/components/layout/`), `/privacidade`
+- `.specify/memory/constitution.md` (Princípio I) e `specs/004-fluxo-funcional-telas/spec.md` (FR-108)
 - Relatório da candidatura: componente novo `ReviewRequestCard.tsx`
 
 **Não mexe**: `decision.ts` e a ficha de avaliação (spec 009), painel e métricas (spec 010),
@@ -137,7 +161,7 @@ aviso de reprovação. Enquanto a 009 não estiver no `main`, o aviso sai sem o 
 - Chat entre candidato e recrutador.
 - Avisos para o RH (o resumo diário da spec 010 cobre).
 - Notificação push no navegador.
-- Explicação por candidato (D6) até a emenda ser aprovada.
+- Mostrar ao candidato nota, percentual, ranking ou análise do GitHub (continua só para o RH).
 
 ## Testes
 
@@ -145,5 +169,7 @@ aviso de reprovação. Enquanto a 009 não estiver no `main`, o aviso sai sem o 
   ignora), outro candidato recebe 403; avisos criados em cada momento mesmo com mailer
   falhando; isolamento de avisos; revisão (prazo, um por candidatura, resposta não muda
   `Evaluation`).
-- Unitário: texto do aviso nunca contém score.
+- Unitário: texto do aviso nunca contém score; montagem de `found`/`notFound` a partir da
+  justificativa (versão mais recente, lista vazia sem quebrar).
+- Integração: lista do candidato traz `triage` só com triagem concluída e sem nenhuma chave de nota.
 - E2E: desistir com confirmação; sino mostra o aviso de avanço; pedido de revisão e resposta.

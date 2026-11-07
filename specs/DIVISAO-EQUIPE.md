@@ -29,6 +29,8 @@ e o levantamento de funcionalidades de 07/11.
    | `src/server/email/notify.ts` | parâmetros do `notifyApplicationClosed` | — | uma chamada de `createNotification` por função |
    | `ApplicationDetailView.tsx` | uma linha que inclui `InterviewEvaluationCard` + diálogo de reprovar | — | uma linha que inclui `ReviewRequestCard` |
    | `Dashboard.tsx` | — | card da meta e lista de parados | — |
+   | `src/server/candidates/privacy.ts` (export LGPD) | fichas, motivo e notas automáticas | — | pedidos de revisão |
+   | `specs/004-…/spec.md` (FR-108) | exceção do "retorno ao candidato" | — | exceção da lista "encontramos / não encontramos" |
 
 6. **Contrato entre 009 e 011**: `Application.rejectionReason` e `Application.rejectionFeedback`.
    Davi não renomeia depois do merge; Guilherme só lê.
@@ -37,13 +39,15 @@ e o levantamento de funcionalidades de 07/11.
 8. **Pronto para PR** = `pnpm lint`, `pnpm exec tsc --noEmit`, unitários, integração e
    Playwright passando (Playwright com `E2E_BASE_URL` se não for a porta 3000).
 
-## Decisões que a equipe precisa tomar antes ou durante
+## Decisões tomadas (07/11)
 
-- **009 FR-909**: as fichas de entrevista entram no export LGPD do candidato?
-- **011 D6**: mostrar ao candidato quais tecnologias foram encontradas ou não no perfil dele.
-  Muda o Princípio I e o FR-108 da spec 004: só com aprovação da equipe e do orientador.
-- **010 D2**: a 3aq precisa informar o tempo médio de hoje (anúncio → proposta) para
-  `HIRING_BASELINE_DAYS`. Sem esse número não dá para mostrar a redução de 50%.
+| Decisão | O que ficou | Falta |
+|---|---|---|
+| **009 FR-909**: fichas no export LGPD | Entram: notas, recomendação e comentário, com o avaliador anonimizado ("Avaliador 1"). As notas automáticas, que hoje faltam no export, entram junto. A ficha avisa o entrevistador. | Confirmar com o orientador |
+| **011 D6**: o candidato vê o que foi encontrado | Só a lista "Encontramos no seu perfil / Não encontramos" das tecnologias exigidas, depois da triagem. Nunca nota, ranking nem GitHub. Emenda de uma frase no Princípio I e no FR-108. | Confirmar com o orientador **antes** de mexer na constituição |
+| **010 D2**: linha de base dos 50% | Sem contato com a 3aq. Duas evidências em `docs/entregas/linha-de-base.md`: **referência de mercado com fonte** (Ford/Datafolha 2026: metade das empresas leva 1 a 2 meses para preencher vaga de tecnologia) e **estudo de esforço da equipe** (20 currículos e 5 testes avaliados à mão × pelo CLTech, cronometrados). O card fala em "abaixo da referência", nunca em "meta da 3aq atingida". | Cassiano roda o estudo de esforço com mais uma pessoa da equipe |
+
+As questões de LGPD são leitura técnica da equipe, não parecer jurídico.
 
 ## Próxima rodada (depois destas três no `main`)
 
