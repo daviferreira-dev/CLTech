@@ -70,3 +70,8 @@ if (devUrl && databaseIdentity(devUrl) === databaseIdentity(testUrl)) {
       "todas as tabelas e apagaria esses dados. Use um banco só de teste (ver .env.test.example).",
   );
 }
+
+// Nenhuma suíte envia e-mail de verdade. String vazia (não `delete`): o Prisma Client carrega o
+// `.env` sem sobrescrever o que já existe, então apagar deixaria o SMTP do desenvolvimento voltar.
+// Com HOST vazio o mailer fica desligado; quem quer conferir o envio usa vi.mock do mailer.
+for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"]) process.env[key] = "";

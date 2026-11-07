@@ -6,6 +6,7 @@ const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   // Um único server + pool de conexões Supabase compartilhado: alta concorrência
   // (muitos registros com Argon2id em paralelo) estourava o pool e derrubava o
   // signIn logo após o cadastro de forma intermitente. Execução serial aqui.
@@ -24,11 +25,13 @@ export default defineConfig({
   projects: [
     {
       name: "desktop-1280",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+      // F5: o limite de cadastro é por IP (primeiro valor do x-forwarded-for). Localmente tudo é
+      // ::1 e a suíte inteira passa de 30 cadastros: cada projeto ganha um IP (e uma cota) próprio.
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 }, extraHTTPHeaders: { "x-forwarded-for": "10.0.0.1" } },
     },
     {
       name: "mobile-360",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 360, height: 800 } },
+      use: { ...devices["Desktop Chrome"], viewport: { width: 360, height: 800 }, extraHTTPHeaders: { "x-forwarded-for": "10.0.0.2" } },
     },
   ],
   webServer: {
