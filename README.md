@@ -204,7 +204,7 @@ já faz isso para o ambiente local. O `.env` nunca é versionado.
 
 | Grupo | Variáveis |
 |---|---|
-| Banco | `DATABASE_URL` |
+| Banco | `DATABASE_URL`, `DIRECT_URL` (só em Production na Vercel: o build usa para aplicar as migrations, ver [deploy](docs/deploy-vercel.md)) |
 | Autenticação | `AUTH_SECRET`, `NEXTAUTH_URL`, `GITHUB_ID`/`GITHUB_SECRET`, `LINKEDIN_ID`/`LINKEDIN_SECRET` (opcional) |
 | Criptografia | `ENCRYPTION_KEY` (AES-256, perder a chave torna os dados cifrados irrecuperáveis), `ENCRYPTION_KEY_PREVIOUS` (só durante a troca de chave) |
 | Storage | `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` |

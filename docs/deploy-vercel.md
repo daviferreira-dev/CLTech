@@ -20,8 +20,8 @@ O repositório já traz o que dá para deixar pronto:
 
 - [ ] `git pull` feito e `vercel.json` commitado e enviado (`git push`). A Vercel publica o que
       está no GitHub, não o que está na sua máquina.
-- [ ] Migrações aplicadas no banco: `pnpm prisma migrate status` deve dizer que está em dia.
-      Se não estiver, `pnpm prisma migrate deploy`. **A Vercel não aplica migrações.**
+- [ ] Nada a fazer com as migrações: o build de **produção** aplica sozinho (ver
+      "Migrações automáticas" abaixo). Só precisa da variável `DIRECT_URL` (passo 3).
 - [ ] Seed presente: `pnpm db:seed` (idempotente; rodar de novo não duplica nada).
 
 ## 2. Criar o OAuth App do GitHub para produção
@@ -54,6 +54,15 @@ Supabase com `?pgbouncer=true&connection_limit=1`, o modo recomendado para funç
 serverless. Na porta 5432 (a do `.env` local), várias funções abertas ao mesmo tempo esgotam
 as conexões do plano gratuito.
 
+Além disso, crie à mão a `DIRECT_URL`, **só no ambiente Production** (não marque Preview):
+
+| Variável | Valor |
+|---|---|
+| `DIRECT_URL` | Supabase → **Connect** → *Session pooler* (porta **5432**, sem `?pgbouncer=true`). É a mesma conexão do `.env` local |
+
+Ela é usada só no build, para aplicar as migrações. O pooler da porta 6543 (modo transaction)
+pode travar o `prisma migrate deploy`; a 5432 não. A aplicação continua usando o `DATABASE_URL`.
+
 Se o arquivo não existir (outra máquina), monte-o a partir da tabela:
 
 | Variável | Valor |
@@ -78,7 +87,7 @@ próprio Next.js, decisão D11) e `SANDBOX_ALLOW_LOCAL`.
 1. https://vercel.com/signup → entrar com a conta do GitHub.
 2. **Add New… → Project** → escolha o repositório `CLTech` → **Import**.
 3. Na tela de configuração, deixe tudo no padrão: Framework **Next.js**, Build Command
-   `pnpm build` (já roda `prisma generate`), Install Command padrão.
+   `pnpm build` (já roda `prisma generate` e, em produção, as migrações), Install Command padrão.
 4. Abra **Environment Variables**, clique no campo da primeira variável e **cole o conteúdo
    inteiro** do `.env.vercel.local`: a Vercel separa as variáveis sozinha. Confira se apareceram
    todas e se nenhuma ficou com `TROCAR`.
@@ -121,7 +130,9 @@ Na URL pública:
 |---|---|---|
 | Build falha com `ERR_PNPM_OUTDATED_LOCKFILE` | `package.json` mudou sem atualizar o `pnpm-lock.yaml` | `pnpm install` local e commitar o lockfile |
 | Build falha com `@prisma/client did not initialize yet` | `prisma generate` não rodou | Confirmar que o Build Command é o padrão (`pnpm build`) |
-| Erro 500 com `column ... does not exist` | Migração não aplicada no banco | `pnpm prisma migrate deploy` local (passo 1) |
+| Build falha com `[migrate] DIRECT_URL não configurada` | Falta a variável em Production | Criar `DIRECT_URL` (passo 3) e fazer Redeploy. O deploy anterior segue no ar |
+| Build falha no `prisma migrate deploy` | Migração com erro de SQL, ou banco pausado | Ler o log do build; o deploy anterior segue no ar. Ver "Migrações automáticas" |
+| Erro 500 com `column ... does not exist` | Migração não aplicada (deploy de Preview, que não migra) | Fazer o deploy de produção, ou `prisma migrate deploy` manual (ver "Migrações automáticas") |
 | Login com GitHub volta com erro `redirect_uri` | URL de retorno do OAuth App diferente da URL do projeto | Corrigir o passo 2 |
 | Login com senha volta para `/entrar` sem erro | `AUTH_SECRET` ausente ou diferente | Conferir a variável e fazer Redeploy |
 | `too many connections` / `max clients reached` nos logs | `DATABASE_URL` na porta 5432 | Usar a porta `6543` com `?pgbouncer=true&connection_limit=1` (passo 3) |
@@ -129,3 +140,24 @@ Na URL pública:
 | E-mail não chega | SMTP vazio, ou senha normal do Gmail em vez de "senha de app" | Ver os comentários de SMTP no `.env.example` |
 
 Logs: Project → **Logs** (filtrar por rota).
+
+## 9. Migrações automáticas
+
+O `pnpm build` roda `scripts/migrate-production.mjs` entre o `prisma generate` e o `next build`:
+
+| Onde | O que acontece |
+|---|---|
+| Vercel, **Production** (`VERCEL_ENV=production`) | `prisma migrate deploy` usando a `DIRECT_URL`. Se falhar, o build para e o deploy anterior continua no ar |
+| Vercel, **Preview** | Não migra. O Preview usa o mesmo banco de produção, e migração de branch não revisada lá seria pior. Um Preview com migração nova pode dar erro 500 até o merge na `main` |
+| Local, CI, testes | Não faz nada (use `pnpm prisma migrate dev` / `migrate deploy` como sempre) |
+
+Cuidados:
+
+- A migração roda **antes** do `next build`. Se o `next build` falhar depois, o banco fica uma
+  migração à frente do código no ar. Por isso as migrações devem ser aditivas (criar tabela ou
+  coluna, nunca apagar ou renomear no mesmo deploy que muda o código).
+- As migrações aplicadas à mão em 07/11 têm o checksum calculado com quebra de linha Windows
+  (CRLF), e a Vercel lê os arquivos com quebra Linux (LF). Testado: o `migrate deploy` não confere
+  checksum de migração já aplicada, só aplica as pendentes. Não precisa mexer em nada.
+- Para aplicar à mão (emergência), de uma máquina com a `DIRECT_URL` de produção, **sem** gravá-la
+  no `.env`: `DATABASE_URL="<DIRECT_URL>" pnpm prisma migrate deploy`.
