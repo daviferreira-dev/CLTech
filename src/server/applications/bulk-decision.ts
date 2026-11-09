@@ -1,6 +1,7 @@
 // Spec 009 (FR-908): avançar ou reprovar várias candidaturas de uma vaga de uma vez. Reaproveita
 // recordDecision item por item (mesmas regras, e-mails e histórico): nenhum atalho no banco.
-// ponytail: sequencial, um por vez (até 50); paralelizar só se o tempo da resposta incomodar.
+// ponytail: sequencial, um por vez (até BULK_DECISION_MAX = 20, pelo tempo de função da Vercel
+// Hobby); para lotes maiores, uma fila em segundo plano.
 import { prisma } from "@/lib/prisma";
 import { Errors, ApiError } from "@/lib/errors";
 import { INTERVIEW_STAGES } from "@/lib/processStages";

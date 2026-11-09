@@ -88,7 +88,8 @@ Em `/recrutamento/vagas/[id]/candidaturas`, o recrutador marca vários candidato
 3. **Given** seleção cuja próxima etapa é uma entrevista, **When** "Avançar selecionados",
    **Then** a ação é recusada com "Para entrevistas, avance um por vez para marcar a
    reunião" (a reunião é obrigatória e individual).
-4. **Given** mais de 50 selecionados, **Then** o botão avisa o limite (50 por vez).
+4. **Given** mais de 20 selecionados, **Then** o botão avisa o limite (20 por vez: cada item
+   manda e-mail, e o lote tem de caber no tempo de uma função da Vercel no plano Hobby).
 5. **Given** falha em um item no meio do lote, **Then** os outros seguem e o resumo lista
    quem falhou e por quê.
 
@@ -127,7 +128,7 @@ Em `/recrutamento/vagas/[id]/candidaturas`, o recrutador marca vários candidato
   repouso, como os outros textos livres do candidato, e entram na rotação de chave
   (`src/server/reencrypt.ts`).
 - **FR-908** `POST /api/recruiter/jobs/[id]/applications/bulk-decision`:
-  `{ applicationIds: string[] (1..50), decision: "ADVANCE" | "REJECT", rejection? }`.
+  `{ applicationIds: string[] (1..20), decision: "ADVANCE" | "REJECT", rejection? }`.
   Chama `recordDecision` em sequência e devolve `{ done: [...], skipped: [...], failed: [...] }`.
   Recusa `ADVANCE` quando a próxima etapa de algum item é entrevista.
 - **FR-909** Export LGPD (`exportMyData` em `src/server/candidates/privacy.ts`) passa a

@@ -46,8 +46,10 @@ export const recordDecisionSchema = z
   })
   .superRefine(requireRejection);
 
-/** Spec 009: decisão em lote. Avançar para entrevista em lote é recusado (a reunião é individual). */
-export const BULK_DECISION_MAX = 50;
+/** Spec 009: decisão em lote. Avançar para entrevista em lote é recusado (a reunião é individual).
+ * 20 por vez: o lote roda em sequência, cada item com e-mail, dentro do tempo de uma função da
+ * Vercel (plano Hobby). */
+export const BULK_DECISION_MAX = 20;
 export const bulkDecisionSchema = z
   .object({
     applicationIds: z

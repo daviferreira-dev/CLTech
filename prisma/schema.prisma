@@ -35,12 +35,12 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  accounts             Account[]
-  sessions             Session[]
-  candidate            Candidate?
-  jobsCreated          Job[]                     @relation("JobCreatedBy")
-  stageDecisions       ApplicationStageHistory[] @relation("StageDecidedBy")
-  passwordResets       PasswordResetToken[]
+  accounts       Account[]
+  sessions       Session[]
+  candidate      Candidate?
+  jobsCreated    Job[]                     @relation("JobCreatedBy")
+  stageDecisions ApplicationStageHistory[] @relation("StageDecidedBy")
+  passwordResets PasswordResetToken[]
   interviewEvaluations InterviewEvaluation[]
 
   @@map("User")
@@ -368,11 +368,11 @@ model ProcessStage {
   emailSubject    String?
   emailBody       String?
 
-  job                  Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  emailTemplate        EmailTemplate?            @relation(fields: [emailTemplateId], references: [id], onDelete: Restrict)
-  applicationsAt       Application[]
-  stageHistoryAt       ApplicationStageHistory[]
-  codeDrafts           CodeDraft[]
+  job            Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  emailTemplate  EmailTemplate?            @relation(fields: [emailTemplateId], references: [id], onDelete: Restrict)
+  applicationsAt Application[]
+  stageHistoryAt ApplicationStageHistory[]
+  codeDrafts     CodeDraft[]
   interviewEvaluations InterviewEvaluation[]
 
   @@unique([jobId, order])
@@ -443,29 +443,29 @@ enum MatchScoreStatus {
 /// 🟢 Entidade central: inscrição de um candidato em uma vaga.
 /// Restrição crítica: único por (candidateId, jobId) — garante FR-022/SC-003 no banco.
 model Application {
-  id                String            @id @default(uuid())
-  candidateId       String
-  jobId             String
-  resumeId          String
-  currentStageId    String
-  status            ApplicationStatus @default(IN_PROGRESS)
-  matchScore        Int?
-  matchScoreStatus  MatchScoreStatus  @default(NOT_CALCULATED)
-  appliedAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id               String            @id @default(uuid())
+  candidateId      String
+  jobId            String
+  resumeId         String
+  currentStageId   String
+  status           ApplicationStatus @default(IN_PROGRESS)
+  matchScore       Int?
+  matchScoreStatus MatchScoreStatus  @default(NOT_CALCULATED)
+  appliedAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   // Spec 009: por que foi reprovada (interno, alimenta indicadores) e o retorno escrito pelo
   // recrutador para o candidato (vai no e-mail; cifrado como os outros textos livres).
   rejectionReason   RejectionReason?
   rejectionFeedback String?
 
-  candidate            Candidate                 @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  job                  Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  resume               Resume                    @relation(fields: [resumeId], references: [id])
-  currentStage         ProcessStage              @relation(fields: [currentStageId], references: [id])
-  stageHistory         ApplicationStageHistory[]
-  evaluations          Evaluation[]
-  codeSubmissions      CodeSubmission[]
-  codeDrafts           CodeDraft[]
+  candidate       Candidate                 @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job             Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resume          Resume                    @relation(fields: [resumeId], references: [id])
+  currentStage    ProcessStage              @relation(fields: [currentStageId], references: [id])
+  stageHistory    ApplicationStageHistory[]
+  evaluations     Evaluation[]
+  codeSubmissions CodeSubmission[]
+  codeDrafts      CodeDraft[]
   interviewEvaluations InterviewEvaluation[]
 
   @@unique([candidateId, jobId])

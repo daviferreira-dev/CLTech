@@ -4,7 +4,7 @@ import { recordBulkDecision } from "@/server/applications/bulk-decision";
 import { bulkDecisionSchema } from "@/lib/validation/applications";
 import { toErrorResponse, Errors } from "@/lib/errors";
 
-// Spec 009 (FR-908): avançar ou reprovar até 50 candidaturas da vaga de uma vez.
+// Spec 009 (FR-908): avançar ou reprovar até 20 candidaturas (BULK_DECISION_MAX) da vaga de uma vez.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireRole(["RECRUITER", "ADMIN"]);

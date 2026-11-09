@@ -11,7 +11,7 @@ import { getApplicationDetail } from "@/server/applications/detail";
 import { closeJob } from "@/server/jobs/builder";
 import { encrypt } from "@/server/crypto";
 import { sendMail } from "@/server/email/mailer";
-import { bulkDecisionSchema, recordDecisionSchema } from "@/lib/validation/applications";
+import { BULK_DECISION_MAX, bulkDecisionSchema, recordDecisionSchema } from "@/lib/validation/applications";
 
 vi.mock("@/server/email/mailer", () => ({ sendMail: vi.fn(async () => {}) }));
 
@@ -76,8 +76,10 @@ describe("motivo da reprovação", () => {
     expect(recordDecisionSchema.safeParse({ decision: "REJECT", rejection: { reason: "JOB_CLOSED" } }).success).toBe(false);
     expect(recordDecisionSchema.safeParse({ decision: "REJECT", rejection: { reason: "TECHNICAL_SKILLS" } }).success).toBe(true);
     expect(recordDecisionSchema.safeParse({ decision: "ADVANCE" }).success).toBe(true);
-    const ids = Array.from({ length: 51 }, () => crypto.randomUUID());
+    expect(BULK_DECISION_MAX).toBe(20);
+    const ids = Array.from({ length: BULK_DECISION_MAX + 1 }, () => crypto.randomUUID());
     expect(bulkDecisionSchema.safeParse({ applicationIds: ids, decision: "REJECT", rejection: { reason: "OTHER" } }).success).toBe(false);
+    expect(bulkDecisionSchema.safeParse({ applicationIds: ids.slice(0, BULK_DECISION_MAX), decision: "REJECT", rejection: { reason: "OTHER" } }).success).toBe(true);
   });
 
   it("grava motivo e retorno cifrado; o retorno vai no e-mail padrão num bloco próprio", async () => {

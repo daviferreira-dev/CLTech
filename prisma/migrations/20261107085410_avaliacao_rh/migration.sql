@@ -34,3 +34,7 @@ ALTER TABLE "InterviewEvaluation" ADD CONSTRAINT "InterviewEvaluation_stageId_fk
 
 -- AddForeignKey
 ALTER TABLE "InterviewEvaluation" ADD CONSTRAINT "InterviewEvaluation_evaluatorUserId_fkey" FOREIGN KEY ("evaluatorUserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- RLS ligado como em todas as tabelas de produção. O app usa o dono do banco, que ignora o
+-- RLS; sem política nenhuma, quem acessar pela API pública do Supabase não lê nada daqui.
+ALTER TABLE "InterviewEvaluation" ENABLE ROW LEVEL SECURITY;
