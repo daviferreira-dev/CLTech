@@ -112,7 +112,9 @@ A região já vem de `vercel.json`; não precisa mexer em *Settings → Function
 Na URL pública:
 
 - [ ] `/vagas` lista as vagas do seed, sem login.
-- [ ] Login `recrutador@3aq.dev` / `Senha123!` cai em `/recrutamento` com o painel preenchido.
+- [ ] Login com a conta de recrutador de produção cai em `/recrutamento` com o painel preenchido.
+      Não deixe as contas do seed (`recrutador@3aq.dev`, `admin@3aq.dev`) com a senha de demonstração:
+      ela é pública no repositório. Troque o e-mail delas por um seu e defina a senha por "esqueci minha senha".
 - [ ] Cadastro de um candidato novo, envio de um currículo **PDF** em `/perfil`: o perfil aparece
       pré-preenchido. Se aparecer "não foi possível ler o currículo", ver o item 8.
 - [ ] Candidatura a uma vaga e o percentual de compatibilidade aparecendo na lista.

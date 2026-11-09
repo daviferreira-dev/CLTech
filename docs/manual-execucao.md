@@ -95,11 +95,14 @@ demanda e fica lenta o bastante para atrapalhar uma demonstração.
 
 ### Contas de demonstração (criadas pelo seed)
 
-| Papel | E-mail | Senha |
-|---|---|---|
-| Recrutador | `recrutador@3aq.dev` | `Senha123!` |
-| Administrador | `admin@3aq.dev` | `Senha123!` |
-| Candidato | `candidato.demo@example.com` | `Senha123!` |
+| Papel | E-mail |
+|---|---|
+| Recrutador | `recrutador@3aq.dev` |
+| Administrador | `admin@3aq.dev` |
+| Candidato | `candidato.demo@example.com` |
+
+A senha de demonstração é a constante `DEMO_PASSWORD` em `prisma/seed.ts`. Ela vale só para o banco
+local: nunca use essas contas, nem essa senha, em produção.
 
 Só o administrador cria e edita desafios do catálogo. O recrutador apenas os escolhe para
 as vagas.
