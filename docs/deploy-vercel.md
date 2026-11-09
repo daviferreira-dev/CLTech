@@ -21,7 +21,7 @@ O repositório já traz o que dá para deixar pronto:
 - [ ] `git pull` feito e `vercel.json` commitado e enviado (`git push`). A Vercel publica o que
       está no GitHub, não o que está na sua máquina.
 - [ ] Nada a fazer com as migrações: o build de **produção** aplica sozinho (ver
-      "Migrações automáticas" abaixo). Só precisa da variável `DIRECT_URL` (passo 3).
+      "Migrações automáticas" abaixo). Não precisa de variável nova (passo 3).
 - [ ] Seed presente: `pnpm db:seed` (idempotente; rodar de novo não duplica nada).
 
 ## 2. Criar o OAuth App do GitHub para produção
@@ -54,14 +54,19 @@ Supabase com `?pgbouncer=true&connection_limit=1`, o modo recomendado para funç
 serverless. Na porta 5432 (a do `.env` local), várias funções abertas ao mesmo tempo esgotam
 as conexões do plano gratuito.
 
-Além disso, crie à mão a `DIRECT_URL`, **só no ambiente Production** (não marque Preview):
+**Migrações no build:** o pooler da porta 6543 (modo transaction) pode travar o
+`prisma migrate deploy`. Por isso o build de produção monta sozinho a URL de migração a partir do
+`DATABASE_URL`: mesmo host, usuário e senha, porta **5432** (session pooler) e sem
+`pgbouncer=true`/`connection_limit`. Só funciona com o pooler do Supabase
+(`*.pooler.supabase.com:6543`). Não é preciso saber a senha nem criar variável nova. A aplicação
+continua usando o `DATABASE_URL` normal.
+
+Opcional: `DIRECT_URL`, **só em Production** (não marque Preview), tem prioridade sobre essa
+conta. Use se o banco sair do pooler do Supabase.
 
 | Variável | Valor |
 |---|---|
-| `DIRECT_URL` | Supabase → **Connect** → *Session pooler* (porta **5432**, sem `?pgbouncer=true`). É a mesma conexão do `.env` local |
-
-Ela é usada só no build, para aplicar as migrações. O pooler da porta 6543 (modo transaction)
-pode travar o `prisma migrate deploy`; a 5432 não. A aplicação continua usando o `DATABASE_URL`.
+| `DIRECT_URL` (opcional) | Supabase → **Connect** → *Session pooler* (porta **5432**, sem `?pgbouncer=true`). Não é a do `.env` local, que aponta para o Postgres do Docker |
 
 Se o arquivo não existir (outra máquina), monte-o a partir da tabela:
 
@@ -130,7 +135,7 @@ Na URL pública:
 |---|---|---|
 | Build falha com `ERR_PNPM_OUTDATED_LOCKFILE` | `package.json` mudou sem atualizar o `pnpm-lock.yaml` | `pnpm install` local e commitar o lockfile |
 | Build falha com `@prisma/client did not initialize yet` | `prisma generate` não rodou | Confirmar que o Build Command é o padrão (`pnpm build`) |
-| Build falha com `[migrate] DIRECT_URL não configurada` | Falta a variável em Production | Criar `DIRECT_URL` (passo 3) e fazer Redeploy. O deploy anterior segue no ar |
+| Build falha com `[migrate] Não deu para montar a URL de migração` | `DATABASE_URL` de Production não é o pooler do Supabase na 6543, e não há `DIRECT_URL` | Corrigir o `DATABASE_URL` (passo 3) ou criar `DIRECT_URL` em Production; depois Redeploy. O deploy anterior segue no ar |
 | Build falha no `prisma migrate deploy` | Migração com erro de SQL, ou banco pausado | Ler o log do build; o deploy anterior segue no ar. Ver "Migrações automáticas" |
 | Erro 500 com `column ... does not exist` | Migração não aplicada (deploy de Preview, que não migra) | Fazer o deploy de produção, ou `prisma migrate deploy` manual (ver "Migrações automáticas") |
 | Login com GitHub volta com erro `redirect_uri` | URL de retorno do OAuth App diferente da URL do projeto | Corrigir o passo 2 |
@@ -147,7 +152,7 @@ O `pnpm build` roda `scripts/migrate-production.mjs` entre o `prisma generate` e
 
 | Onde | O que acontece |
 |---|---|
-| Vercel, **Production** (`VERCEL_ENV=production`) | `prisma migrate deploy` usando a `DIRECT_URL`. Se falhar, o build para e o deploy anterior continua no ar |
+| Vercel, **Production** (`VERCEL_ENV=production`) | `prisma migrate deploy` usando a `DIRECT_URL`, ou, sem ela, o `DATABASE_URL` com a porta trocada de 6543 para 5432. O log mostra só host e porta, nunca a senha. Se falhar, o build para e o deploy anterior continua no ar |
 | Vercel, **Preview** | Não migra. O Preview usa o mesmo banco de produção, e migração de branch não revisada lá seria pior. Um Preview com migração nova pode dar erro 500 até o merge na `main` |
 | Local, CI, testes | Não faz nada (use `pnpm prisma migrate dev` / `migrate deploy` como sempre) |
 
@@ -159,5 +164,6 @@ Cuidados:
 - As migrações aplicadas à mão em 07/11 têm o checksum calculado com quebra de linha Windows
   (CRLF), e a Vercel lê os arquivos com quebra Linux (LF). Testado: o `migrate deploy` não confere
   checksum de migração já aplicada, só aplica as pendentes. Não precisa mexer em nada.
-- Para aplicar à mão (emergência), de uma máquina com a `DIRECT_URL` de produção, **sem** gravá-la
-  no `.env`: `DATABASE_URL="<DIRECT_URL>" pnpm prisma migrate deploy`.
+- Para aplicar à mão (emergência) sem saber a senha: Deployments → ⋯ → **Redeploy** do último
+  deploy de produção. Quem tiver a URL de session pooler de produção pode rodar, **sem** gravá-la no
+  `.env`: `DATABASE_URL="<url porta 5432>" pnpm prisma migrate deploy`.
