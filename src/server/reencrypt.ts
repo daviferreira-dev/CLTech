@@ -12,7 +12,7 @@ function rotate(ciphertext: string | null): string | null {
 }
 
 export async function reencryptAll(): Promise<Record<string, number>> {
-  const counts = { phone: 0, resumeText: 0, resumeFile: 0, draft: 0, submission: 0 };
+  const counts = { phone: 0, resumeText: 0, resumeFile: 0, draft: 0, submission: 0, rejectionFeedback: 0, interviewComment: 0 };
 
   for (const c of await prisma.candidate.findMany({ where: { phone: { not: null } }, select: { id: true, phone: true } })) {
     const phone = rotate(c.phone);
@@ -36,6 +36,17 @@ export async function reencryptAll(): Promise<Record<string, number>> {
   for (const s of await prisma.codeSubmission.findMany({ select: { id: true, sourceCode: true } })) {
     const sourceCode = rotate(s.sourceCode);
     if (sourceCode) counts.submission += (await prisma.codeSubmission.update({ where: { id: s.id }, data: { sourceCode } }), 1);
+  }
+
+  // Spec 009: retorno da reprovação e comentário da ficha de entrevista.
+  for (const a of await prisma.application.findMany({ where: { rejectionFeedback: { not: null } }, select: { id: true, rejectionFeedback: true } })) {
+    const rejectionFeedback = rotate(a.rejectionFeedback);
+    if (rejectionFeedback) counts.rejectionFeedback += (await prisma.application.update({ where: { id: a.id }, data: { rejectionFeedback } }), 1);
+  }
+
+  for (const e of await prisma.interviewEvaluation.findMany({ where: { comment: { not: null } }, select: { id: true, comment: true } })) {
+    const comment = rotate(e.comment);
+    if (comment) counts.interviewComment += (await prisma.interviewEvaluation.update({ where: { id: e.id }, data: { comment } }), 1);
   }
 
   return counts;

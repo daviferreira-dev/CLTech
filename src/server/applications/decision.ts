@@ -4,7 +4,9 @@ import { INTERVIEW_STAGES, positionsOf } from "@/lib/processStages";
 import { stageAdvancedMoment } from "@/lib/emailMoments";
 import type { CodeTestStageConfig } from "@/lib/codeTest";
 import { Errors } from "@/lib/errors";
-import type { MeetingInput } from "@/lib/validation/applications";
+import type { MeetingInput, RejectionInput } from "@/lib/validation/applications";
+import { REJECTION_REASON_LABEL } from "@/lib/labels";
+import { encryptOrNull } from "@/server/crypto";
 import { keepAlive } from "@/server/background";
 import { notifyApplicationClosed, notifyStageAdvanced } from "@/server/email/notify";
 import { closeStragglers } from "@/server/jobs/closeStragglers";
@@ -20,6 +22,8 @@ export async function recordDecision(
   decidedByUserId: string,
   decision: "ADVANCE" | "REJECT",
   meeting?: MeetingInput,
+  /** Spec 009: a rota exige ao reprovar (recordDecisionSchema); chamadas internas podem omitir. */
+  rejection?: RejectionInput,
 ): Promise<DecisionResult> {
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
@@ -43,8 +47,12 @@ export async function recordDecision(
   const to = application.candidate.user;
 
   if (decision === "REJECT") {
+    const feedback = rejection?.feedback?.trim() || null;
     await prisma.$transaction([
-      prisma.application.update({ where: { id: applicationId }, data: { status: "REJECTED" } }),
+      prisma.application.update({
+        where: { id: applicationId },
+        data: { status: "REJECTED", rejectionReason: rejection?.reason ?? null, rejectionFeedback: encryptOrNull(feedback) },
+      }),
       prisma.applicationStageHistory.updateMany({
         where: { applicationId, stageId: application.currentStageId, exitedAt: null },
         data: { exitedAt: now, decidedByUserId },
@@ -64,6 +72,8 @@ export async function recordDecision(
           emailBody: job.rejectedEmailBody,
         },
         appUrl,
+        reasonLabel: rejection ? REJECTION_REASON_LABEL[rejection.reason] : undefined,
+        feedback,
       }),
     );
     return { currentStage: { type: application.currentStage.type, order: application.currentStage.order }, status: "REJECTED" };
@@ -94,7 +104,11 @@ export async function recordDecision(
       if (approved < positions) return { filled: false, affected: [] };
 
       await tx.job.update({ where: { id: application.jobId }, data: { status: "CLOSED" } });
-      const affected = await closeStragglers(tx, application.jobId, now, { excludeApplicationId: applicationId, decidedByUserId });
+      const affected = await closeStragglers(tx, application.jobId, now, {
+        excludeApplicationId: applicationId,
+        decidedByUserId,
+        rejectionReason: "POSITION_FILLED",
+      });
       return { filled: true, affected };
     });
     keepAlive(

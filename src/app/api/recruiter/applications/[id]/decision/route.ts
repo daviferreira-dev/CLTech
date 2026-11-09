@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!parsed.success) {
       return toErrorResponse(Errors.validation(parsed.error.issues[0]?.message ?? "Decisão inválida."));
     }
-    const result = await recordDecision(id, user.id, parsed.data.decision, parsed.data.meeting);
+    const result = await recordDecision(id, user.id, parsed.data.decision, parsed.data.meeting, parsed.data.rejection);
     return NextResponse.json(result);
   } catch (err) {
     return toErrorResponse(err);

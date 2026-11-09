@@ -178,6 +178,8 @@ test.describe("recrutador", () => {
 
     await page.route("**/api/recruiter/applications/*/decision", (route) => route.fulfill(fulfillError(409, "APPLICATION_CLOSED")));
     await page.getByRole("button", { name: "Reprovar" }).click();
+    // Spec 009: reprovar exige motivo.
+    await chooseOption(page.getByRole("dialog").getByRole("combobox", { name: "Motivo" }), "Outros motivos");
     await page.getByRole("button", { name: "Confirmar reprovação" }).click();
     await expect(page.getByText("já foi decidida por outra pessoa", { exact: false })).toBeVisible();
   });

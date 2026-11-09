@@ -12,6 +12,9 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { ProfileDetails } from "@/lib/profile-details";
 import { ProfessionalProfileCard } from "./ProfessionalProfileCard";
 import { MeetingDialog } from "./MeetingDialog";
+import { RejectDialog } from "@/components/recruiter/RejectDialog";
+import { InterviewEvaluationCard } from "./InterviewEvaluationCard";
+import type { RejectionInput } from "@/lib/validation/applications";
 import { ProviderIcon } from "@/components/ui/BrandIcons";
 import {
   Badge,
@@ -65,6 +68,7 @@ interface ApplicationDetailData {
   }>;
   resume: { id: string; originalFilename: string } | null;
   codeTest: CodeTestReport;
+  rejection: { reason: string; reasonLabel: string; feedback: string | null } | null;
 }
 
 export type ReportOrigin = { kind: "job"; stage: string } | { kind: "search"; q: string };
@@ -100,6 +104,8 @@ export function ApplicationDetailView({
   const [saving, setSaving] = useState(false);
   const [pending, setPending] = useState<Decision | null>(null);
   const [message, setMessage] = useState<{ tone: "success" | "danger" | "info"; text: string } | null>(null);
+  // Spec 009: fichas na etapa atual — avançar uma entrevista sem nenhuma ficha só avisa.
+  const [interviewCount, setInterviewCount] = useState(0);
 
   const fetchDetail = useCallback(async () => {
     const result = await apiFetch<ApplicationDetailData>(`/api/recruiter/applications/${applicationId}`);
@@ -123,13 +129,13 @@ export function ApplicationDetailView({
     load();
   }, [load]);
 
-  async function handleDecision(decision: Decision, meeting?: { scheduledAt: string; url: string }) {
+  async function handleDecision(decision: Decision, meeting?: { scheduledAt: string; url: string }, rejection?: RejectionInput) {
     if (saving) return;
     setSaving(true);
     setMessage(null);
     const result = await apiFetch<{ status: ApplicationDetailData["status"]; currentStage: { type: string; order: number } }>(
       `/api/recruiter/applications/${applicationId}/decision`,
-      jsonInit("POST", { decision, meeting }),
+      jsonInit("POST", { decision, meeting, rejection }),
     );
     setSaving(false);
     setPending(null);
@@ -225,6 +231,8 @@ export function ApplicationDetailView({
   const nextIsInterview = !!nextStage && INTERVIEW_STAGES.includes(nextStage.type);
   const nextStageLabel = nextStage ? (STAGE_LABEL[nextStage.type] ?? nextStage.type) : "";
   const currentLabel = STAGE_LABEL[data.currentStage.type] ?? data.currentStage.type;
+  const canEvaluate = data.status === "IN_PROGRESS" && INTERVIEW_STAGES.includes(data.currentStage.type);
+  const noEvaluationWarning = canEvaluate && interviewCount === 0 ? " Atenção: ninguém preencheu a ficha desta entrevista." : "";
 
   return (
     <div className="space-y-6">
@@ -297,6 +305,14 @@ export function ApplicationDetailView({
               <p className="text-body text-fg">
                 Candidatura {data.status === "APPROVED" ? "aprovada" : data.status === "REJECTED" ? "reprovada" : "retirada"}.
               </p>
+              {data.rejection && (
+                <p className="text-label font-normal text-fg-muted">Motivo: {data.rejection.reasonLabel}</p>
+              )}
+              {data.rejection?.feedback && (
+                <p className="max-w-sm whitespace-pre-wrap break-words text-label font-normal text-fg-muted md:ml-auto">
+                  Retorno enviado: “{data.rejection.feedback}”
+                </p>
+              )}
               <ButtonLink href={backHref} variant="secondary">
                 {origin.kind === "search" ? "Voltar à busca" : "Voltar às candidaturas"}
               </ButtonLink>
@@ -434,6 +450,13 @@ export function ApplicationDetailView({
         </div>
       </div>
 
+      <InterviewEvaluationCard
+        applicationId={data.id}
+        currentStageType={data.currentStage.type}
+        canEvaluate={canEvaluate}
+        onCurrentCountChange={setInterviewCount}
+      />
+
       <CodeTestCard report={data.codeTest} />
 
       <ProfessionalProfileCard profile={data.professionalProfile} />
@@ -441,7 +464,7 @@ export function ApplicationDetailView({
       <MeetingDialog
         open={pending === "ADVANCE" && nextIsInterview}
         title={`Agendar ${nextStageLabel}`}
-        description={`${data.candidate.name} vai para "${nextStageLabel}". Informe quando será a reunião; o candidato recebe a data e o link por e-mail.`}
+        description={`${data.candidate.name} vai para "${nextStageLabel}". Informe quando será a reunião; o candidato recebe a data e o link por e-mail.${noEvaluationWarning}`}
         loading={saving}
         onCancel={() => setPending(null)}
         onConfirm={(meeting) => handleDecision("ADVANCE", meeting)}
@@ -451,23 +474,22 @@ export function ApplicationDetailView({
         title={isLastStage ? "Aprovar candidato?" : "Avançar candidato?"}
         description={
           isLastStage
-            ? `${data.candidate.name} está na última etapa. Avançar conclui o processo como aprovado.`
-            : `${data.candidate.name} sai de "${currentLabel}" e vai para "${stages && stages[currentIndex + 1] ? (STAGE_LABEL[stages[currentIndex + 1]!.type] ?? stages[currentIndex + 1]!.type) : "a próxima etapa"}".`
+            ? `${data.candidate.name} está na última etapa. Avançar conclui o processo como aprovado.${noEvaluationWarning}`
+            : `${data.candidate.name} sai de "${currentLabel}" e vai para "${stages && stages[currentIndex + 1] ? (STAGE_LABEL[stages[currentIndex + 1]!.type] ?? stages[currentIndex + 1]!.type) : "a próxima etapa"}".${noEvaluationWarning}`
         }
         confirmLabel={isLastStage ? "Confirmar aprovação" : "Confirmar avanço"}
         loading={saving}
         onCancel={() => setPending(null)}
         onConfirm={() => handleDecision("ADVANCE")}
       />
-      <ConfirmDialog
+      <RejectDialog
         open={pending === "REJECT"}
         title="Reprovar candidato?"
-        description={`A candidatura de ${data.candidate.name} será encerrada. Esta decisão não pode ser desfeita.`}
+        description={`A candidatura de ${data.candidate.name} será encerrada e ele recebe o e-mail de reprovação. Esta decisão não pode ser desfeita.`}
         confirmLabel="Confirmar reprovação"
-        tone="danger"
         loading={saving}
         onCancel={() => setPending(null)}
-        onConfirm={() => handleDecision("REJECT")}
+        onConfirm={(rejection) => handleDecision("REJECT", undefined, rejection)}
       />
     </div>
   );

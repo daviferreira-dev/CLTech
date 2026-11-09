@@ -4,6 +4,8 @@ import { Errors } from "@/lib/errors";
 import { getCodeTestReport, type CodeTestReport } from "@/server/code-test/report";
 import type { ProfileDetails } from "@/lib/profile-details";
 import { profileDetailsInclude, toProfileDetails } from "@/server/candidates/profile-details";
+import { decryptOrNull } from "@/server/crypto";
+import { REJECTION_REASON_LABEL } from "@/lib/labels";
 
 export interface ApplicationDetail {
   id: string;
@@ -17,6 +19,8 @@ export interface ApplicationDetail {
   externalAccounts: Array<{ provider: string; status: string; externalUsername: string | null; url: string | null; verified: boolean; verifiedName: string | null }>;
   resume: { id: string; originalFilename: string } | null;
   codeTest: CodeTestReport;
+  /** Spec 009: motivo (interno) e retorno enviado ao candidato, se foi reprovada. */
+  rejection: { reason: string; reasonLabel: string; feedback: string | null } | null;
 }
 
 export async function getApplicationDetail(applicationId: string): Promise<ApplicationDetail> {
@@ -56,5 +60,12 @@ export async function getApplicationDetail(applicationId: string): Promise<Appli
     })),
     resume: application.resume,
     codeTest: await getCodeTestReport(application.id),
+    rejection: application.rejectionReason
+      ? {
+          reason: application.rejectionReason,
+          reasonLabel: REJECTION_REASON_LABEL[application.rejectionReason] ?? application.rejectionReason,
+          feedback: decryptOrNull(application.rejectionFeedback),
+        }
+      : null,
   };
 }

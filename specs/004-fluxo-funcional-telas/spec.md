@@ -264,6 +264,9 @@ busca com os termos preservados.
   novo estado sem recarregamento manual.
 - **FR-108**: Nenhuma tela de candidato MUST expor dado interno de triagem — score bruto de
   outros candidatos, notas do recrutador, ou motivo interno de reprovação.
+  *Exceção (spec 009, 07/11)*: o **retorno** que o recrutador escreve para o candidato ao
+  reprovar vai no e-mail de reprovação. Não é motivo interno: é texto escrito para ele ler. A
+  categoria do motivo continua interna (só entra no e-mail se o RH puser `{{motivo}}` no modelo).
 - **FR-109**: Os cinco estados de match MUST ter tratamento de tela definido e distinto,
   conforme US1.3.
 - **FR-110**: Nenhum contrato de API, payload ou código de erro MUST ser alterado por esta

@@ -41,6 +41,7 @@ model User {
   jobsCreated    Job[]                     @relation("JobCreatedBy")
   stageDecisions ApplicationStageHistory[] @relation("StageDecidedBy")
   passwordResets PasswordResetToken[]
+  interviewEvaluations InterviewEvaluation[]
 
   @@map("User")
 }
@@ -372,6 +373,7 @@ model ProcessStage {
   applicationsAt Application[]
   stageHistoryAt ApplicationStageHistory[]
   codeDrafts     CodeDraft[]
+  interviewEvaluations InterviewEvaluation[]
 
   @@unique([jobId, order])
   @@map("ProcessStage")
@@ -451,6 +453,10 @@ model Application {
   matchScoreStatus MatchScoreStatus  @default(NOT_CALCULATED)
   appliedAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+  // Spec 009: por que foi reprovada (interno, alimenta indicadores) e o retorno escrito pelo
+  // recrutador para o candidato (vai no e-mail; cifrado como os outros textos livres).
+  rejectionReason   RejectionReason?
+  rejectionFeedback String?
 
   candidate       Candidate                 @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   job             Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
@@ -460,9 +466,53 @@ model Application {
   evaluations     Evaluation[]
   codeSubmissions CodeSubmission[]
   codeDrafts      CodeDraft[]
+  interviewEvaluations InterviewEvaluation[]
 
   @@unique([candidateId, jobId])
   @@map("Application")
+}
+
+/// Spec 009: por que a candidatura foi reprovada. JOB_CLOSED e POSITION_FILLED são gravados
+/// pelo sistema (vaga encerrada / vagas preenchidas); o resto o recrutador escolhe.
+enum RejectionReason {
+  TECHNICAL_SKILLS
+  CODE_TEST_SCORE
+  INTERVIEW_PERFORMANCE
+  REQUIREMENTS_NOT_MET
+  POSITION_FILLED
+  JOB_CLOSED
+  NO_RESPONSE
+  OTHER
+}
+
+enum InterviewRecommendation {
+  ADVANCE
+  UNSURE
+  REJECT
+}
+
+/// 🟢 Spec 009: ficha de entrevista com critérios fixos por tipo de etapa (src/lib/interviewCriteria.ts).
+/// Opinião humana — separada de Evaluation, que é só resultado automático e imutável (Princípio II).
+/// Uma por avaliador × candidatura × etapa; editável só enquanto a candidatura está na etapa.
+model InterviewEvaluation {
+  id              String                  @id @default(uuid())
+  applicationId   String
+  stageId         String
+  evaluatorUserId String
+  /// { critério: 1..5 } — chaves validadas contra os critérios da etapa.
+  scores          Json
+  /// Texto livre, cifrado (AES-256-GCM, src/server/crypto.ts).
+  comment         String?
+  recommendation  InterviewRecommendation
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  application Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  stage       ProcessStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  evaluator   User         @relation(fields: [evaluatorUserId], references: [id])
+
+  @@unique([applicationId, stageId, evaluatorUserId])
+  @@map("InterviewEvaluation")
 }
 
 /// 🟢 Registro append-only de cada mudança de etapa (FR-029).

@@ -6,7 +6,7 @@
 
 **Created**: 2026-11-07
 
-**Status**: Draft (divisão aprovada em conversa, 07/11; escopo a revisar com a equipe)
+**Status**: Implementada (07/11), exceto FR-909 (export LGPD), que espera o OK do orientador
 
 **Input**: proposta da demanda da 3aq (`docs/entregas/PROPOSTA_INICIAL_DEMANDA.pdf`) —
 "cada avaliador tem uma opinião, o que faz com que a escolha do candidato não seja justa ou
@@ -88,7 +88,8 @@ Em `/recrutamento/vagas/[id]/candidaturas`, o recrutador marca vários candidato
 3. **Given** seleção cuja próxima etapa é uma entrevista, **When** "Avançar selecionados",
    **Then** a ação é recusada com "Para entrevistas, avance um por vez para marcar a
    reunião" (a reunião é obrigatória e individual).
-4. **Given** mais de 50 selecionados, **Then** o botão avisa o limite (50 por vez).
+4. **Given** mais de 20 selecionados, **Then** o botão avisa o limite (20 por vez: cada item
+   manda e-mail, e o lote tem de caber no tempo de uma função da Vercel no plano Hobby).
 5. **Given** falha em um item no meio do lote, **Then** os outros seguem e o resumo lista
    quem falhou e por quê.
 
@@ -118,12 +119,16 @@ Em `/recrutamento/vagas/[id]/candidaturas`, o recrutador marca vários candidato
   quando `decision = "REJECT"`. Encerrar vaga e "vaga preenchida" (aprovação esgota as
   vagas) gravam `JOB_CLOSED` / `POSITION_FILLED` sozinhos.
 - **FR-907** Variáveis novas no momento `REJECTED`: `{{motivo}}` e `{{retorno}}`
-  (`EMAIL_MOMENT_VARIABLES` e prévia com dados de exemplo). O modelo padrão semeado passa a
-  usar só `{{retorno}}`, e só quando preenchido; `{{motivo}}` fica disponível para o RH.
-  Atualizar a nota de FR-108 na spec 004: o retorno escrito pelo recrutador é a única
-  exceção a "sem motivo interno".
+  (`EMAIL_MOMENT_VARIABLES` e prévia com dados de exemplo); `{{motivo}}` fica disponível para
+  o RH. **Implementado assim (07/11)**: o texto do modelo padrão **não muda** (mudar exigiria
+  reescrever uma linha que o RH pode já ter editado em produção). Quando há retorno e o
+  modelo não usa `{{retorno}}`, ele entra sozinho no fim do e-mail, num bloco "Retorno do
+  recrutador". A nota de FR-108 na spec 004 foi atualizada com essa exceção.
+- **FR-907a** O retorno (`rejectionFeedback`) e o comentário da ficha são **cifrados** em
+  repouso, como os outros textos livres do candidato, e entram na rotação de chave
+  (`src/server/reencrypt.ts`).
 - **FR-908** `POST /api/recruiter/jobs/[id]/applications/bulk-decision`:
-  `{ applicationIds: string[] (1..50), decision: "ADVANCE" | "REJECT", rejection? }`.
+  `{ applicationIds: string[] (1..20), decision: "ADVANCE" | "REJECT", rejection? }`.
   Chama `recordDecision` em sequência e devolve `{ done: [...], skipped: [...], failed: [...] }`.
   Recusa `ADVANCE` quando a próxima etapa de algum item é entrevista.
 - **FR-909** Export LGPD (`exportMyData` em `src/server/candidates/privacy.ts`) passa a
@@ -137,7 +142,8 @@ Em `/recrutamento/vagas/[id]/candidaturas`, o recrutador marca vários candidato
     e automática do mesmo jeito.
 
   Decisão de 07/11 (LGPD art. 18, II: a avaliação é dado pessoal do candidato). Leitura
-  técnica da equipe, **a confirmar com o orientador** antes do merge.
+  técnica da equipe, **a confirmar com o orientador**. **Ainda não implementado**: fica para
+  depois do OK dele, num PR à parte (o resto da spec não depende disto).
 - **FR-909a** O formulário da ficha mostra, acima do comentário: "O candidato pode ter acesso
   a esta avaliação se pedir os dados dele (LGPD)."
 - **FR-910** Relatório da candidatura mostra o motivo e o retorno de quem foi reprovado, e o
