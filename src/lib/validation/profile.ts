@@ -56,10 +56,16 @@ const linkSchema = z.object({
 // (é a chave de identidade — RN007). Spec 007 (FR-704): blocos do perfil profissional;
 // cada lista enviada substitui a lista inteira, bloco omitido não muda.
 export const updateProfileSchema = z.object({
-  name: z.string().trim().min(1).optional(),
-  phone: z.string().trim().min(8).max(20).optional().or(z.literal("")),
-  city: z.string().trim().max(100).optional().or(z.literal("")),
-  state: z.string().trim().length(2).optional().or(z.literal("")),
+  name: z.string().trim().min(1, "Informe seu nome.").optional(),
+  phone: z
+    .string()
+    .trim()
+    .min(8, "O telefone parece curto demais. Informe com DDD, por exemplo (85) 99999-0000.")
+    .max(20, "O telefone pode ter no máximo 20 caracteres.")
+    .optional()
+    .or(z.literal("")),
+  city: z.string().trim().max(100, "A cidade pode ter no máximo 100 caracteres.").optional().or(z.literal("")),
+  state: z.string().trim().length(2, "Use a sigla do estado, com 2 letras. Exemplo: CE.").optional().or(z.literal("")),
   headline: z.string().trim().max(L.headline, `O título tem no máximo ${L.headline} caracteres.`).nullable().optional(),
   summary: z.string().trim().max(L.summary, `O resumo tem no máximo ${L.summary} caracteres.`).nullable().optional(),
   technologies: tags("tecnologias").optional(),
