@@ -2,7 +2,7 @@
 // extensão e MIME são falsificáveis, magic number não.
 
 import { prisma } from "@/lib/prisma";
-import { Errors } from "@/lib/errors";
+import { ApiError, Errors, logSafeError } from "@/lib/errors";
 import { uploadPrivateObject } from "@/server/storage";
 import { encrypt, encryptOrNull } from "@/server/crypto";
 import { MAX_RESUME_SIZE_BYTES, ALLOWED_RESUME_MIME_TYPES } from "@/lib/validation/profile";
@@ -50,7 +50,17 @@ export async function uploadResume(
 
   // Conteúdo cifrado antes do upload (R4) — o bucket nunca guarda o arquivo em claro.
   const encryptedContent = Buffer.from(encrypt(file.buffer.toString("base64")), "utf8");
-  const { storageKey } = await uploadPrivateObject(candidate.id, encryptedContent, "application/octet-stream");
+  let storageKey: string;
+  try {
+    ({ storageKey } = await uploadPrivateObject(candidate.id, encryptedContent, "application/octet-stream"));
+  } catch (err) {
+    logSafeError("resume-upload", err);
+    throw new ApiError(
+      503,
+      "STORAGE_UNAVAILABLE",
+      "Não conseguimos guardar o arquivo agora. Seu perfil continua como estava; tente de novo em alguns minutos.",
+    );
+  }
 
   // RN001/FR-032: extrai o texto antes de qualquer exibição a recrutador. Nunca bloqueia o
   // upload — PDF ilegível (ex.: escaneado como imagem) só reduz o sinal do score (R13).

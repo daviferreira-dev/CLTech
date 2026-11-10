@@ -6,6 +6,7 @@
 // tem janela de corrida; a segunda inserção simultânea falhando com P2002 é o que
 // torna o teste de concorrência (T048) determinístico.
 
+import { CANDIDATE_APPLICATION_STATUS_LABEL } from "@/lib/labels";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
@@ -128,7 +129,7 @@ export async function applyToJob(userId: string, jobId: string): Promise<ApplyRe
       });
       throw Errors.conflict(
         "ALREADY_APPLIED",
-        `Você já se candidatou a esta vaga. Status atual: ${existing.status}.`,
+        `Você já se candidatou a esta vaga. Situação atual: ${(CANDIDATE_APPLICATION_STATUS_LABEL[existing.status] ?? "em andamento").toLowerCase()}.`,
       );
     }
     throw err;

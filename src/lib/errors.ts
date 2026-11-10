@@ -3,6 +3,11 @@
 // { "error": { "code": "RESUME_REQUIRED", "message": "..." } }
 
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+// Toda rota importa este arquivo antes de validar: o que não tem texto próprio sai em português,
+// e não como "Too small: expected string to have >=8 characters".
+z.config(z.locales.ptBR());
 
 export class ApiError extends Error {
   constructor(
@@ -50,7 +55,7 @@ export function toErrorResponse(err: unknown): NextResponse {
   }
   logSafeError("api", err);
   return NextResponse.json(
-    { error: { code: "INTERNAL_ERROR", message: "Erro inesperado. Tente novamente." } },
+    { error: { code: "INTERNAL_ERROR", message: "Algo deu errado do nosso lado. Tente de novo em instantes; se continuar, avise a equipe da 3aq." } },
     { status: 500 },
   );
 }

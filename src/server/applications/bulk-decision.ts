@@ -65,7 +65,7 @@ export async function recordBulkDecision(
       if (err instanceof ApiError && (err.code === "APPLICATION_CLOSED" || err.code === "JOB_CLOSED")) {
         result.skipped.push({ id, name });
       } else {
-        result.failed.push({ id, name, message: err instanceof ApiError ? err.message : "Erro inesperado." });
+        result.failed.push({ id, name, message: err instanceof ApiError ? err.message : "Algo deu errado ao processar esta candidatura." });
       }
     }
   }
