@@ -1,0 +1,45 @@
+- generic [ref=f4e1]:
+  - main [ref=f4e2]:
+    - region "Sobre a CLTech" [ref=f4e3]:
+      - link "CLTech" [ref=f4e4] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f4e8]:
+        - paragraph [ref=f4e9]: Contrate pelo código, não pelo currículo bonito.
+        - paragraph [ref=f4e10]: Triagem automática do currículo, teste de código corrigido na hora e análise do GitHub. A decisão de quem avança continua com a equipe.
+      - list "Como a seleção funciona" [ref=f4e11]:
+        - listitem [ref=f4e12]:
+          - generic [ref=f4e13]: Currículo
+          - text: compatibilidade com a vaga
+        - listitem [ref=f4e14]:
+          - generic [ref=f4e15]: Código
+          - text: corrigido na hora
+        - listitem [ref=f4e16]:
+          - generic [ref=f4e17]: GitHub
+          - text: portfólio verificado
+    - generic [ref=f4e20]:
+      - generic [ref=f4e21]:
+        - heading "Entrar" [level=1] [ref=f4e22]
+        - paragraph [ref=f4e23]: Acesse sua conta para acompanhar seus processos.
+      - generic [ref=f4e24]:
+        - button "Entrar com GitHub" [ref=f4e25] [cursor=pointer]
+        - button "Entrar com LinkedIn" [ref=f4e28] [cursor=pointer]
+        - paragraph [ref=f4e31]: Entrando pelo GitHub, seu perfil público vira portfólio verificado para o recrutador. Dá para desconectar no seu perfil.
+      - generic [ref=f4e32]: ou com e-mail
+      - generic [ref=f4e35]:
+        - generic [ref=f4e36]:
+          - generic [ref=f4e37]: E-mail
+          - textbox "E-mail" [ref=f4e38]
+        - generic [ref=f4e39]:
+          - generic [ref=f4e40]: Senha
+          - generic [ref=f4e41]:
+            - textbox "Senha" [ref=f4e42]
+            - button "Mostrar senha" [ref=f4e43] [cursor=pointer]
+        - paragraph [ref=f4e47]:
+          - link "Esqueci minha senha" [ref=f4e48] [cursor=pointer]:
+            - /url: /esqueci-senha
+        - button "Entrar" [ref=f4e49] [cursor=pointer]
+      - paragraph [ref=f4e50]:
+        - text: Ainda não tem conta?
+        - link "Cadastre-se" [ref=f4e51] [cursor=pointer]:
+          - /url: /cadastro
+  - alert [ref=f4e52]

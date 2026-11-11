@@ -2,6 +2,7 @@
 // Agregado no banco em poucas consultas fixas — nunca uma por vaga (sem N+1).
 import { prisma } from "@/lib/prisma";
 import { positionsOf } from "@/lib/processStages";
+import { stalledDaysFrom } from "@/lib/velocity";
 
 const DAY_MS = 86_400_000;
 const HOUR_MS = 3_600_000;
@@ -63,6 +64,8 @@ export interface JobOverviewResult {
   summary: JobOverviewSummary;
   jobs: JobOverviewRow[];
   recruiters: Array<{ id: string; name: string }>;
+  /** Spec 010 FR-1003: o mesmo limite de "parado" dos candidatos (STALLED_CANDIDATE_DAYS). */
+  stalledDays: number;
 }
 
 function inPeriod(date: Date, from?: Date, to?: Date): boolean {
@@ -110,7 +113,7 @@ export async function getJobsOverview(filters: JobOverviewFilters = {}): Promise
   const recruiters = allCreators.map((j) => j.createdBy).sort((a, b) => a.name.localeCompare(b.name));
 
   if (jobs.length === 0) {
-    return { summary: { openJobs: 0, activeCandidates: 0, awaitingDecision: 0, hiresInPeriod: 0, avgDaysToHire: null }, jobs: [], recruiters };
+    return { summary: { openJobs: 0, activeCandidates: 0, awaitingDecision: 0, hiresInPeriod: 0, avgDaysToHire: null }, jobs: [], recruiters, stalledDays: stalledDaysFrom(process.env) };
   }
   const jobIds = jobs.map((j) => j.id);
   const now = new Date();
@@ -271,5 +274,6 @@ export async function getJobsOverview(filters: JobOverviewFilters = {}): Promise
     summary: { openJobs, activeCandidates, awaitingDecision: awaitingDecisionTotal, hiresInPeriod: hiresInPeriod.length, avgDaysToHire },
     jobs: rows,
     recruiters,
+    stalledDays: stalledDaysFrom(process.env),
   };
 }

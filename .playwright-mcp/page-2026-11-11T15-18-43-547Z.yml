@@ -1,0 +1,432 @@
+- generic [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - link "Pular para o conteúdo" [ref=f5e3] [cursor=pointer]:
+      - /url: "#conteudo"
+    - banner [ref=f5e4]:
+      - generic [ref=f5e5]:
+        - link "CLTech" [ref=f5e6] [cursor=pointer]:
+          - /url: /recrutamento
+        - navigation "Navegação principal" [ref=f5e10]:
+          - list [ref=f5e11]:
+            - listitem [ref=f5e12]:
+              - link "Painel" [ref=f5e13] [cursor=pointer]:
+                - /url: /recrutamento
+            - listitem [ref=f5e14]:
+              - link "Minhas vagas" [ref=f5e15] [cursor=pointer]:
+                - /url: /recrutamento/vagas
+            - listitem [ref=f5e16]:
+              - link "Candidatos" [ref=f5e17] [cursor=pointer]:
+                - /url: /recrutamento/candidatos
+            - listitem [ref=f5e18]:
+              - link "Desafios" [ref=f5e19] [cursor=pointer]:
+                - /url: /recrutamento/desafios
+            - listitem [ref=f5e20]:
+              - link "Modelos de e-mail" [ref=f5e21] [cursor=pointer]:
+                - /url: /recrutamento/modelos-de-email
+        - generic [ref=f5e22]:
+          - 'button "Tema: sistema. Trocar tema" [ref=f5e23] [cursor=pointer]'
+          - button "Recrutador 3aq Recrutador(a)" [ref=f5e28] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f5e29]: R3
+            - generic [ref=f5e30]:
+              - generic [ref=f5e31]: Recrutador 3aq
+              - generic [ref=f5e32]: Recrutador(a)
+    - main [ref=f5e33]:
+      - generic [ref=f5e66]:
+        - generic [ref=f5e68]:
+          - generic [ref=f5e69]:
+            - heading "Painel" [level=1] [ref=f5e70]
+            - generic [ref=f5e71]: Acompanhe suas vagas e onde cada candidato está no funil.
+          - link "Criar vaga" [ref=f5e73] [cursor=pointer]:
+            - /url: /recrutamento/vagas/nova
+        - generic [ref=f5e75]:
+          - generic [ref=f5e76]: Filtrar por vaga
+          - combobox "Filtrar por vaga" [ref=f5e78] [cursor=pointer]:
+            - generic [ref=f5e79]: Todas as vagas
+        - status [ref=f5e82]:
+          - generic [ref=f5e83]:
+            - paragraph [ref=f5e84]: "Gargalo do funil: Análise de GitHub"
+            - generic [ref=f5e85]: É a etapa com maior tempo médio (144 horas). Recorte por vaga para ver quem está parado nela.
+        - region "Indicadores" [ref=f5e86]:
+          - generic [ref=f5e87]:
+            - paragraph [ref=f5e88]: Vagas publicadas
+            - paragraph [ref=f5e89]: "7"
+            - paragraph [ref=f5e90]: de 14 no recorte
+          - generic [ref=f5e91]:
+            - paragraph [ref=f5e92]: Candidaturas em andamento
+            - paragraph [ref=f5e93]: "20"
+          - generic [ref=f5e95]:
+            - paragraph [ref=f5e96]: Do anúncio à proposta
+            - paragraph [ref=f5e97]: 17,5 dias
+            - paragraph [ref=f5e98]: "2 vagas na conta. Referência de mercado · Ford/Datafolha 2026: 45 dias · 61% abaixo. Metade ou menos da referência."
+        - region "Candidatos parados" [ref=f5e99]:
+          - heading "Candidatos parados" [level=2] [ref=f5e102]
+          - generic [ref=f5e103]:
+            - paragraph [ref=f5e104]: Há mais de 7 dias na mesma etapa, esperando uma decisão do RH. Os mais antigos primeiro.
+            - list "Candidatos esperando o RH" [ref=f5e105]:
+              - listitem [ref=f5e106]:
+                - link "Candidato Busca Desenvolvedor(a) Full-Stack Pleno · Análise de Currículo há 12 dias" [ref=f5e107] [cursor=pointer]:
+                  - /url: /recrutamento/vagas/06010e84-468b-4acf-a240-7cb7288baf78/candidaturas/3d2d973d-9584-4b7c-a546-47151a613339
+                  - generic [ref=f5e108]:
+                    - generic [ref=f5e109]: Candidato Busca
+                    - generic [ref=f5e110]: Desenvolvedor(a) Full-Stack Pleno · Análise de Currículo
+                  - generic [ref=f5e111]: há 12 dias
+              - listitem [ref=f5e112]:
+                - link "Candidato Fluxo 4 1794406178761 Desenvolvedor(a) Full-Stack Pleno · Proposta Final há 9 dias" [ref=f5e113] [cursor=pointer]:
+                  - /url: /recrutamento/vagas/06010e84-468b-4acf-a240-7cb7288baf78/candidaturas/362210ee-354f-4c27-944b-3fff9d50c274
+                  - generic [ref=f5e114]:
+                    - generic [ref=f5e115]: Candidato Fluxo 4 1794406178761
+                    - generic [ref=f5e116]: Desenvolvedor(a) Full-Stack Pleno · Proposta Final
+                  - generic [ref=f5e117]: há 9 dias
+            - generic [ref=f5e118]:
+              - heading "Aguardando o candidato" [level=3] [ref=f5e119]
+              - paragraph [ref=f5e120]: "Teste de código liberado e ainda dentro do prazo: não depende do RH."
+              - list "Candidatos aguardando o próprio envio" [ref=f5e121]:
+                - listitem [ref=f5e122]:
+                  - link "Pessoa already Desenvolvedor(a) Full-Stack Pleno · Teste de Código há 8 dias" [ref=f5e123] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/06010e84-468b-4acf-a240-7cb7288baf78/candidaturas/c630dae4-59a0-469a-bc2d-ab184c902dd6
+                    - generic [ref=f5e124]:
+                      - generic [ref=f5e125]: Pessoa already
+                      - generic [ref=f5e126]: Desenvolvedor(a) Full-Stack Pleno · Teste de Código
+                    - generic [ref=f5e127]: há 8 dias
+        - region "Vagas" [ref=f5e128]:
+          - heading "Vagas" [level=2] [ref=f5e129]
+          - generic [ref=f5e130]:
+            - generic [ref=f5e131]:
+              - generic [ref=f5e132]:
+                - heading [level=2] [ref=f5e133]:
+                  - link "Desenvolvedor(a) Full-Stack Pleno" [ref=f5e134] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/06010e84-468b-4acf-a240-7cb7288baf78/candidaturas
+                - generic [ref=f5e135]:
+                  - generic [ref=f5e136]: Publicada
+                  - generic [ref=f5e138]: 9 candidatos
+              - list "Candidatos por etapa em Desenvolvedor(a) Full-Stack Pleno" [ref=f5e140]:
+                - listitem [ref=f5e141]:
+                  - link "6 em Análise de Currículo — ver candidaturas" [ref=f5e142] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/06010e84-468b-4acf-a240-7cb7288baf78/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e143]: Análise de Currículo
+                    - generic [ref=f5e144]: "6"
+                - listitem [ref=f5e145]:
+                  - link "1 em Análise de GitHub — ver candidaturas" [ref=f5e146] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/06010e84-468b-4acf-a240-7cb7288baf78/candidaturas?etapa=GITHUB_ANALYSIS
+                    - generic [ref=f5e147]: Análise de GitHub
+                    - generic [ref=f5e148]: "1"
+                - listitem [ref=f5e149]:
+                  - link "1 em Teste de Código — ver candidaturas" [ref=f5e150] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/06010e84-468b-4acf-a240-7cb7288baf78/candidaturas?etapa=CODE_TEST
+                    - generic [ref=f5e151]: Teste de Código
+                    - generic [ref=f5e152]: "1"
+                - listitem [ref=f5e153]:
+                  - link "0 em Entrevista Técnica — ver candidaturas" [ref=f5e154] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/06010e84-468b-4acf-a240-7cb7288baf78/candidaturas?etapa=TECH_INTERVIEW
+                    - generic [ref=f5e155]: Entrevista Técnica
+                    - generic [ref=f5e156]: "0"
+                - listitem [ref=f5e157]:
+                  - link "1 em Proposta Final — ver candidaturas" [ref=f5e158] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/06010e84-468b-4acf-a240-7cb7288baf78/candidaturas?etapa=FINAL_OFFER
+                    - generic [ref=f5e159]: Proposta Final
+                    - generic [ref=f5e160]: "1"
+            - generic [ref=f5e161]:
+              - generic [ref=f5e162]:
+                - heading [level=2] [ref=f5e163]:
+                  - link "Vaga E2E 1794406713697" [ref=f5e164] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/cbe77308-c034-4aab-b6ec-8075e2f4ca1a/candidaturas
+                - generic [ref=f5e165]:
+                  - generic [ref=f5e166]: Publicada
+                  - generic [ref=f5e168]: 6 candidatos
+              - list "Candidatos por etapa em Vaga E2E 1794406713697" [ref=f5e170]:
+                - listitem [ref=f5e171]:
+                  - link "5 em Análise de Currículo — ver candidaturas" [ref=f5e172] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/cbe77308-c034-4aab-b6ec-8075e2f4ca1a/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e173]: Análise de Currículo
+                    - generic [ref=f5e174]: "5"
+                - listitem [ref=f5e175]:
+                  - link "1 em Análise de GitHub — ver candidaturas" [ref=f5e176] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/cbe77308-c034-4aab-b6ec-8075e2f4ca1a/candidaturas?etapa=GITHUB_ANALYSIS
+                    - generic [ref=f5e177]: Análise de GitHub
+                    - generic [ref=f5e178]: "1"
+                - listitem [ref=f5e179]:
+                  - link "0 em Entrevista Técnica — ver candidaturas" [ref=f5e180] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/cbe77308-c034-4aab-b6ec-8075e2f4ca1a/candidaturas?etapa=TECH_INTERVIEW
+                    - generic [ref=f5e181]: Entrevista Técnica
+                    - generic [ref=f5e182]: "0"
+            - generic [ref=f5e183]:
+              - generic [ref=f5e184]:
+                - heading [level=2] [ref=f5e185]:
+                  - link "Vaga E2E 1794406951674" [ref=f5e186] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/57cd6e39-593a-4b59-8cfe-b8461dc56d83/candidaturas
+                - generic [ref=f5e187]:
+                  - generic [ref=f5e188]: Publicada
+                  - generic [ref=f5e190]: 3 candidatos
+              - list "Candidatos por etapa em Vaga E2E 1794406951674" [ref=f5e192]:
+                - listitem [ref=f5e193]:
+                  - link "2 em Análise de Currículo — ver candidaturas" [ref=f5e194] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/57cd6e39-593a-4b59-8cfe-b8461dc56d83/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e195]: Análise de Currículo
+                    - generic [ref=f5e196]: "2"
+                - listitem [ref=f5e197]:
+                  - link "1 em Análise de GitHub — ver candidaturas" [ref=f5e198] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/57cd6e39-593a-4b59-8cfe-b8461dc56d83/candidaturas?etapa=GITHUB_ANALYSIS
+                    - generic [ref=f5e199]: Análise de GitHub
+                    - generic [ref=f5e200]: "1"
+                - listitem [ref=f5e201]:
+                  - link "0 em Entrevista Técnica — ver candidaturas" [ref=f5e202] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/57cd6e39-593a-4b59-8cfe-b8461dc56d83/candidaturas?etapa=TECH_INTERVIEW
+                    - generic [ref=f5e203]: Entrevista Técnica
+                    - generic [ref=f5e204]: "0"
+            - generic [ref=f5e205]:
+              - generic [ref=f5e206]:
+                - heading [level=2] [ref=f5e207]:
+                  - link "Vaga Encerrada — Suporte Técnico" [ref=f5e208] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/482ed6ce-3a0b-42e8-a082-f7c7353d0a5d/candidaturas
+                - generic [ref=f5e209]:
+                  - generic [ref=f5e210]: Encerrada
+                  - generic [ref=f5e211]: 1 candidato
+              - list "Candidatos por etapa em Vaga Encerrada — Suporte Técnico" [ref=f5e213]:
+                - listitem [ref=f5e214]:
+                  - link "1 em Análise de Currículo — ver candidaturas" [ref=f5e215] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/482ed6ce-3a0b-42e8-a082-f7c7353d0a5d/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e216]: Análise de Currículo
+                    - generic [ref=f5e217]: "1"
+            - generic [ref=f5e218]:
+              - generic [ref=f5e219]:
+                - heading [level=2] [ref=f5e220]:
+                  - link "Estagiário(a) de Desenvolvimento" [ref=f5e221] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/3cbf9f06-0b00-4bf2-99f6-ffe8ff9a4f87/candidaturas
+                - generic [ref=f5e222]:
+                  - generic [ref=f5e223]: Publicada
+                  - generic [ref=f5e225]: 1 candidato
+              - list "Candidatos por etapa em Estagiário(a) de Desenvolvimento" [ref=f5e227]:
+                - listitem [ref=f5e228]:
+                  - link "1 em Análise de Currículo — ver candidaturas" [ref=f5e229] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/3cbf9f06-0b00-4bf2-99f6-ffe8ff9a4f87/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e230]: Análise de Currículo
+                    - generic [ref=f5e231]: "1"
+                - listitem [ref=f5e232]:
+                  - link "0 em Entrevista de RH — ver candidaturas" [ref=f5e233] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/3cbf9f06-0b00-4bf2-99f6-ffe8ff9a4f87/candidaturas?etapa=HR_INTERVIEW
+                    - generic [ref=f5e234]: Entrevista de RH
+                    - generic [ref=f5e235]: "0"
+                - listitem [ref=f5e236]:
+                  - link "0 em Entrevista Técnica — ver candidaturas" [ref=f5e237] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/3cbf9f06-0b00-4bf2-99f6-ffe8ff9a4f87/candidaturas?etapa=TECH_INTERVIEW
+                    - generic [ref=f5e238]: Entrevista Técnica
+                    - generic [ref=f5e239]: "0"
+                - listitem [ref=f5e240]:
+                  - link "0 em Proposta Final — ver candidaturas" [ref=f5e241] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/3cbf9f06-0b00-4bf2-99f6-ffe8ff9a4f87/candidaturas?etapa=FINAL_OFFER
+                    - generic [ref=f5e242]: Proposta Final
+                    - generic [ref=f5e243]: "0"
+            - generic [ref=f5e244]:
+              - generic [ref=f5e245]:
+                - heading [level=2] [ref=f5e246]:
+                  - link "Engenheiro(a) de Software Sênior" [ref=f5e247] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/1cc35c7d-5a48-47f8-81fb-5ced8f530a4c/candidaturas
+                - generic [ref=f5e248]:
+                  - generic [ref=f5e249]: Publicada
+                  - generic [ref=f5e251]: 0 candidatos
+              - list "Candidatos por etapa em Engenheiro(a) de Software Sênior" [ref=f5e253]:
+                - listitem [ref=f5e254]:
+                  - link "0 em Análise de Currículo — ver candidaturas" [ref=f5e255] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/1cc35c7d-5a48-47f8-81fb-5ced8f530a4c/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e256]: Análise de Currículo
+                    - generic [ref=f5e257]: "0"
+                - listitem [ref=f5e258]:
+                  - link "0 em Análise de GitHub — ver candidaturas" [ref=f5e259] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/1cc35c7d-5a48-47f8-81fb-5ced8f530a4c/candidaturas?etapa=GITHUB_ANALYSIS
+                    - generic [ref=f5e260]: Análise de GitHub
+                    - generic [ref=f5e261]: "0"
+                - listitem [ref=f5e262]:
+                  - link "0 em Teste de Código — ver candidaturas" [ref=f5e263] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/1cc35c7d-5a48-47f8-81fb-5ced8f530a4c/candidaturas?etapa=CODE_TEST
+                    - generic [ref=f5e264]: Teste de Código
+                    - generic [ref=f5e265]: "0"
+                - listitem [ref=f5e266]:
+                  - link "0 em Entrevista Técnica — ver candidaturas" [ref=f5e267] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/1cc35c7d-5a48-47f8-81fb-5ced8f530a4c/candidaturas?etapa=TECH_INTERVIEW
+                    - generic [ref=f5e268]: Entrevista Técnica
+                    - generic [ref=f5e269]: "0"
+                - listitem [ref=f5e270]:
+                  - link "0 em Proposta Final — ver candidaturas" [ref=f5e271] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/1cc35c7d-5a48-47f8-81fb-5ced8f530a4c/candidaturas?etapa=FINAL_OFFER
+                    - generic [ref=f5e272]: Proposta Final
+                    - generic [ref=f5e273]: "0"
+            - generic [ref=f5e274]:
+              - generic [ref=f5e275]:
+                - heading [level=2] [ref=f5e276]:
+                  - link "Desenvolvedor(a) Frontend React Pleno" [ref=f5e277] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/747e3dee-94e3-4c73-9637-5067f6956762/candidaturas
+                - generic [ref=f5e278]:
+                  - generic [ref=f5e279]: Publicada
+                  - generic [ref=f5e281]: 0 candidatos
+              - list "Candidatos por etapa em Desenvolvedor(a) Frontend React Pleno" [ref=f5e283]:
+                - listitem [ref=f5e284]:
+                  - link "0 em Análise de Currículo — ver candidaturas" [ref=f5e285] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/747e3dee-94e3-4c73-9637-5067f6956762/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e286]: Análise de Currículo
+                    - generic [ref=f5e287]: "0"
+                - listitem [ref=f5e288]:
+                  - link "0 em Análise de GitHub — ver candidaturas" [ref=f5e289] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/747e3dee-94e3-4c73-9637-5067f6956762/candidaturas?etapa=GITHUB_ANALYSIS
+                    - generic [ref=f5e290]: Análise de GitHub
+                    - generic [ref=f5e291]: "0"
+                - listitem [ref=f5e292]:
+                  - link "0 em Teste de Código — ver candidaturas" [ref=f5e293] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/747e3dee-94e3-4c73-9637-5067f6956762/candidaturas?etapa=CODE_TEST
+                    - generic [ref=f5e294]: Teste de Código
+                    - generic [ref=f5e295]: "0"
+                - listitem [ref=f5e296]:
+                  - link "0 em Entrevista Técnica — ver candidaturas" [ref=f5e297] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/747e3dee-94e3-4c73-9637-5067f6956762/candidaturas?etapa=TECH_INTERVIEW
+                    - generic [ref=f5e298]: Entrevista Técnica
+                    - generic [ref=f5e299]: "0"
+                - listitem [ref=f5e300]:
+                  - link "0 em Proposta Final — ver candidaturas" [ref=f5e301] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/747e3dee-94e3-4c73-9637-5067f6956762/candidaturas?etapa=FINAL_OFFER
+                    - generic [ref=f5e302]: Proposta Final
+                    - generic [ref=f5e303]: "0"
+            - generic [ref=f5e304]:
+              - generic [ref=f5e305]:
+                - heading [level=2] [ref=f5e306]:
+                  - link "Desenvolvedor(a) Backend Node.js Júnior" [ref=f5e307] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/21ee5737-0f8c-4c13-81a9-f64b6e45777c/candidaturas
+                - generic [ref=f5e308]:
+                  - generic [ref=f5e309]: Publicada
+                  - generic [ref=f5e311]: 0 candidatos
+              - list "Candidatos por etapa em Desenvolvedor(a) Backend Node.js Júnior" [ref=f5e313]:
+                - listitem [ref=f5e314]:
+                  - link "0 em Análise de Currículo — ver candidaturas" [ref=f5e315] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/21ee5737-0f8c-4c13-81a9-f64b6e45777c/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e316]: Análise de Currículo
+                    - generic [ref=f5e317]: "0"
+                - listitem [ref=f5e318]:
+                  - link "0 em Entrevista de RH — ver candidaturas" [ref=f5e319] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/21ee5737-0f8c-4c13-81a9-f64b6e45777c/candidaturas?etapa=HR_INTERVIEW
+                    - generic [ref=f5e320]: Entrevista de RH
+                    - generic [ref=f5e321]: "0"
+                - listitem [ref=f5e322]:
+                  - link "0 em Entrevista Técnica — ver candidaturas" [ref=f5e323] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/21ee5737-0f8c-4c13-81a9-f64b6e45777c/candidaturas?etapa=TECH_INTERVIEW
+                    - generic [ref=f5e324]: Entrevista Técnica
+                    - generic [ref=f5e325]: "0"
+                - listitem [ref=f5e326]:
+                  - link "0 em Proposta Final — ver candidaturas" [ref=f5e327] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/21ee5737-0f8c-4c13-81a9-f64b6e45777c/candidaturas?etapa=FINAL_OFFER
+                    - generic [ref=f5e328]: Proposta Final
+                    - generic [ref=f5e329]: "0"
+            - generic [ref=f5e330]:
+              - generic [ref=f5e331]:
+                - heading [level=2] [ref=f5e332]:
+                  - link "Vaga Erros 1794406941989" [ref=f5e333] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/a9e66d4a-ff34-41a0-b42b-e22b7a7d18ac/candidaturas
+                - generic [ref=f5e334]: Rascunho
+              - list "Candidatos por etapa em Vaga Erros 1794406941989" [ref=f5e338]:
+                - listitem [ref=f5e339]:
+                  - link "0 em Análise de Currículo — ver candidaturas" [ref=f5e340] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/a9e66d4a-ff34-41a0-b42b-e22b7a7d18ac/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e341]: Análise de Currículo
+                    - generic [ref=f5e342]: "0"
+                - listitem [ref=f5e343]:
+                  - link "0 em Teste de Código — ver candidaturas" [ref=f5e344] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/a9e66d4a-ff34-41a0-b42b-e22b7a7d18ac/candidaturas?etapa=CODE_TEST
+                    - generic [ref=f5e345]: Teste de Código
+                    - generic [ref=f5e346]: "0"
+            - generic [ref=f5e347]:
+              - generic [ref=f5e348]:
+                - heading [level=2] [ref=f5e349]:
+                  - link "Vaga Erros 1794406937624" [ref=f5e350] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/de8cc62c-ff63-4856-8259-eb0eaefd6909/candidaturas
+                - generic [ref=f5e351]: Rascunho
+              - list "Candidatos por etapa em Vaga Erros 1794406937624" [ref=f5e355]:
+                - listitem [ref=f5e356]:
+                  - link "0 em Análise de Currículo — ver candidaturas" [ref=f5e357] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/de8cc62c-ff63-4856-8259-eb0eaefd6909/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e358]: Análise de Currículo
+                    - generic [ref=f5e359]: "0"
+            - generic [ref=f5e360]:
+              - generic [ref=f5e361]:
+                - heading [level=2] [ref=f5e362]:
+                  - link "Vaga Erros 1794406932446" [ref=f5e363] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/8acd5b8c-91b1-4c8d-952c-3c943b9e926c/candidaturas
+                - generic [ref=f5e364]: Rascunho
+              - list "Candidatos por etapa em Vaga Erros 1794406932446" [ref=f5e368]:
+                - listitem [ref=f5e369]:
+                  - link "0 em Análise de Currículo — ver candidaturas" [ref=f5e370] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/8acd5b8c-91b1-4c8d-952c-3c943b9e926c/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e371]: Análise de Currículo
+                    - generic [ref=f5e372]: "0"
+            - generic [ref=f5e373]:
+              - generic [ref=f5e374]:
+                - heading [level=2] [ref=f5e375]:
+                  - link "Vaga Erros 1794406704432" [ref=f5e376] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/5b76c1c8-f599-48fd-a745-069bb47ec417/candidaturas
+                - generic [ref=f5e377]: Rascunho
+              - list "Candidatos por etapa em Vaga Erros 1794406704432" [ref=f5e381]:
+                - listitem [ref=f5e382]:
+                  - link "0 em Análise de Currículo — ver candidaturas" [ref=f5e383] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/5b76c1c8-f599-48fd-a745-069bb47ec417/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e384]: Análise de Currículo
+                    - generic [ref=f5e385]: "0"
+                - listitem [ref=f5e386]:
+                  - link "0 em Teste de Código — ver candidaturas" [ref=f5e387] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/5b76c1c8-f599-48fd-a745-069bb47ec417/candidaturas?etapa=CODE_TEST
+                    - generic [ref=f5e388]: Teste de Código
+                    - generic [ref=f5e389]: "0"
+            - generic [ref=f5e390]:
+              - generic [ref=f5e391]:
+                - heading [level=2] [ref=f5e392]:
+                  - link "Vaga Erros 1794406698845" [ref=f5e393] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/beb5dabe-9a2a-4bfb-bc41-15e937260403/candidaturas
+                - generic [ref=f5e394]: Rascunho
+              - list "Candidatos por etapa em Vaga Erros 1794406698845" [ref=f5e398]:
+                - listitem [ref=f5e399]:
+                  - link "0 em Análise de Currículo — ver candidaturas" [ref=f5e400] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/beb5dabe-9a2a-4bfb-bc41-15e937260403/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e401]: Análise de Currículo
+                    - generic [ref=f5e402]: "0"
+            - generic [ref=f5e403]:
+              - generic [ref=f5e404]:
+                - heading [level=2] [ref=f5e405]:
+                  - link "Vaga Erros 1794406686732" [ref=f5e406] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/18f2c25e-5f0d-4e48-b20a-c97247ec233b/candidaturas
+                - generic [ref=f5e407]: Rascunho
+              - list "Candidatos por etapa em Vaga Erros 1794406686732" [ref=f5e411]:
+                - listitem [ref=f5e412]:
+                  - link "0 em Análise de Currículo — ver candidaturas" [ref=f5e413] [cursor=pointer]:
+                    - /url: /recrutamento/vagas/18f2c25e-5f0d-4e48-b20a-c97247ec233b/candidaturas?etapa=RESUME_ANALYSIS
+                    - generic [ref=f5e414]: Análise de Currículo
+                    - generic [ref=f5e415]: "0"
+        - region "Métricas do funil" [ref=f5e416]:
+          - heading "Métricas do funil" [level=2] [ref=f5e419]
+          - generic [ref=f5e421]:
+            - generic [ref=f5e422]:
+              - paragraph [ref=f5e423]: Análise de Currículo
+              - paragraph [ref=f5e424]: "Tempo médio: 20.8h"
+              - paragraph [ref=f5e425]: "Taxa de avanço: 40%"
+            - generic [ref=f5e426]:
+              - paragraph [ref=f5e427]:
+                - text: Análise de GitHub
+                - generic [ref=f5e428]: Gargalo
+              - paragraph [ref=f5e430]: "Tempo médio: 144h"
+              - paragraph [ref=f5e431]: "Taxa de avanço: 100%"
+            - generic [ref=f5e432]:
+              - paragraph [ref=f5e433]: Teste de Código
+              - paragraph [ref=f5e434]: "Tempo médio: 144h"
+              - paragraph [ref=f5e435]: "Taxa de avanço: 100%"
+            - generic [ref=f5e436]:
+              - paragraph [ref=f5e437]: Entrevista Técnica
+              - paragraph [ref=f5e438]: "Tempo médio: 108h"
+              - paragraph [ref=f5e439]: "Taxa de avanço: 100%"
+            - generic [ref=f5e440]:
+              - paragraph [ref=f5e441]: Entrevista de RH
+              - paragraph [ref=f5e442]: "Tempo médio: 120h"
+              - paragraph [ref=f5e443]: "Taxa de avanço: 100%"
+            - generic [ref=f5e444]:
+              - paragraph [ref=f5e445]: Proposta Final
+              - paragraph [ref=f5e446]: "Tempo médio: 144h"
+              - paragraph [ref=f5e447]: "Taxa de avanço: 100%"
+    - contentinfo [ref=f5e62]:
+      - generic [ref=f5e63]:
+        - generic [ref=f5e64]: CLTech · 3aq Tecnologia
+        - link "Aviso de privacidade" [ref=f5e65] [cursor=pointer]:
+          - /url: /privacidade
+  - alert [ref=f5e448]

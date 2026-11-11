@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { STAGE_LABEL } from "@/lib/processStages";
@@ -24,6 +24,7 @@ import {
   focusRing,
 } from "@/components/ui";
 import { ViewSwitcher } from "../ViewSwitcher";
+import { StageTimesPanel, StageTimesToggle, formatHours } from "./StageTimes";
 
 interface StageCount {
   stageType: string;
@@ -66,10 +67,9 @@ interface OverviewResult {
   };
   jobs: JobRow[];
   recruiters: Array<{ id: string; name: string }>;
+  /** Vaga publicada sem movimentação há esse tanto de dias: destaque de "parada" (spec 010 FR-1003). */
+  stalledDays: number;
 }
-
-// Vaga publicada sem nenhuma movimentação há esse tanto de tempo: destaque de "parada".
-const STALLED_DAYS = 7;
 
 type SortKey = "title" | "daysOpen" | "totalCandidates" | "conversionRate" | "bottleneck" | "awaitingDecision" | "codeTestPending" | "activity" | "positions";
 
@@ -101,12 +101,6 @@ function formatDays(n: number | null): string {
   if (n === null) return "—";
   if (n <= 0) return "hoje";
   return n === 1 ? "1 dia" : `${n} dias`;
-}
-
-function formatHours(hours: number): string {
-  if (hours < 1) return "menos de 1h";
-  if (hours < 48) return `${Math.round(hours)}h`;
-  return `${Math.round(hours / 24)} dias`;
 }
 
 function formatPercent(rate: number | null): string {
@@ -147,6 +141,17 @@ export function VisaoGeralVagas() {
   const [searchInput, setSearchInput] = useState(searchParams.get("busca") ?? "");
   const [search, setSearch] = useState(searchParams.get("busca") ?? "");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "activity", dir: "desc" });
+  // Spec 010 US4: vagas com o "Tempo por etapa" aberto.
+  const [openStageTimes, setOpenStageTimes] = useState<Set<string>>(new Set());
+
+  function toggleStageTimes(jobId: string) {
+    setOpenStageTimes((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) next.delete(jobId);
+      else next.add(jobId);
+      return next;
+    });
+  }
 
   const [data, setData] = useState<OverviewResult | null>(null);
   const [failed, setFailed] = useState(false);
@@ -301,71 +306,88 @@ export function VisaoGeralVagas() {
               </thead>
               <tbody>
                 {sortedJobs.map((job) => {
-                  const stalled = job.status === "PUBLISHED" && job.daysSinceActivity >= STALLED_DAYS;
+                  const stalled = job.status === "PUBLISHED" && job.daysSinceActivity >= data.stalledDays;
+                  const stageTimesOpen = openStageTimes.has(job.id);
                   return (
-                    <tr
-                      key={job.id}
-                      className={cn("relative border-b border-line last:border-0 hover:bg-page", stalled && "bg-warning/5")}
-                    >
-                      <td className="max-w-[220px] px-4 py-3">
-                        <Link
-                          href={`/recrutamento/vagas/${job.id}/candidaturas`}
-                          className={cn("break-words rounded-sm font-medium text-fg after:absolute after:inset-0 hover:underline", focusRing)}
-                        >
-                          {job.title}
-                        </Link>
-                        <p className="truncate text-label text-fg-muted">{job.recruiter.name}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col items-start gap-1">
-                          <Badge variant={JOB_STATUS_BADGE[job.status]}>{JOB_STATUS_LABEL[job.status]}</Badge>
-                          {stalled && <Badge variant="warning">Parada</Badge>}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-fg-muted">{formatDays(job.daysOpen)}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-semibold tabular-nums text-fg">{job.totalCandidates}</p>
-                        {job.byStage.some((s) => s.count > 0) && (
-                          <div className="mt-1 flex max-w-[220px] flex-wrap gap-1">
-                            {job.byStage
-                              .filter((s) => s.count > 0)
-                              .map((s) => (
-                                <Badge key={s.stageType} variant="muted" className="text-[11px]">
-                                  {STAGE_LABEL[s.stageType] ?? s.stageType} {s.count}
-                                </Badge>
-                              ))}
+                    <Fragment key={job.id}>
+                      <tr
+                        className={cn("relative border-b border-line last:border-0 hover:bg-page", stalled && "bg-warning/5")}
+                      >
+                        <td className="max-w-[220px] px-4 py-3">
+                          <Link
+                            href={`/recrutamento/vagas/${job.id}/candidaturas`}
+                            className={cn("break-words rounded-sm font-medium text-fg after:absolute after:inset-0 hover:underline", focusRing)}
+                          >
+                            {job.title}
+                          </Link>
+                          <p className="truncate text-label text-fg-muted">{job.recruiter.name}</p>
+                          {job.status !== "DRAFT" && job.byStage.length > 0 && (
+                            <StageTimesToggle panelId={`tempo-etapas-tabela-${job.id}`} open={stageTimesOpen} onToggle={() => toggleStageTimes(job.id)} />
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col items-start gap-1">
+                            <Badge variant={JOB_STATUS_BADGE[job.status]}>{JOB_STATUS_LABEL[job.status]}</Badge>
+                            {stalled && <Badge variant="warning">Parada</Badge>}
                           </div>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-fg-muted">{formatPercent(job.conversionRate)}</td>
-                      <td className="px-4 py-3">
-                        {job.bottleneck ? (
-                          <>
-                            <Badge variant="warning">{STAGE_LABEL[job.bottleneck.stageType] ?? job.bottleneck.stageType}</Badge>
-                            <p className="mt-1 text-label text-fg-muted">
-                              {job.bottleneck.count} {job.bottleneck.count === 1 ? "pessoa" : "pessoas"} · {formatHours(job.bottleneck.avgHoursWaiting)}
-                            </p>
-                          </>
-                        ) : (
-                          <span className="text-fg-muted">—</span>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-fg-muted">{job.awaitingDecision}</td>
-                      <td className="px-4 py-3">
-                        {job.codeTestPending === 0 && job.codeTestSubmitted === 0 ? (
-                          <span className="text-fg-muted">—</span>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            {job.codeTestPending > 0 && <Badge variant="warning">{job.codeTestPending} pendente{job.codeTestPending > 1 ? "s" : ""}</Badge>}
-                            {job.codeTestSubmitted > 0 && <Badge variant="muted">{job.codeTestSubmitted} enviado{job.codeTestSubmitted > 1 ? "s" : ""}</Badge>}
-                          </div>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-fg-muted">{formatDays(job.daysSinceActivity)}</td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-fg-muted">
-                        {job.positionsFilled}/{job.positionsTotal ?? "—"}
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-fg-muted">{formatDays(job.daysOpen)}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-semibold tabular-nums text-fg">{job.totalCandidates}</p>
+                          {job.byStage.some((s) => s.count > 0) && (
+                            <div className="mt-1 flex max-w-[220px] flex-wrap gap-1">
+                              {job.byStage
+                                .filter((s) => s.count > 0)
+                                .map((s) => (
+                                  <Badge key={s.stageType} variant="muted" className="text-[11px]">
+                                    {STAGE_LABEL[s.stageType] ?? s.stageType} {s.count}
+                                  </Badge>
+                                ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-fg-muted">{formatPercent(job.conversionRate)}</td>
+                        <td className="px-4 py-3">
+                          {job.bottleneck ? (
+                            <>
+                              <Badge variant="warning">{STAGE_LABEL[job.bottleneck.stageType] ?? job.bottleneck.stageType}</Badge>
+                              <p className="mt-1 text-label text-fg-muted">
+                                {job.bottleneck.count} {job.bottleneck.count === 1 ? "pessoa" : "pessoas"} · {formatHours(job.bottleneck.avgHoursWaiting)}
+                              </p>
+                            </>
+                          ) : (
+                            <span className="text-fg-muted">—</span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-fg-muted">{job.awaitingDecision}</td>
+                        <td className="px-4 py-3">
+                          {job.codeTestPending === 0 && job.codeTestSubmitted === 0 ? (
+                            <span className="text-fg-muted">—</span>
+                          ) : (
+                            <div className="flex flex-col gap-1">
+                              {job.codeTestPending > 0 && <Badge variant="warning">{job.codeTestPending} pendente{job.codeTestPending > 1 ? "s" : ""}</Badge>}
+                              {job.codeTestSubmitted > 0 && <Badge variant="muted">{job.codeTestSubmitted} enviado{job.codeTestSubmitted > 1 ? "s" : ""}</Badge>}
+                            </div>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-fg-muted">{formatDays(job.daysSinceActivity)}</td>
+                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-fg-muted">
+                          {job.positionsFilled}/{job.positionsTotal ?? "—"}
+                        </td>
+                      </tr>
+                      {stageTimesOpen && (
+                        <tr className="border-b border-line bg-page last:border-0">
+                          <td colSpan={COLUMNS.length + 1} className="px-4 py-3">
+                            <StageTimesPanel
+                              panelId={`tempo-etapas-tabela-${job.id}`}
+                              jobId={job.id}
+                              jobTitle={job.title}
+                              stageOrder={job.byStage.map((s) => s.stageType)}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -375,7 +397,7 @@ export function VisaoGeralVagas() {
           {/* Mobile/tablet: um cartão por vaga. */}
           <ul className="space-y-3 lg:hidden">
             {sortedJobs.map((job) => {
-              const stalled = job.status === "PUBLISHED" && job.daysSinceActivity >= STALLED_DAYS;
+              const stalled = job.status === "PUBLISHED" && job.daysSinceActivity >= data.stalledDays;
               return (
                 <Card as="li" key={job.id} className={cn("relative space-y-3 p-4", stalled && "bg-warning/5")}>
                   <div className="flex items-start justify-between gap-3">
@@ -445,6 +467,24 @@ export function VisaoGeralVagas() {
                   )}
 
                   <p className="text-label text-fg-muted">Última atividade: {formatDays(job.daysSinceActivity)}</p>
+
+                  {job.status !== "DRAFT" && job.byStage.length > 0 && (
+                    <div className="space-y-2">
+                      <StageTimesToggle
+                        panelId={`tempo-etapas-cartao-${job.id}`}
+                        open={openStageTimes.has(job.id)}
+                        onToggle={() => toggleStageTimes(job.id)}
+                      />
+                      {openStageTimes.has(job.id) && (
+                        <StageTimesPanel
+                          panelId={`tempo-etapas-cartao-${job.id}`}
+                          jobId={job.id}
+                          jobTitle={job.title}
+                          stageOrder={job.byStage.map((s) => s.stageType)}
+                        />
+                      )}
+                    </div>
+                  )}
                 </Card>
               );
             })}

@@ -7,6 +7,7 @@ import { STAGE_LABEL } from "@/lib/processStages";
 import { apiFetch } from "@/lib/api-client";
 import { JOB_STATUS_BADGE, JOB_STATUS_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/cn";
+import { formatDays, timeToOfferVerdict, type TimeToOffer, type WaitingOn } from "@/lib/velocity";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Badge,
@@ -38,6 +39,53 @@ interface DashboardResult {
     advanceRatePerStage: Array<{ stageType: string; rate: number }>;
     bottleneckStageType: string | null;
   };
+  timeToOffer: TimeToOffer;
+  stalledDays: number;
+  stalledCandidates: StalledCandidate[];
+}
+
+interface StalledCandidate {
+  applicationId: string;
+  candidateName: string;
+  jobId: string;
+  jobTitle: string;
+  stageType: string;
+  days: number;
+  waitingOn: WaitingOn;
+}
+
+function dayCount(days: number): string {
+  return `${days} ${days === 1 ? "dia" : "dias"}`;
+}
+
+/** Spec 010 US1: meta da 3aq. Sem vaga na conta, diz isso — nunca "0 dias". */
+function timeToOfferHint(t: TimeToOffer): string {
+  if (t.avgDays === null) return "Ainda sem vaga que chegou à proposta.";
+  const counted = `${t.jobsCounted} ${t.jobsCounted === 1 ? "vaga" : "vagas"} na conta.`;
+  return `${counted} ${timeToOfferVerdict(t)}`;
+}
+
+function StalledList({ items, label }: { items: StalledCandidate[]; label: string }) {
+  return (
+    <ul className="divide-y divide-line" aria-label={label}>
+      {items.map((item) => (
+        <li key={item.applicationId}>
+          <Link
+            href={`/recrutamento/vagas/${item.jobId}/candidaturas/${item.applicationId}`}
+            className={cn("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-field px-2 py-2 hover:bg-page", focusRing)}
+          >
+            <span className="min-w-0 break-words">
+              <span className="block text-body font-medium text-fg">{item.candidateName}</span>
+              <span className="block text-label font-normal text-fg-muted">
+                {item.jobTitle} · {STAGE_LABEL[item.stageType] ?? item.stageType}
+              </span>
+            </span>
+            <span className="shrink-0 text-body font-semibold tabular-nums text-fg">há {dayCount(item.days)}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function MetricCard({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
@@ -132,6 +180,9 @@ export function Dashboard() {
   const bottleneck = data.funnel.bottleneckStageType;
   const bottleneckHours = data.funnel.avgTimePerStageHours.find((item) => item.stageType === bottleneck)?.hours;
   const totalOf = (job: (typeof data.jobs)[number]) => job.candidatesByStage.reduce((sum, item) => sum + item.count, 0);
+  const timeToOffer = data.timeToOffer;
+  const waitingOnRecruiter = data.stalledCandidates.filter((item) => item.waitingOn === "RECRUITER");
+  const waitingOnCandidate = data.stalledCandidates.filter((item) => item.waitingOn === "CANDIDATE");
   // Vaga com gente na frente; rascunho por último (e mais discreto no cartão).
   const jobs = [...data.jobs].sort((a, b) => Number(a.status === "DRAFT") - Number(b.status === "DRAFT") || totalOf(b) - totalOf(a));
 
@@ -140,7 +191,7 @@ export function Dashboard() {
       {header}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <Field id="painel-vaga" label="Recortar por vaga" className="sm:w-80">
+        <Field id="painel-vaga" label="Filtrar por vaga" className="sm:w-80">
           <Select value={selectedJobId} onChange={(e) => selectJob(e.target.value)}>
             <option value="">Todas as vagas</option>
             {(allJobs.length > 0 ? allJobs : data.jobs).map((job) => (
@@ -171,10 +222,40 @@ export function Dashboard() {
         </Notice>
       )}
 
-      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:gap-4">
+      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <MetricCard label="Vagas publicadas" value={published} hint={`de ${data.jobs.length} no recorte`} />
         <MetricCard label="Candidaturas em andamento" value={inProgress} />
+        <div className="col-span-2 lg:col-span-1">
+          <MetricCard
+            label="Do anúncio à proposta"
+            value={timeToOffer.avgDays === null ? "Sem dados" : `${formatDays(timeToOffer.avgDays)} dias`}
+            hint={timeToOfferHint(timeToOffer)}
+          />
+        </div>
       </section>
+
+      <Card as="section" aria-labelledby="candidatos-parados">
+        <CardHeader titleId="candidatos-parados" title="Candidatos parados" />
+        <CardBody className="space-y-4">
+          {waitingOnRecruiter.length === 0 ? (
+            <p className="text-body text-fg-muted">Ninguém esperando o RH há mais de {dayCount(data.stalledDays)} na mesma etapa.</p>
+          ) : (
+            <>
+              <p className="text-body text-fg-muted">
+                Há mais de {dayCount(data.stalledDays)} na mesma etapa, esperando uma decisão do RH. Os mais antigos primeiro.
+              </p>
+              <StalledList items={waitingOnRecruiter} label="Candidatos esperando o RH" />
+            </>
+          )}
+          {waitingOnCandidate.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-body font-medium text-fg">Aguardando o candidato</h3>
+              <p className="text-label font-normal text-fg-muted">Teste de código liberado e ainda dentro do prazo: não depende do RH.</p>
+              <StalledList items={waitingOnCandidate} label="Candidatos aguardando o próprio envio" />
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       <section aria-labelledby="vagas-painel" className="space-y-4">
         <h2 id="vagas-painel" className="sr-only">

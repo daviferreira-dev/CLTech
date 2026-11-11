@@ -1,0 +1,32 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e18]:
+      - link "CLTech" [ref=e53] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - heading "Entrar" [level=1] [ref=e22]
+          - paragraph [ref=e23]: Acesse sua conta para acompanhar seus processos.
+        - generic [ref=e24]:
+          - button "Entrar com GitHub" [ref=e25] [cursor=pointer]
+          - button "Entrar com LinkedIn" [ref=e28] [cursor=pointer]
+          - paragraph [ref=e31]: Entrando pelo GitHub, seu perfil público vira portfólio verificado para o recrutador. Dá para desconectar no seu perfil.
+        - generic [ref=e32]: ou com e-mail
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - generic [ref=e37]: E-mail
+            - textbox "E-mail" [ref=e38]: recrutador@3aq.dev
+          - generic [ref=e39]:
+            - generic [ref=e40]: Senha
+            - generic [ref=e41]:
+              - textbox "Senha" [ref=e42]: Senha123!
+              - button "Mostrar senha" [ref=e43] [cursor=pointer]
+          - paragraph [ref=e47]:
+            - link "Esqueci minha senha" [ref=e48] [cursor=pointer]:
+              - /url: /esqueci-senha
+          - button "Entrando…" [disabled] [ref=e57]
+        - paragraph [ref=e50]:
+          - text: Ainda não tem conta?
+          - link "Cadastre-se" [ref=e51] [cursor=pointer]:
+            - /url: /cadastro
+  - alert [ref=e52]

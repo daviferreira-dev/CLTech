@@ -1,0 +1,46 @@
+- generic [ref=f5e2]:
+  - link "Pular para o conteúdo" [ref=f5e3] [cursor=pointer]:
+    - /url: "#conteudo"
+  - banner [ref=f5e4]:
+    - generic [ref=f5e5]:
+      - link "CLTech" [ref=f5e6] [cursor=pointer]:
+        - /url: /recrutamento
+      - navigation "Navegação principal" [ref=f5e10]:
+        - list [ref=f5e11]:
+          - listitem [ref=f5e12]:
+            - link "Painel" [ref=f5e13] [cursor=pointer]:
+              - /url: /recrutamento
+          - listitem [ref=f5e14]:
+            - link "Minhas vagas" [ref=f5e15] [cursor=pointer]:
+              - /url: /recrutamento/vagas
+          - listitem [ref=f5e16]:
+            - link "Candidatos" [ref=f5e17] [cursor=pointer]:
+              - /url: /recrutamento/candidatos
+          - listitem [ref=f5e18]:
+            - link "Desafios" [ref=f5e19] [cursor=pointer]:
+              - /url: /recrutamento/desafios
+          - listitem [ref=f5e20]:
+            - link "Modelos de e-mail" [ref=f5e21] [cursor=pointer]:
+              - /url: /recrutamento/modelos-de-email
+      - generic [ref=f5e22]:
+        - 'button "Tema: sistema. Trocar tema" [ref=f5e23] [cursor=pointer]'
+        - button "Recrutador 3aq Recrutador(a)" [ref=f5e28] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f5e29]: R3
+          - generic [ref=f5e30]:
+            - generic [ref=f5e31]: Recrutador 3aq
+            - generic [ref=f5e32]: Recrutador(a)
+  - main [ref=f5e33]:
+    - generic [ref=f5e34]:
+      - generic [ref=f5e36]:
+        - generic [ref=f5e37]:
+          - heading "Painel" [level=1] [ref=f5e38]
+          - generic [ref=f5e39]: Acompanhe suas vagas e onde cada candidato está no funil.
+        - link "Criar vaga" [ref=f5e41] [cursor=pointer]:
+          - /url: /recrutamento/vagas/nova
+      - status [ref=f5e42]:
+        - generic [ref=f5e43]: Carregando painel…
+  - contentinfo [ref=f5e62]:
+    - generic [ref=f5e63]:
+      - generic [ref=f5e64]: CLTech · 3aq Tecnologia
+      - link "Aviso de privacidade" [ref=f5e65] [cursor=pointer]:
+        - /url: /privacidade
