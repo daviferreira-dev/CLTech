@@ -127,7 +127,7 @@ Na URL pública:
 | Limite | Efeito | O que fazer |
 |---|---|---|
 | Corpo de requisição de 4,5 MB | Currículo entre 4,5 e 5 MB é recusado pela Vercel antes de chegar ao sistema | Aceitável na demonstração; registrar se o professor testar com arquivo grande |
-| Cron só 1 vez por dia, e a rota de expiração é `POST` | Não dá para agendar `POST /api/internal/code-tests/expire` pela Vercel | Não é necessário: o prazo também expira sempre que o candidato ou o recrutador abrem o desafio |
+| Cron só 1 vez por dia (plano gratuito) | A rota `/api/internal/code-tests/expire` exporta `GET` (que chama o `POST`) e está agendada em `vercel.json`, uma vez por dia | O prazo também expira sempre que o candidato ou o recrutador abrem o desafio, então o atraso de até um dia não afeta ninguém |
 | Sem sandbox | Teste de código não é corrigido | VM do Judge0 |
 | Supabase gratuito pausa após inatividade | Toda rota com banco falha | Restaurar o projeto no painel do Supabase antes de apresentar |
 
