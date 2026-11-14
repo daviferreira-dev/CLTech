@@ -68,5 +68,9 @@ curriculos-teste/
 .storage/
 .env.backup
 
+# Backup do banco (dados pessoais, mesmo cifrado): nunca no repositório público
+*.dump
+*.dump.gpg
+
 # Added by ggshield
 .cache_ggshield
