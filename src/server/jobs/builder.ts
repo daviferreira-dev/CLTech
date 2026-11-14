@@ -121,7 +121,7 @@ async function normalizeCodeTestConfig(config: Record<string, unknown> | undefin
   return { challengeId, languages: chosen, timeLimitMinutes, maxTestRuns: MAX_TEST_RUNS };
 }
 
-/** Proposta Final: grava só `positions`, inteiro dentro dos limites (padrão 1). */
+/** Proposta final: grava só `positions`, inteiro dentro dos limites (padrão 1). */
 function normalizeFinalOfferConfig(config: Record<string, unknown> | undefined): { positions: number } {
   const raw = config?.positions ?? MIN_POSITIONS;
   if (typeof raw !== "number" || !Number.isInteger(raw) || raw < MIN_POSITIONS || raw > MAX_POSITIONS) {
@@ -191,7 +191,7 @@ export async function setStages(jobId: string, input: SetStagesInput): Promise<R
   }
 
   if (input.stages.filter((stage) => stage.type === "FINAL_OFFER").length > 1) {
-    throw Errors.validation("A vaga pode ter só uma Proposta Final; use a quantidade de vagas para contratar mais de uma pessoa.");
+    throw Errors.validation("A vaga pode ter só uma Proposta final; use a quantidade de vagas para contratar mais de uma pessoa.");
   }
 
   // Substituição completa (FR-039/042): sob Read Committed, dois PUT concorrentes
@@ -284,7 +284,7 @@ export async function publishJob(jobId: string): Promise<RecruiterJobView> {
 }
 
 /**
- * Encerramento manual PUBLISHED -> CLOSED; o automático fica em decision.ts (Proposta Final).
+ * Encerramento manual PUBLISHED -> CLOSED; o automático fica em decision.ts (Proposta final).
  * Quem ainda estava em andamento é reprovado e avisado (JOB_CLOSED), um e-mail por candidato.
  */
 export async function closeJob(jobId: string, decidedByUserId: string): Promise<RecruiterJobView> {

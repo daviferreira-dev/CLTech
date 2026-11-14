@@ -3,6 +3,7 @@
 // FR-033/FR-035/FR-036: compatibilidade com justificativa, só para o próprio candidato.
 import { prisma } from "@/lib/prisma";
 import { Errors } from "@/lib/errors";
+import { computeMissingMatches } from "@/server/matching/recompute";
 import type { MatchScoreView } from "@/server/jobs/list";
 
 export interface JobDetail {
@@ -39,7 +40,7 @@ export async function getJobDetail(jobId: string, requesterUserId: string | null
 
   if (job.status !== "PUBLISHED" && !hasOwnApplication) throw Errors.notFound("Vaga", true);
 
-  const matchScore = requesterUserId ? await getMatchScoreForRequester(job.id, requesterUserId) : undefined;
+  const matchScore = requesterUserId ? await getMatchScoreForRequester(job.id, job.technologies, requesterUserId) : undefined;
 
   return {
     id: job.id,
@@ -60,6 +61,7 @@ export async function getJobDetail(jobId: string, requesterUserId: string | null
 
 async function getMatchScoreForRequester(
   jobId: string,
+  technologies: string[],
   requesterUserId: string,
 ): Promise<JobDetail["matchScore"] | undefined> {
   const candidate = await prisma.candidate.findUnique({ where: { userId: requesterUserId }, select: { id: true } });
@@ -75,7 +77,11 @@ async function getMatchScoreForRequester(
     where: { candidateId_jobId: { candidateId: candidate.id, jobId } },
     select: { score: true, justification: true },
   });
-  if (!match) return undefined;
+  if (!match) {
+    const created = (await computeMissingMatches(candidate.id, [{ id: jobId, technologies }])).get(jobId);
+    if (!created) return { status: "NEEDS_RESUME" }; // currículo sem sinal nenhum para comparar
+    return { status: "CALCULATED", value: created.score, matched: created.matched, missing: created.missing };
+  }
 
   const justification = match.justification as { matched?: string[]; missing?: string[] } | null;
   return {

@@ -35,22 +35,22 @@ test("recrutador cria vaga, monta pipeline, publica, e vaga publicada trava edi�
   await page.getByRole("button", { name: "Confirmar publicação" }).click();
   await expect(page.getByText(/Adicione ao menos uma etapa/)).toBeVisible();
 
-  // Monta o pipeline: Análise de Currículo, Análise de GitHub, Entrevista Técnica.
+  // Monta o pipeline: Análise de currículo, Análise de GitHub, Entrevista técnica.
   // O rótulo da etapa também existe como <option> do select — escopar na lista (<li>)
   // evita violação de strict mode do Playwright.
   const stageItem = (label: string) => page.getByRole("listitem").filter({ hasText: label });
 
-  await chooseOption(page.getByLabel("Tipo de etapa"), "Análise de Currículo");
+  await chooseOption(page.getByLabel("Tipo de etapa"), "Análise de currículo");
   await page.getByRole("button", { name: "Adicionar etapa" }).click();
-  await expect(stageItem("Análise de Currículo")).toBeVisible();
+  await expect(stageItem("Análise de currículo")).toBeVisible();
 
   await chooseOption(page.getByLabel("Tipo de etapa"), "Análise de GitHub");
   await page.getByRole("button", { name: "Adicionar etapa" }).click();
   await expect(stageItem("Análise de GitHub")).toBeVisible();
 
-  await chooseOption(page.getByLabel("Tipo de etapa"), "Entrevista Técnica");
+  await chooseOption(page.getByLabel("Tipo de etapa"), "Entrevista técnica");
   await page.getByRole("button", { name: "Adicionar etapa" }).click();
-  await expect(stageItem("Entrevista Técnica")).toBeVisible();
+  await expect(stageItem("Entrevista técnica")).toBeVisible();
 
   await page.getByRole("button", { name: "Publicar Vaga" }).click();
   // Publicar é irreversível: exige confirmação (spec 004 FR-105).

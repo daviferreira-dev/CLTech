@@ -98,7 +98,7 @@ describe("reprovado/aprovado usam o e-mail configurado na vaga", () => {
     const user = await createCandidateWithResume(`aprovado-${Date.now()}@example.com`);
     const { applicationId } = await applyToJob(user.id, job.id);
     await recordDecision(applicationId, recruiter.id, "ADVANCE");
-    // Espera o e-mail de "candidatura recebida" e o de avanço para Proposta Final — ambos
+    // Espera o e-mail de "candidatura recebida" e o de avanço para Proposta final — ambos
     // disparados em segundo plano (keepAlive) — antes de limpar o mock para a aprovação.
     await vi.waitFor(() => expect(sendMail).toHaveBeenCalledTimes(2));
     vi.mocked(sendMail).mockClear();

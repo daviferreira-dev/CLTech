@@ -83,9 +83,9 @@ export const INTERVIEW_CRITERIA: Record<string, readonly InterviewCriterion[]> =
 };
 
 export const INTERVIEW_RECOMMENDATION_LABEL: Record<string, string> = {
-  ADVANCE: "Avançar",
-  UNSURE: "Em dúvida",
-  REJECT: "Não avançar",
+  ADVANCE: "Recomendo avançar",
+  UNSURE: "Tenho dúvida",
+  REJECT: "Não recomendo",
 };
 
 /** Mensagem de erro, ou null se as notas batem exatamente com os critérios da etapa. */

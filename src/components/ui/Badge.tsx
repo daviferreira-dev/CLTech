@@ -69,7 +69,7 @@ export function MatchBadge({ match, profileHref = "/perfil" }: { match: MatchSta
       return (
         <p className="text-body text-fg-muted">
           <Link href={profileHref} className={textLinkClasses}>
-            Complete seu perfil para ver sua compatibilidade.
+            Envie o currículo para ver sua compatibilidade.
           </Link>
         </p>
       );

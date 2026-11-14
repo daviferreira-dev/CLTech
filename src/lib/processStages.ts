@@ -11,15 +11,15 @@ export const STAGE_TYPES = [
 export type StageType = (typeof STAGE_TYPES)[number];
 
 export const STAGE_LABEL: Record<string, string> = {
-  RESUME_ANALYSIS: "Análise de Currículo",
-  CODE_TEST: "Teste de Código",
+  RESUME_ANALYSIS: "Análise de currículo",
+  CODE_TEST: "Teste de código",
   GITHUB_ANALYSIS: "Análise de GitHub",
   HR_INTERVIEW: "Entrevista de RH",
-  TECH_INTERVIEW: "Entrevista Técnica",
-  FINAL_OFFER: "Proposta Final",
+  TECH_INTERVIEW: "Entrevista técnica",
+  FINAL_OFFER: "Proposta final",
 };
 
-/** Quantas pessoas a Proposta Final contrata: a vaga só fecha ao aprovar todas (padrão 1). */
+/** Quantas pessoas a Proposta final contrata: a vaga só fecha ao aprovar todas (padrão 1). */
 export const MIN_POSITIONS = 1;
 export const MAX_POSITIONS = 100;
 

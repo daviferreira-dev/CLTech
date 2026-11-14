@@ -8,6 +8,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { CHALLENGES } from "./challenges";
 import { encrypt } from "../src/server/crypto";
+import { computeScore } from "../src/server/matching/score";
 import { isLocalStorage, localObjectPath } from "../src/server/storage";
 
 const prisma = new PrismaClient();
@@ -90,6 +91,9 @@ const JOBS: JobSeed[] = [
     pipeline: STANDARD_PIPELINE,
   },
 ];
+
+const DEMO_RESUME_TEXT =
+  "Candidato Demo. Desenvolvedor com experiência em React, TypeScript, Node.js, PostgreSQL e Git.";
 
 async function main() {
   const passwordHash = await hashedPassword();
@@ -215,7 +219,12 @@ async function main() {
   const demoCandidate = await prisma.candidate.upsert({
     where: { userId: demoCandidateUser.id },
     update: {},
-    create: { userId: demoCandidateUser.id, city: "Fortaleza", state: "CE" },
+    create: {
+      userId: demoCandidateUser.id,
+      city: "Fortaleza",
+      state: "CE",
+      technologies: ["React", "TypeScript", "Node.js", "PostgreSQL", "Git"],
+    },
   });
 
   const demoResume = await prisma.resume.findFirst({ where: { candidateId: demoCandidate.id } });
@@ -229,8 +238,16 @@ async function main() {
         mimeType: "application/pdf",
         sizeBytes: 102400,
         isCurrent: true,
+        extractedText: encrypt(DEMO_RESUME_TEXT),
+        parseStatus: "PARSED",
       },
     }));
+  if (!resume.extractedText) {
+    await prisma.resume.update({
+      where: { id: resume.id },
+      data: { extractedText: encrypt(DEMO_RESUME_TEXT), parseStatus: "PARSED" },
+    });
+  }
 
   // Grava o arquivo da linha Resume no storage local (cifrado como uploadResume grava), senão
   // o download do currículo do candidato demo não tem o que entregar. No bucket remoto, não.
@@ -238,6 +255,30 @@ async function main() {
     const file = localObjectPath(resume.storageKey);
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, encrypt(demoPdf("Candidato Demo - Suporte Tecnico").toString("base64")), "utf8");
+  }
+
+  // Compatibilidade do candidato demo nas vagas publicadas (o roteiro do manual promete).
+  // Só cria o que falta: um score já emitido não é recalculado (RN003).
+  const publishedJobs = await prisma.job.findMany({
+    where: { status: "PUBLISHED", title: { in: JOBS.map((job) => job.title) } },
+    select: { id: true, technologies: true },
+  });
+  for (const job of publishedJobs) {
+    const result = computeScore(job.technologies, {
+      resumeText: DEMO_RESUME_TEXT,
+      githubLanguages: null,
+    });
+    if (!result) continue;
+    await prisma.jobMatch.upsert({
+      where: { candidateId_jobId: { candidateId: demoCandidate.id, jobId: job.id } },
+      update: {},
+      create: {
+        candidateId: demoCandidate.id,
+        jobId: job.id,
+        score: result.score,
+        justification: { matched: result.matched, missing: result.missing },
+      },
+    });
   }
 
   const closedJobStage = await prisma.processStage.findFirstOrThrow({

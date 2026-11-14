@@ -135,7 +135,7 @@ export function stageAdvancedEmail(input: StageAdvancedEmailInput): MailMessage 
     headline: approved ? `Parabéns, ${name}!` : `Olá, ${name}!`,
     intro,
     highlight: approved
-      ? { tone: "success", eyebrow: "RESULTADO", title: "Aprovado(a) 🎉", text: highlightText }
+      ? { tone: "success", eyebrow: "RESULTADO", title: "Aprovado(a)", text: highlightText }
       : { tone: "success", eyebrow: "NOVA ETAPA", title: stageLabel(newStage!.type), text: highlightText },
     section: `${meetingBlock}${renderTimeline(input.stages, approved ? null : input.newStageOrder)}`,
     cta: { label: ctaLabel, href: ctaHref },

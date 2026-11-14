@@ -225,7 +225,7 @@ function EmailTemplateForm({
   const variablesHint = moment
     ? `Variáveis: ${toTags(variables)}.`
     : `Variáveis: ${toTags(variables)}. Na etapa de teste de código também: ${toTags(CODE_TEST_VARIABLES)}.`;
-  const values = sampleEmailValues(moment ? EMAIL_MOMENT_LABEL[moment] : "Entrevista Técnica", "Desenvolvedor(a) Backend", "3aq");
+  const values = sampleEmailValues(moment ? EMAIL_MOMENT_LABEL[moment] : "Entrevista técnica", "Desenvolvedor(a) Backend", "3aq");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
