@@ -1,7 +1,8 @@
 // RF03 / FR-018 / FR-019: listagem pública e filtrada, só vagas PUBLISHED.
 // FR-033/FR-035/FR-036: percentual de compatibilidade, só para o próprio candidato
-// autenticado — nunca calculado aqui, só lido de JobMatch (D3 da Sprint 1).
+// autenticado — lido de JobMatch; só o que ainda não existe é calculado na hora (nunca recalcula, RN003).
 import { prisma } from "@/lib/prisma";
+import { computeMissingMatches } from "@/server/matching/recompute";
 import type { JobListQuery } from "@/lib/validation/jobs";
 
 export type MatchScoreView = { status: "CALCULATED"; value: number } | { status: "NEEDS_RESUME" };
@@ -93,10 +94,18 @@ export async function listPublishedJobs(query: JobListQuery, requesterUserId?: s
   ]);
 
   const scoreByJobId = new Map(matches.map((match) => [match.jobId, match.score]));
+  if (hasCurrentResume) {
+    const missing = items.filter((item) => !scoreByJobId.has(item.id));
+    const created = await computeMissingMatches(candidateId, missing);
+    for (const [jobId, result] of created) scoreByJobId.set(jobId, result.score);
+  }
   const itemsWithMatch: JobListItem[] = items.map((item) => {
     if (!hasCurrentResume) return { ...item, matchScore: { status: "NEEDS_RESUME" } };
     const score = scoreByJobId.get(item.id);
-    return score === undefined ? item : { ...item, matchScore: { status: "CALCULATED", value: score } };
+    // Sem linha mesmo depois de tentar calcular = sem sinal nenhum (nem texto, nem tecnologias).
+    return score === undefined
+      ? { ...item, matchScore: { status: "NEEDS_RESUME" } }
+      : { ...item, matchScore: { status: "CALCULATED", value: score } };
   });
 
   return { items: itemsWithMatch, page: query.page, pageSize: query.pageSize, total };

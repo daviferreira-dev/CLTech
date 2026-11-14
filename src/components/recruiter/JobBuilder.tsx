@@ -108,6 +108,15 @@ interface ChallengeOption {
   hiddenCaseCount: number;
 }
 
+const FIELD_ORDER = ["title", "description", "company", "location", "technologies", "minimumRequirements"] as const;
+type FieldKey = (typeof FIELD_ORDER)[number];
+
+/** Leva o foco ao primeiro campo com erro, na ordem em que aparecem na tela. */
+function focusFirstError(errors: Partial<Record<FieldKey, string>>) {
+  const first = FIELD_ORDER.find((key) => errors[key]);
+  if (first) requestAnimationFrame(() => document.getElementById(first)?.focus());
+}
+
 type Banner = { tone: "success" | "danger" | "warning" | "info"; title?: string; text: string } | null;
 
 /** Criação (sem jobId) e edição (com jobId) da vaga + pipeline — RF04. */
@@ -124,6 +133,8 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
   const [savingStages, setSavingStages] = useState(false);
   const [message, setMessage] = useState<Banner>(null);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  // Erro de validação sob o campo (a faixa do topo fica só para erro do servidor).
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [confirmPublish, setConfirmPublish] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -221,6 +232,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
 
   function updateField<K extends keyof JobFields>(key: K, value: JobFields[K]) {
     setFields((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((prev) => (key in prev ? { ...prev, [key]: undefined } : prev));
     setDirty(true);
   }
 
@@ -257,9 +269,22 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
   async function handleSave(e?: React.FormEvent) {
     e?.preventDefault();
     if (saving) return;
-    setSaving(true);
     setMessage(null);
     setMissingFields([]);
+
+    // Mesmas regras do servidor (createJobSchema): erro sob o campo, sem ir à rede.
+    const errors: Partial<Record<FieldKey, string>> = {};
+    if (!fields.title.trim()) errors.title = "Informe o título da vaga.";
+    if (!fields.description.trim()) errors.description = "Informe a descrição da vaga.";
+    if (!fields.company.trim()) errors.company = "Informe a empresa.";
+    if (!fields.location.trim()) errors.location = "Informe a localização.";
+    if (!locked && !fields.minimumRequirements.trim()) errors.minimumRequirements = "Informe os requisitos mínimos.";
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstError(errors);
+      return;
+    }
+    setSaving(true);
 
     const technologies = technologiesText
       .split(",")
@@ -387,6 +412,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     setPublishing(true);
     setMessage(null);
     setMissingFields([]);
+    setFieldErrors({});
 
     // A rota de publicação devolve só { id, status, publishedAt }: o resto do estado fica.
     const result = await apiFetch<{ status: JobBuilderView["status"] }>(`/api/recruiter/jobs/${jobId}/publish`, { method: "POST" });
@@ -401,13 +427,22 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
     if (result.error?.code === "INCOMPLETE_JOB") {
       // US4.3: aponta exatamente o que falta e mantém o rascunho intacto.
       const missing = Array.isArray(result.error.missing) ? (result.error.missing as string[]) : [];
-      setMissingFields(missing);
-      const parts = missing.map((m) => MISSING_LABEL[m] ?? m);
-      setMessage({
-        tone: "danger",
-        title: "Faltam dados para publicar",
-        text: parts.length > 0 ? `Informe ${parts.join(", ")}. O rascunho foi mantido.` : (result.error.message ?? "Preencha os dados mínimos."),
-      });
+      const errors: Partial<Record<FieldKey, string>> = {};
+      if (missing.includes("technologies")) errors.technologies = "Informe ao menos uma tecnologia.";
+      if (missing.includes("minimumRequirements")) errors.minimumRequirements = "Informe os requisitos mínimos.";
+      setFieldErrors(errors);
+      focusFirstError(errors);
+      // Campos já têm erro embaixo; a faixa só aponta o que não tem campo (etapas, desafio).
+      const others = missing.filter((m) => m !== "technologies" && m !== "minimumRequirements");
+      setMissingFields(others);
+      if (others.length > 0 || missing.length === 0) {
+        const parts = others.map((m) => MISSING_LABEL[m] ?? m);
+        setMessage({
+          tone: "danger",
+          title: "Faltam dados para publicar",
+          text: parts.length > 0 ? `Informe ${parts.join(", ")}. O rascunho foi mantido.` : (result.error.message ?? "Preencha os dados mínimos."),
+        });
+      }
       return;
     }
     await handleFailure(result, "Não foi possível publicar.");
@@ -496,17 +531,17 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
         <CardHeader titleId="dados-vaga" title="Dados da vaga" />
         <CardBody>
           <form onSubmit={handleSave} className="space-y-4">
-            <Field id="title" label="Título">
+            <Field id="title" label="Título" error={fieldErrors.title}>
               <Input value={fields.title} onChange={(e) => updateField("title", e.target.value)} />
             </Field>
-            <Field id="description" label="Descrição">
+            <Field id="description" label="Descrição" error={fieldErrors.description}>
               <Textarea value={fields.description} onChange={(e) => updateField("description", e.target.value)} rows={4} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="company" label="Empresa">
+              <Field id="company" label="Empresa" error={fieldErrors.company}>
                 <Input value={fields.company} onChange={(e) => updateField("company", e.target.value)} />
               </Field>
-              <Field id="location" label="Localização">
+              <Field id="location" label="Localização" error={fieldErrors.location}>
                 <Input value={fields.location} onChange={(e) => updateField("location", e.target.value)} />
               </Field>
               <Field id="workMode" label="Modalidade">
@@ -529,13 +564,14 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
               id="technologies"
               label="Tecnologias exigidas (separadas por vírgula)"
               hint={locked ? "Travado após a publicação." : undefined}
-              error={missingFields.includes("technologies") ? "Informe ao menos uma tecnologia." : undefined}
+              error={fieldErrors.technologies}
             >
               <Input
                 disabled={locked}
                 value={technologiesText}
                 onChange={(e) => {
                   setTechnologiesText(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, technologies: undefined }));
                   setDirty(true);
                 }}
                 placeholder="React, Node, PostgreSQL"
@@ -545,7 +581,7 @@ export function JobBuilder({ jobId }: { jobId?: string }) {
               id="minimumRequirements"
               label="Requisitos mínimos"
               hint={locked ? "Travado após a publicação." : undefined}
-              error={missingFields.includes("minimumRequirements") ? "Informe os requisitos mínimos." : undefined}
+              error={fieldErrors.minimumRequirements}
             >
               <Textarea disabled={locked} value={fields.minimumRequirements} onChange={(e) => updateField("minimumRequirements", e.target.value)} rows={3} />
             </Field>

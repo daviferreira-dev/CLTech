@@ -10,12 +10,12 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 // As seis etapas reais do pipeline (STAGE_LABEL), com o que cada uma faz no sistema.
 const STAGES = [
-  { name: "Análise de Currículo", auto: true, text: "O PDF ou DOCX é lido e comparado com as tecnologias da vaga. Sai uma nota de 0 a 100 com o que foi encontrado e o que falta." },
-  { name: "Teste de Código", auto: true, text: "Desafio com tempo, resolvido no navegador e corrigido contra casos visíveis e ocultos. Ninguém da equipe sênior precisa parar para corrigir." },
+  { name: "Análise de currículo", auto: true, text: "O PDF ou DOCX é lido e comparado com as tecnologias da vaga. Sai uma nota de 0 a 100 com o que foi encontrado e o que falta." },
+  { name: "Teste de código", auto: true, text: "Desafio com tempo, resolvido no navegador e corrigido contra casos visíveis e ocultos. Ninguém da equipe sênior precisa parar para corrigir." },
   { name: "Análise de GitHub", auto: true, text: "Repositórios públicos, linguagens e atividade dos últimos 90 dias. Conta conectada por login vem marcada como verificada." },
   { name: "Entrevista de RH", auto: false, text: "O recrutador agenda pela plataforma e o candidato recebe data e link por e-mail." },
-  { name: "Entrevista Técnica", auto: false, text: "A conversa com a equipe técnica já parte do código que o candidato enviou." },
-  { name: "Proposta Final", auto: false, text: "A aprovação fecha a vaga. Quem não avançou recebe o retorno sem ficar no vácuo." },
+  { name: "Entrevista técnica", auto: false, text: "A conversa com a equipe técnica já parte do código que o candidato enviou." },
+  { name: "Proposta final", auto: false, text: "A aprovação fecha a vaga. Quem não avançou recebe o retorno sem ficar no vácuo." },
 ];
 
 export function FunnelLine() {

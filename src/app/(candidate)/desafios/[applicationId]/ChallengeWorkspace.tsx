@@ -58,6 +58,7 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
   const submitted = view.submission !== null;
   const readOnly = submitted || remainingMs <= 0;
 
+  const resultRef = useRef<HTMLDivElement>(null);
   const latest = useRef({ language, code });
   latest.current = { language, code };
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -127,6 +128,11 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
       );
     }
   }, [remainingMs, submitted, saveState, save, refresh]);
+
+  // Terminou de executar: leva o foco ao resultado, que o leitor de tela lê (nome + resumo).
+  useEffect(() => {
+    if (runResult) resultRef.current?.focus();
+  }, [runResult]);
 
   // Aviso nativo ao sair com alteração não salva.
   useEffect(() => {
@@ -222,6 +228,8 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
     requestAnimationFrame(() => el.setSelectionRange(selectionStart + 4, selectionStart + 4));
   }
 
+  const passedCount = runResult?.results.filter((r) => r.outcome === "PASSED").length ?? 0;
+  const runSummary = runResult ? `${passedCount} de ${runResult.results.length} passaram` : null;
   const lowTime = !readOnly && remainingMs <= 5 * 60_000;
   const statusBadge = !view.submission ? null : view.submission.status === "GRADED" ? (
     <Badge variant="success">Correção concluída</Badge>
@@ -237,25 +245,24 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
         breadcrumb={<Breadcrumb items={[{ label: "Desafios", href: "/desafios" }, { label: view.challenge.title }]} />}
         title={view.challenge.title}
         subtitle={`${view.job.title} · ${view.job.company} · ${DIFFICULTY_LABEL[view.challenge.difficulty] ?? view.challenge.difficulty}`}
-        actions={
-          submitted ? (
-            statusBadge
-          ) : (
-            <div
-              role="timer"
-              aria-live={lowTime ? "polite" : "off"}
-              aria-label={`Tempo restante: ${formatRemaining(remainingMs)}`}
-              className={cn(
-                "rounded-card border px-4 py-2 text-right",
-                lowTime ? "border-danger/50 bg-danger/10" : "border-line bg-surface",
-              )}
-            >
-              <p className="text-label text-fg-muted">Tempo restante</p>
-              <p className="font-mono text-h2 tabular-nums text-fg">{formatRemaining(remainingMs)}</p>
-            </div>
-          )
-        }
+        actions={submitted ? statusBadge : undefined}
       />
+
+      {!submitted && (
+        // Fica colado sob o header enquanto a pessoa rola enunciado e editor.
+        <div
+          role="timer"
+          aria-live={lowTime ? "polite" : "off"}
+          aria-label={`Tempo restante: ${formatRemaining(remainingMs)}`}
+          className={cn(
+            "sticky top-[4.5rem] z-20 flex items-center justify-between gap-3 rounded-card border px-4 py-2 shadow-header",
+            lowTime ? "border-danger/50 bg-danger/10 backdrop-blur" : "border-line bg-surface",
+          )}
+        >
+          <p className="text-label text-fg-muted">Tempo restante</p>
+          <p className="font-mono text-h2 tabular-nums text-fg">{formatRemaining(remainingMs)}</p>
+        </div>
+      )}
 
       {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
       {submitted && !notice && (
@@ -375,6 +382,9 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
                     Execuções de teste restantes: <strong className="text-fg">{view.remainingRuns}</strong> de {view.maxTestRuns}
                   </p>
                   <div className="flex flex-wrap gap-2">
+                    {runSummary && !running && (
+                      <span className="flex items-center text-body font-medium text-fg">{runSummary}</span>
+                    )}
                     <Button variant="secondary" onClick={handleRun} loading={running} disabled={view.remainingRuns <= 0}>
                       {running ? "Executando…" : "Executar testes"}
                     </Button>
@@ -389,11 +399,19 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
           </Card>
 
           {runResult && (
-            <Card as="section" aria-labelledby="resultado">
+            <div
+              ref={resultRef}
+              tabIndex={-1}
+              role="region"
+              aria-labelledby="resultado"
+              aria-describedby="resumo-execucao"
+              className={cn("scroll-mt-40 rounded-card", focusRing)}
+            >
+            <Card>
               <CardHeader
                 titleId="resultado"
                 title="Resultado nos casos de exemplo"
-                description={`${runResult.results.filter((r) => r.outcome === "PASSED").length} de ${runResult.results.length} passaram.`}
+                description={<span id="resumo-execucao">{runSummary}.</span>}
               />
               <CardBody className="space-y-3">
                 <ul className="space-y-3">
@@ -423,6 +441,7 @@ export function ChallengeWorkspace({ initial }: { initial: CandidateChallengeVie
                 </ul>
               </CardBody>
             </Card>
+            </div>
           )}
         </div>
       </div>

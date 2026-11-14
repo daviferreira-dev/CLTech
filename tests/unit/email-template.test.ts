@@ -31,7 +31,7 @@ describe("e-mails de senha", () => {
   });
 });
 
-const VALUES = { candidato: "Ana", vaga: "Dev", etapa: "Entrevista Técnica", data: "sexta", horario: "14:00", link: "https://meet.x/1" };
+const VALUES = { candidato: "Ana", vaga: "Dev", etapa: "Entrevista técnica", data: "sexta", horario: "14:00", link: "https://meet.x/1" };
 
 describe("fillTemplate", () => {
   it("troca as variáveis conhecidas e deixa as desconhecidas como estão", () => {

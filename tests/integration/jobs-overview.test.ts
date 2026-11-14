@@ -63,21 +63,21 @@ describe("getJobsOverview (visão macro das vagas)", () => {
       data: { jobId: job.id, type: "FINAL_OFFER", order: 3, config: { positions: 1 } },
     });
 
-    // Em andamento, na Análise de Currículo há 2 horas.
+    // Em andamento, na Análise de currículo há 2 horas.
     const c1 = await createCandidate(`c1-${Date.now()}@example.com`);
     const app1 = await prisma.application.create({
       data: { candidateId: c1.candidateId, jobId: job.id, resumeId: c1.resumeId, currentStageId: stageResume.id, status: "IN_PROGRESS" },
     });
     await prisma.applicationStageHistory.create({ data: { applicationId: app1.id, stageId: stageResume.id, enteredAt: new Date(Date.now() - 2 * HOUR) } });
 
-    // Em andamento, no Teste de Código há 5 horas, sem enviar — é o gargalo (2 pessoas).
+    // Em andamento, no Teste de código há 5 horas, sem enviar — é o gargalo (2 pessoas).
     const c2 = await createCandidate(`c2-${Date.now()}@example.com`);
     const app2 = await prisma.application.create({
       data: { candidateId: c2.candidateId, jobId: job.id, resumeId: c2.resumeId, currentStageId: stageCode.id, status: "IN_PROGRESS" },
     });
     await prisma.applicationStageHistory.create({ data: { applicationId: app2.id, stageId: stageCode.id, enteredAt: new Date(Date.now() - 5 * HOUR) } });
 
-    // Em andamento, no Teste de Código há 7 horas, já enviou.
+    // Em andamento, no Teste de código há 7 horas, já enviou.
     const c3 = await createCandidate(`c3-${Date.now()}@example.com`);
     const app3 = await prisma.application.create({
       data: { candidateId: c3.candidateId, jobId: job.id, resumeId: c3.resumeId, currentStageId: stageCode.id, status: "IN_PROGRESS" },
@@ -95,7 +95,7 @@ describe("getJobsOverview (visão macro das vagas)", () => {
     });
     await prisma.applicationStageHistory.create({ data: { applicationId: app4.id, stageId: stageHr.id, enteredAt: new Date(Date.now() - HOUR) } });
 
-    // Reprovado na Análise de Currículo.
+    // Reprovado na Análise de currículo.
     const c5 = await createCandidate(`c5-${Date.now()}@example.com`);
     const app5 = await prisma.application.create({
       data: { candidateId: c5.candidateId, jobId: job.id, resumeId: c5.resumeId, currentStageId: stageResume.id, status: "REJECTED" },
@@ -184,7 +184,7 @@ describe("getJobsOverview (visão macro das vagas)", () => {
     expect(ids).not.toContain(oldJob.id);
   });
 
-  it("vaga em rascunho não tem dias aberta; sem Proposta Final não tem total de posições", async () => {
+  it("vaga em rascunho não tem dias aberta; sem Proposta final não tem total de posições", async () => {
     const recruiter = await createRecruiter();
     const draft = await createJob(recruiter.id, { status: "DRAFT" });
     await prisma.processStage.create({ data: { jobId: draft.id, type: "RESUME_ANALYSIS", order: 0, config: {} } });
