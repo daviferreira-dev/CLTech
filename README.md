@@ -193,8 +193,10 @@ pnpm test:e2e           # Playwright, contra pnpm build && pnpm start
 - A suíte de integração dá `TRUNCATE` antes de cada teste: roda só no banco `cltech_test`,
   nunca no de produção.
 - O e2e sobe a aplicação em modo produção e roda em série (`workers: 1`).
-- O CI (`.github/workflows/ci.yml`) roda lint, `tsc --noEmit`, migrações, `pnpm test` e build
-  a cada push na `main` e em todo PR.
+- O CI (`.github/workflows/ci.yml`) roda a cada push na `main` e em todo PR: lint,
+  `tsc --noEmit`, schema × migrations, RLS nas tabelas novas, `pnpm test`, build e, em paralelo,
+  o Playwright. Depois do deploy de produção, um smoke test confere as rotas principais. Lista
+  completa no [CONTRIBUTING](.github/CONTRIBUTING.md#o-que-o-ci-confere).
 
 ## Variáveis de ambiente
 
