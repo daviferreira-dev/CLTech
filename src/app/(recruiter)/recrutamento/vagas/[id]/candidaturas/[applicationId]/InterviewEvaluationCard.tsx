@@ -12,7 +12,7 @@ import {
   INTERVIEW_SCORE_MAX,
   INTERVIEW_SCORE_MIN,
 } from "@/lib/interviewCriteria";
-import { Badge, Button, Card, CardBody, CardHeader, Field, Notice, Textarea } from "@/components/ui";
+import { Badge, Button, Card, CardBody, CardHeader, Field, Icon, Notice, Textarea } from "@/components/ui";
 
 type Recommendation = "ADVANCE" | "UNSURE" | "REJECT";
 
@@ -154,6 +154,18 @@ export function InterviewEvaluationCard({
                     </label>
                   ))}
                 </div>
+                {/* Só dica ao entrevistador: fechada por padrão, não muda a nota nem o que é gravado. */}
+                <details className="group">
+                  <summary className="inline-flex min-h-6 cursor-pointer list-none items-center gap-1 rounded-sm text-label font-normal text-fg-muted hover:text-fg">
+                    <Icon name="chevronDown" className="transition-transform group-open:rotate-180" />
+                    Perguntas sugeridas
+                  </summary>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-label font-normal text-fg-muted">
+                    {criterion.questions.map((question) => (
+                      <li key={question}>{question}</li>
+                    ))}
+                  </ul>
+                </details>
               </fieldset>
             ))}
             <fieldset className="space-y-1.5">
