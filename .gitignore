@@ -46,6 +46,8 @@ venv/
 coverage/
 playwright-report/
 test-results/
+# Prints e snapshots do Playwright MCP (podem ter dado de tela)
+.playwright-mcp/
 
 # Uploads locais (curriculos - dado pessoal, nunca versionar)
 uploads/

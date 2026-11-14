@@ -1,0 +1,55 @@
+name: Smoke de produção
+
+# Depois que a Vercel publica em produção, confere que o site responde. Sem segredo.
+# Gatilho: a Vercel não cria GitHub Deployments neste repositório; ela só publica um commit
+# status com context "Vercel". Quando esse status fica "success" num commit que está na main,
+# é o deploy de produção. O evento `status` só dispara com este arquivo na branch padrão (main).
+# workflow_dispatch roda à mão (Actions → Smoke de produção → Run workflow).
+on:
+  status:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  smoke:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.context == 'Vercel' &&
+        github.event.state == 'success' &&
+        contains(github.event.branches.*.name, 'main'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # O domínio de produção, não a URL única do deploy (target_url do status): com a Deployment
+      # Protection padrão da Vercel, a URL única pede login e responde 401.
+      BASE_URL: https://cltech-3aq.vercel.app
+    steps:
+      - name: Rotas respondem o esperado
+        env:
+          # Por variável, nunca interpolado direto no script (dado do evento).
+          COMMIT: ${{ github.event.sha || github.sha }}
+        run: |
+          echo "Commit: $COMMIT"
+          fail=0
+          # A Vercel pode avisar o sucesso antes de o domínio apontar para o deploy novo:
+          # cada rota tenta até 5 vezes, com 15 s entre as tentativas, antes de falhar.
+          check() {
+            for attempt in 1 2 3 4 5; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$BASE_URL$1" || true)
+              if [ "$code" = "$2" ]; then
+                echo "ok   GET $1 -> $code"
+                return
+              fi
+              echo "     GET $1 -> $code (esperado $2), tentativa $attempt"
+              if [ "$attempt" -lt 5 ]; then sleep 15; fi
+            done
+            echo "::error::GET $1 respondeu $code, esperado $2"
+            fail=1
+          }
+          check / 200
+          check /entrar 200
+          check /vagas 200
+          check /perfil 307
+          check /api/recruiter/dashboard 401
+          exit $fail

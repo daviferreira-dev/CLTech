@@ -9,6 +9,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -36,6 +39,122 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Histórico inteiro: a guarda de RLS compara as migrations com a base do PR.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Sem .env nem .playwright-mcp/ no repositório
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)\.playwright-mcp/|(^|/)\.env(\.|$)' | grep -vE '\.example$' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Arquivos que não podem ser versionados:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prisma generate
+      - run: pnpm lint
+      - run: pnpm exec tsc --noEmit
+
+      # schema.prisma e migrations precisam dizer a mesma coisa. O shadow é um banco vazio à
+      # parte, no mesmo Postgres de serviço (o Prisma apaga o que houver nele).
+      - name: schema.prisma bate com as migrations
+        run: |
+          docker exec ${{ job.services.postgres.id }} createdb -U cltech cltech_shadow
+          # --exit-code: 0 = igual, 2 = diverge, 1 = o próprio comando falhou.
+          code=0
+          pnpm exec prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url postgresql://cltech:cltech@localhost:5432/cltech_shadow \
+            --exit-code || code=$?
+          if [ "$code" = 2 ]; then
+            echo "::error::schema.prisma diverge das migrations. Rode pnpm prisma:migrate e commite a migration."
+          elif [ "$code" != 0 ]; then
+            echo "::error::prisma migrate diff falhou (código $code) antes de comparar; veja o log acima."
+          fi
+          exit "$code"
+
+      - name: Tabela nova liga RLS na própria migration
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/check-migration-rls.ts "origin/$BASE_REF"
+
+      - run: pnpm exec prisma migrate deploy
+      - run: pnpm test
+      - name: Build
+        run: pnpm build
+        env:
+          AUTH_SECRET: ci-build-only
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cltech
+          POSTGRES_PASSWORD: cltech
+          POSTGRES_DB: cltech_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cltech"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      # Os specs de e-mail (esqueci a senha, avaliação do RH) leem a caixa pela API do Mailpit.
+      mailpit:
+        image: axllent/mailpit:v1.32
+        env:
+          MP_SMTP_AUTH_ACCEPT_ANY: "true"
+          MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+        ports:
+          - 1025:1025
+          - 8025:8025
+
+    # Tudo falso e só de CI. Nada aponta para fora do runner: banco e SMTP são os serviços acima,
+    # currículos vão para .storage/ e os botões OAuth são interceptados pelo próprio teste.
+    env:
+      DATABASE_URL: postgresql://cltech:cltech@localhost:5432/cltech_e2e
+      AUTH_SECRET: ci-e2e-only
+      # ENCRYPTION_KEY: gerada no primeiro passo (32 bytes em base64, como exige src/server/crypto.ts).
+      NEXTAUTH_URL: http://localhost:3000
+      GITHUB_ID: ci-sem-github
+      GITHUB_SECRET: ci-sem-github
+      LINKEDIN_ID: ci-sem-linkedin
+      LINKEDIN_SECRET: ci-sem-linkedin
+      STORAGE_ENDPOINT: local
+      STORAGE_BUCKET: cltech-curriculos
+      STORAGE_ACCESS_KEY: local
+      STORAGE_SECRET_KEY: local
+      SMTP_HOST: localhost
+      SMTP_PORT: "1025"
+      SMTP_USER: ci@cltech.test
+      SMTP_PASS: ci
+      MAILPIT_URL: http://localhost:8025
+
+    steps:
+      # Chave descartável, nova a cada execução: nada fixo no arquivo. Antes do seed, que já cifra.
+      - name: Gera ENCRYPTION_KEY só desta execução
+        run: |
+          key=$(openssl rand -base64 32)
+          echo "::add-mask::$key"
+          echo "ENCRYPTION_KEY=$key" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -46,11 +165,32 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec prisma generate
-      - run: pnpm lint
-      - run: pnpm exec tsc --noEmit
       - run: pnpm exec prisma migrate deploy
-      - run: pnpm test
-      - name: Build
-        run: pnpm build
-        env:
-          AUTH_SECRET: ci-build-only
+      # Contas e vagas de demonstração que os specs usam (recrutador@3aq.dev etc.).
+      - run: pnpm exec tsx prisma/seed.ts
+
+      - name: Versão do Playwright
+        id: playwright
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      # O webServer do playwright.config.ts faz o build e sobe `pnpm start`.
+      - run: pnpm test:e2e
+
+      - name: Relatório e traces do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
