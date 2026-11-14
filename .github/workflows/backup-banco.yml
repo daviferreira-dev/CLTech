@@ -1,0 +1,128 @@
+name: Backup do banco
+
+# Backup semanal do banco de produção (o Supabase grátis não tem backup diário nem PITR).
+# O dump sai do pg_dump direto para o gpg: o arquivo em claro nunca toca o disco. Só o
+# .dump.gpg (AES256) vira artifact, porque o repositório é público.
+# Secrets do Environment `backup`, liberado só para a main (docs/incidente.md, "Passos do Davi"):
+#   BACKUP_DATABASE_URL  papel só de leitura no session pooler (porta 5432)
+#   BACKUP_PASSPHRASE    senha da cifra; sem ela o backup não abre
+on:
+  schedule:
+    - cron: "17 6 * * 0" # domingo, 06:17 UTC (03:17 em Brasília)
+  workflow_dispatch:
+
+# Nada do repositório é lido nem escrito; o upload de artifact não usa o GITHUB_TOKEN.
+permissions: {}
+
+concurrency:
+  group: backup-banco
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Os secrets ficam no Environment, não no repositório: só um job da main os enxerga.
+    environment: backup
+    env:
+      ARQUIVO_NOME: cltech.dump.gpg
+    steps:
+      - name: Dump cifrado
+        id: dump
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          ARQUIVO="$RUNNER_TEMP/$ARQUIVO_NOME"
+          falta=""
+          [ -n "$BACKUP_DATABASE_URL" ] || falta="$falta BACKUP_DATABASE_URL"
+          [ -n "$BACKUP_PASSPHRASE" ] || falta="$falta BACKUP_PASSPHRASE"
+          if [ -n "$falta" ]; then
+            echo "::error::Secret(s) ausente(s):$falta. Cadastre no Environment backup com 'gh secret set NOME --env backup' (ver docs/incidente.md, Passos do Davi)."
+            exit 1
+          fi
+
+          # A URL vira variáveis PG* (o libpq lê do ambiente): a senha não vai na linha de comando
+          # de nenhum processo. Nada daqui é impresso; em erro, só uma frase sem a URL.
+          while IFS='=' read -r k v; do export "$k=$v"; done < <(node -e '
+            try {
+              const u = new URL(process.env.BACKUP_DATABASE_URL);
+              const vars = {
+                PGHOST: u.hostname,
+                PGPORT: u.port || "5432",
+                PGUSER: decodeURIComponent(u.username),
+                PGPASSWORD: decodeURIComponent(u.password),
+                PGDATABASE: decodeURIComponent(u.pathname.slice(1)) || "postgres",
+                PGSSLMODE: u.searchParams.get("sslmode") || "require",
+              };
+              for (const [k, v] of Object.entries(vars)) console.log(k + "=" + v);
+            } catch {
+              process.exit(1);
+            }
+          ')
+          if [ -z "${PGHOST:-}" ] || [ -z "${PGPASSWORD:-}" ]; then
+            echo "::error::BACKUP_DATABASE_URL não é uma URL postgresql://usuario:senha@host:5432/postgres válida."
+            exit 1
+          fi
+          echo "::add-mask::$PGPASSWORD"
+          echo "::add-mask::$PGUSER"
+          if [ "$PGPORT" = "6543" ]; then
+            echo "::error::Porta 6543 é o pooler em modo transaction, que não serve para pg_dump. Use o session pooler (porta 5432)."
+            exit 1
+          fi
+          pg=(-e PGHOST -e PGPORT -e PGUSER -e PGPASSWORD -e PGDATABASE -e PGSSLMODE)
+
+          # pg_dump precisa ser da mesma versão maior do servidor, ou mais nova.
+          num=$(docker run --rm "${pg[@]}" postgres:17-alpine psql -XAtc 'show server_version_num')
+          [[ $num =~ ^[0-9]+$ ]] || { echo "::error::versão inesperada do servidor"; exit 1; }
+          major=$((num / 10000))
+          img="postgres:${major}-alpine"
+          echo "Servidor Postgres $major; usando $img"
+          docker pull -q "$img" > /dev/null
+          echo "img=$img" >> "$GITHUB_OUTPUT"
+
+          # Só o schema public (o do app). Formato custom já vem comprimido.
+          # pg_dump desliga o RLS na sessão: papel sem BYPASSRLS falha aqui, não gera dump vazio.
+          docker run --rm "${pg[@]}" "$img" pg_dump --format=custom --schema=public \
+            | gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 3 \
+                --symmetric --cipher-algo AES256 --s2k-digest-algo SHA512 --compress-algo none \
+                --output "$ARQUIVO" 3< <(printf '%s' "$BACKUP_PASSPHRASE")
+          echo "Arquivo cifrado: $(du -h "$ARQUIVO" | cut -f1)"
+
+      - name: Confere que o backup abre
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          IMG: ${{ steps.dump.outputs.img }}
+        run: |
+          set -euo pipefail
+          ARQUIVO="$RUNNER_TEMP/$ARQUIVO_NOME"
+          decifra() {
+            gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 3 --decrypt "$ARQUIVO" \
+              3< <(printf '%s' "$BACKUP_PASSPHRASE")
+          }
+          lista="$RUNNER_TEMP/lista.txt"
+          # --list lê só o índice; o `cat` drena o resto para o gpg não morrer com pipe fechado.
+          decifra | docker run --rm -i "$IMG" sh -c 'pg_restore --list; s=$?; cat > /dev/null; exit $s' > "$lista"
+          tabelas=$(grep -c ' TABLE public ' "$lista" || true)
+          dados=$(grep -c ' TABLE DATA public ' "$lista" || true)
+          if [ "$tabelas" -eq 0 ] || [ "$dados" -eq 0 ]; then
+            echo "::error::O backup abriu, mas não tem tabelas ($tabelas) ou dados ($dados). Não confie nele."
+            exit 1
+          fi
+          # Lê o arquivo inteiro (descomprime todos os blocos) sem gravar nada.
+          decifra | docker run --rm -i "$IMG" pg_restore --file=/dev/null
+          echo "Backup íntegro: $tabelas tabela(s), $dados bloco(s) de dados."
+          echo "Backup íntegro: $tabelas tabelas, $dados blocos de dados. Artifact cifrado, retido por 30 dias." >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backup-banco-${{ github.run_id }}
+          path: ${{ runner.temp }}/${{ env.ARQUIVO_NOME }}
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error

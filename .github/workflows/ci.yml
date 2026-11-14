@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Histórico inteiro: a guarda de RLS compara as migrations com a base do PR.
+          # Histórico inteiro: a guarda de migrations compara com a base do PR.
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
@@ -50,9 +50,9 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      - name: Sem .env nem .playwright-mcp/ no repositório
+      - name: Sem .env, .playwright-mcp/ nem dump de banco no repositório
         run: |
-          bad=$(git ls-files | grep -E '(^|/)\.playwright-mcp/|(^|/)\.env(\.|$)' | grep -vE '\.example$' || true)
+          bad=$(git ls-files | grep -E '(^|/)\.playwright-mcp/|(^|/)\.env(\.|$)|\.dump(\.gpg)?$' | grep -vE '\.example$' || true)
           if [ -n "$bad" ]; then
             echo "::error::Arquivos que não podem ser versionados:"
             echo "$bad"
@@ -83,11 +83,12 @@ jobs:
           fi
           exit "$code"
 
-      - name: Tabela nova liga RLS na própria migration
+      # RLS ligado em tabela nova e nada destrutivo sem "-- destrutiva-aprovada: <motivo>".
+      - name: Migrations novas (RLS e nada destrutivo)
         if: github.event_name == 'pull_request'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: node scripts/check-migration-rls.ts "origin/$BASE_REF"
+        run: node scripts/check-migrations.ts "origin/$BASE_REF"
 
       - run: pnpm exec prisma migrate deploy
       - run: pnpm test

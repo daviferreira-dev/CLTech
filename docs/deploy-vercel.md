@@ -162,10 +162,17 @@ Cuidados:
 
 - A migração roda **antes** do `next build`. Se o `next build` falhar depois, o banco fica uma
   migração à frente do código no ar. Por isso as migrações devem ser aditivas (criar tabela ou
-  coluna, nunca apagar ou renomear no mesmo deploy que muda o código).
+  coluna, nunca apagar ou renomear no mesmo deploy que muda o código). O CI barra migration
+  destrutiva sem `-- destrutiva-aprovada: <motivo>` (ver CONTRIBUTING).
 - As migrações aplicadas à mão em 07/11 têm o checksum calculado com quebra de linha Windows
   (CRLF), e a Vercel lê os arquivos com quebra Linux (LF). Testado: o `migrate deploy` não confere
   checksum de migração já aplicada, só aplica as pendentes. Não precisa mexer em nada.
 - Para aplicar à mão (emergência) sem saber a senha: Deployments → ⋯ → **Redeploy** do último
   deploy de produção. Quem tiver a URL de session pooler de produção pode rodar, **sem** gravá-la no
   `.env`: `DATABASE_URL="<url porta 5432>" pnpm prisma migrate deploy`.
+
+## 10. Incidente, rollback e backup
+
+Smoke falhou, produção quebrou, migration estragou dados, ou é preciso restaurar o backup
+semanal do banco: [docs/incidente.md](incidente.md). Lá também estão os passos para ligar o
+backup (secrets `BACKUP_DATABASE_URL` e `BACKUP_PASSPHRASE`).

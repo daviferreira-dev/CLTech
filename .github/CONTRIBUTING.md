@@ -36,14 +36,17 @@ Detalhes no [README](../README.md#como-rodar-localmente) e em
 Em todo PR e push na `main` ([`ci.yml`](workflows/ci.yml)), dois jobs em paralelo:
 
 **`check`**
-- Nenhum `.env`, `.env.*` (fora os `.example`) nem `.playwright-mcp/` versionado.
+- Nenhum `.env`, `.env.*` (fora os `.example`), `.playwright-mcp/` nem `*.dump`/`*.dump.gpg` versionado.
 - `pnpm lint` e `pnpm exec tsc --noEmit`.
 - `schema.prisma` bate com as migrations (`prisma migrate diff --exit-code`). Mudou o schema?
   Rode `pnpm prisma:migrate` e commite a migration.
-- Só em PR: toda migration **nova** com `CREATE TABLE` tem o
-  `ALTER TABLE "X" ENABLE ROW LEVEL SECURITY;` da mesma tabela
-  ([`scripts/check-migration-rls.ts`](../scripts/check-migration-rls.ts)). Local:
-  `node scripts/check-migration-rls.ts origin/main` (compara commits: migration ainda não
+- Só em PR, nas migrations **novas** ([`scripts/check-migrations.ts`](../scripts/check-migrations.ts)):
+  - todo `CREATE TABLE` tem o `ALTER TABLE "X" ENABLE ROW LEVEL SECURITY;` da mesma tabela;
+  - nada de `DROP TABLE`, `DROP COLUMN`, `RENAME` (de tabela, coluna ou valor de enum),
+    `ALTER COLUMN ... TYPE` ou `TRUNCATE`, a menos que a migration tenha a linha
+    `-- destrutiva-aprovada: <motivo>` (ver Regras).
+
+  Local: `node scripts/check-migrations.ts origin/main` (compara commits: migration ainda não
   commitada não entra).
 - `prisma migrate deploy`, `pnpm test` (unit + integration) e `pnpm build`.
 
@@ -58,12 +61,23 @@ Depois do deploy de produção, [`smoke-producao.yml`](workflows/smoke-producao.
 (manda para o login) e `GET /api/recruiter/dashboard` dá 401. Cada rota tenta até 5 vezes, porque
 o domínio pode demorar uns segundos para apontar para o deploy novo. O gatilho é o commit status
 `Vercel` com `success` num commit da `main` (a Vercel não cria GitHub Deployments aqui). Dá para
-rodar à mão em Actions → Smoke de produção → Run workflow.
+rodar à mão em Actions → Smoke de produção → Run workflow. Se falhar, siga o
+[roteiro de incidente](../docs/incidente.md).
+
+Todo domingo, [`backup-banco.yml`](workflows/backup-banco.yml) faz um `pg_dump` do banco de
+produção, cifra com gpg (AES256), confere que ele abre e guarda só o arquivo cifrado como
+artifact por 30 dias. Configuração e restauração em [docs/incidente.md](../docs/incidente.md).
 
 ## Regras
 
 - Nunca commite `.env` nem aponte o `.env` local para o banco de produção.
 - Dado pessoal novo é cifrado (`src/server/crypto.ts`) e restrito por papel.
 - Toda tabela nova liga RLS na própria migration (`ALTER TABLE "X" ENABLE ROW LEVEL SECURITY;`).
+- Migration só **adiciona** (tabela, coluna, índice, valor de enum). Apagar, renomear, trocar o
+  tipo ou esvaziar vai numa rodada seguinte, num PR à parte, depois que o código no ar já não usa
+  o que sai. Motivo: o build de produção aplica a migration antes de o código novo subir, o
+  Instant Rollback da Vercel volta só o código, e o Prisma não desfaz migration. Se for mesmo
+  necessário, rode um backup antes (Actions → Backup do banco → Run workflow) e ponha na
+  migration `-- destrutiva-aprovada: <motivo>`. Ver [docs/incidente.md](../docs/incidente.md).
 - O score de compatibilidade é imutável depois de emitido (RN003).
 - Visual segue o [DESIGN.md](../DESIGN.md).
