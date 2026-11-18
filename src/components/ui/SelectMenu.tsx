@@ -192,11 +192,11 @@ export function SelectMenu({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
           open ? "border-action ring-2 ring-action/20" : "border-fg-subtle/40 hover:border-fg-subtle",
           "disabled:cursor-not-allowed disabled:bg-page disabled:text-fg-muted disabled:opacity-70",
-          invalid && "border-danger",
+          invalid && "animate-shake border-danger",
         )}
       >
         <span className="min-w-0 truncate">{selected?.label ?? ""}</span>
-        <Icon name="chevronDown" className={cn("h-4 w-4 shrink-0 text-fg-muted transition-transform duration-200", open && "rotate-180 text-link")} />
+        <Icon name="chevronDown" className={cn("h-4 w-4 shrink-0 text-fg-muted transition-transform duration-fast", open && "rotate-180 text-link")} />
       </button>
 
       <ul
@@ -205,8 +205,8 @@ export function SelectMenu({
         role="listbox"
         aria-labelledby={buttonId}
         tabIndex={-1}
-        hidden={!open}
-        className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-64 origin-top animate-[cl-pop_140ms_ease-out] overflow-auto rounded-field border border-line bg-raised p-1 shadow-popover motion-reduce:animate-none"
+        data-open={open}
+        className="t-dropdown absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-64 origin-top overflow-auto rounded-field border border-line bg-raised p-1 shadow-popover"
       >
         {options.map((option, index) => {
           const isSelected = index === selectedIndex;

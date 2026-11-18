@@ -30,6 +30,10 @@ export function ConfirmDialog({
   onCancel: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Durante a saída (150ms) o chamador já zerou o estado que gera o texto; mostra o último texto aberto.
+  const shown = useRef({ title, description, confirmLabel });
+  if (open) shown.current = { title, description, confirmLabel };
+  ({ title, description, confirmLabel } = shown.current);
   const titleId = useId();
   const descriptionId = useId();
 

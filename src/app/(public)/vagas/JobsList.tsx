@@ -230,12 +230,12 @@ export function JobsList({ viewer }: { viewer: Viewer }) {
         )}
 
         {data && data.items.length > 0 && (
-          <div className={cn("space-y-6 transition-opacity duration-200", loading && "opacity-60")} aria-busy={loading}>
+          <div className={cn("space-y-6 transition-opacity duration-fast", loading && "opacity-60")} aria-busy={loading}>
             <Reveal as="ul" onScroll={false} stagger={0.06} className="space-y-4">
               {data.items.map((job) => {
                 const match = matchStateFor(job, viewer);
                 return (
-                  <Card as="li" key={job.id} data-reveal className="relative p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-action/40 hover:shadow-popover sm:p-6">
+                  <Card as="li" key={job.id} data-reveal className="relative p-4 transition-[transform,border-color,box-shadow] duration-fast hover:-translate-y-0.5 hover:border-action/40 hover:shadow-popover sm:p-6">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
                         <h2 className="font-display text-[19px] font-semibold leading-7">

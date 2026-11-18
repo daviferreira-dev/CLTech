@@ -10,7 +10,7 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /**
  * Entrada suave dos filhos marcados com `data-reveal` (ou do próprio bloco, sem marcas):
- * sobem 20px e aparecem em sequência quando entram na tela. O conteúdo já vem renderizado
+ * sobem 12px e aparecem em sequência quando entram na tela. O conteúdo já vem renderizado
  * do servidor; sem JS ou com movimento reduzido, nada fica escondido.
  */
 export function Reveal({
@@ -41,9 +41,9 @@ export function Reveal({
         // conteúdo fica visível. Na montagem, o rAF não roda em aba oculta e a timeline
         // congelaria os itens invisíveis; o setTimeout (que roda, mesmo atrasado) a conclui.
         const tween = gsap.from(targets, {
-          y: 20,
+          y: 12, // --distance-medium
           opacity: 0,
-          duration: 0.6,
+          duration: 0.5, // --duration-very-slow
           ease: "power3.out",
           stagger,
           clearProps: "transform,opacity,visibility",
