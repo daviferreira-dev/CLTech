@@ -40,6 +40,17 @@
   --radius-card: 14px;
   --shadow-header: 0 1px 0 rgb(var(--shadow-rgb) / 0.06);
   --shadow-popover: 0 12px 32px rgb(var(--shadow-rgb) / 0.14);
+
+  /* Escala de movimento (transitions.dev, licença gratuita). Só os tokens que a interface usa;
+     tailwind.config.ts expõe duração e curva por nome (duration-fast, ease-smooth-out…). */
+  --duration-quick: 150ms; /* fechar menu e diálogo, trocas de cor */
+  --duration-fast: 250ms; /* abrir menu e diálogo, hover de cartão, giro do chevron */
+  --duration-very-slow: 500ms; /* revelação de blocos ao rolar */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1); /* abrir, fechar, deslocar */
+  --distance-small: 6px; /* tremida de campo com erro */
+  --distance-medium: 12px; /* subida da revelação ao rolar */
+  --scale-large: 0.96; /* diálogo */
+  --scale-medium: 0.97; /* menu */
 }
 
 /* Tema escuro: o navy vira a base, o azul royal continua sendo a ação. */
@@ -80,6 +91,7 @@ body {
   *::before,
   *::after {
     transition-duration: 0ms !important;
+    transition-delay: 0s !important;
     animation-duration: 0ms !important;
     animation-iteration-count: 1 !important;
   }
@@ -89,14 +101,88 @@ dialog::backdrop {
   background: rgb(var(--inverse) / 0.6);
 }
 
-/* Abertura de listas suspensas e popovers (SelectMenu). */
-@keyframes cl-pop {
-  from {
+/*
+ * Menu suspenso (SelectMenu): abre em 250ms e fecha em 150ms, crescendo a partir do botão.
+ * `data-open` troca o estado; fechado, a lista sai do layout (`display: none`), então não cria
+ * rolagem vazia; `allow-discrete` adia o `display` até o fim da saída.
+ */
+@layer components {
+  .t-dropdown {
+    display: none;
     opacity: 0;
-    transform: translateY(-4px) scale(0.98);
+    transform: scale(var(--scale-medium));
+    pointer-events: none;
+    transition:
+      opacity var(--duration-quick) var(--ease-smooth-out),
+      transform var(--duration-quick) var(--ease-smooth-out),
+      display var(--duration-quick) allow-discrete;
   }
-  to {
+  .t-dropdown[data-open="true"] {
+    display: block;
     opacity: 1;
     transform: none;
+    pointer-events: auto;
+    transition:
+      opacity var(--duration-fast) var(--ease-smooth-out),
+      transform var(--duration-fast) var(--ease-smooth-out),
+      display var(--duration-fast) allow-discrete;
+  }
+  @starting-style {
+    .t-dropdown[data-open="true"] {
+      opacity: 0;
+      transform: scale(var(--scale-medium));
+    }
+  }
+
+  /* Entrada de menus montados só quando abertos (menu do usuário e menu móvel do cabeçalho). */
+  .t-menu-in {
+    animation: t-menu-in var(--duration-fast) var(--ease-smooth-out);
+  }
+}
+
+@keyframes t-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--distance-small) * -1)) scale(var(--scale-medium));
+  }
+}
+
+/*
+ * Diálogos (<dialog> nativo: ConfirmDialog, RejectDialog, MeetingDialog): crescem do centro ao
+ * abrir (250ms) e saem mais rápido (150ms). `allow-discrete` mantém o elemento na tela durante a
+ * saída; onde o navegador não suporta, o diálogo só aparece e some sem animar.
+ */
+dialog {
+  opacity: 0;
+  transform: scale(var(--scale-large));
+  transition:
+    opacity var(--duration-quick) var(--ease-smooth-out),
+    transform var(--duration-quick) var(--ease-smooth-out),
+    overlay var(--duration-quick) allow-discrete,
+    display var(--duration-quick) allow-discrete;
+}
+dialog[open] {
+  opacity: 1;
+  transform: none;
+  transition-duration: var(--duration-fast);
+}
+dialog::backdrop {
+  opacity: 0;
+  transition:
+    opacity var(--duration-quick) var(--ease-smooth-out),
+    overlay var(--duration-quick) allow-discrete,
+    display var(--duration-quick) allow-discrete;
+}
+dialog[open]::backdrop {
+  opacity: 1;
+  transition-duration: var(--duration-fast);
+}
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: scale(var(--scale-large));
+  }
+  dialog[open]::backdrop {
+    opacity: 0;
   }
 }

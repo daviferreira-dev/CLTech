@@ -54,8 +54,32 @@ const config: Config = {
       maxWidth: {
         content: "1280px",
       },
+      // Escala de movimento declarada em globals.css (transitions.dev).
       transitionDuration: {
-        DEFAULT: "150ms",
+        DEFAULT: "var(--duration-quick)",
+        quick: "var(--duration-quick)",
+        fast: "var(--duration-fast)",
+      },
+      transitionTimingFunction: {
+        DEFAULT: "var(--ease-smooth-out)",
+        "smooth-out": "var(--ease-smooth-out)",
+      },
+      keyframes: {
+        // Tremida do campo com erro: 280ms, quatro trechos (direita, esquerda, volta com folga, repouso).
+        shake: {
+          "0%, 100%": { transform: "translateX(0)" },
+          "28.57%": { transform: "translateX(var(--distance-small))" },
+          "57.14%": { transform: "translateX(calc(var(--distance-small) * -1))" },
+          "78.57%": { transform: "translateX(4px)" },
+        },
+        // Mensagem de erro: sobe 6px e aparece.
+        "fade-rise": {
+          from: { opacity: "0", transform: "translateY(var(--distance-small))" },
+        },
+      },
+      animation: {
+        shake: "shake 280ms var(--ease-smooth-out)",
+        "fade-rise": "fade-rise var(--duration-fast) var(--ease-smooth-out)",
       },
     },
   },
