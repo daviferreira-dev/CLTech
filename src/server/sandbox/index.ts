@@ -1,8 +1,9 @@
 // Execução isolada de código do candidato (spec 005 FR-208 / RNF06 / R10).
 //
-// O sandbox é Judge0 numa VM à parte (Oracle Cloud Always Free), nunca a própria Vercel:
-// serverless não isola contêiner, CPU, memória nem rede. Aqui fica só o cliente HTTP. Sem
-// SANDBOX_URL configurada, todo pedido falha como indisponibilidade de infraestrutura — e a
+// O sandbox é o Judge0 CE público (ce.judge0.com, serviço externo; o código do candidato sai
+// da plataforma), nunca a própria Vercel: serverless não isola contêiner, CPU, memória nem
+// rede. Dá para trocar por um Judge0 próprio só mudando SANDBOX_URL. Aqui fica só o cliente
+// HTTP. Sem SANDBOX_URL configurada, todo pedido falha como indisponibilidade de infraestrutura — e a
 // tela degrada para "correção em andamento" (NFR-202) em vez de quebrar.
 
 import { spawn } from "node:child_process";
@@ -283,7 +284,7 @@ class UnconfiguredSandbox implements Sandbox {
   }
 
   async run(): Promise<SandboxRunResult> {
-    throw new SandboxUnavailableError("SANDBOX_URL não configurada — VM do Judge0 ainda não provisionada.");
+    throw new SandboxUnavailableError("SANDBOX_URL não configurada — serviço Judge0 não configurado.");
   }
 }
 

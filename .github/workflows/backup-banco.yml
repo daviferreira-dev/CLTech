@@ -6,6 +6,9 @@ name: Backup do banco
 # Secrets do Environment `backup`, liberado só para a main (docs/incidente.md, "Passos do Davi"):
 #   BACKUP_DATABASE_URL  papel só de leitura no session pooler (porta 5432)
 #   BACKUP_PASSPHRASE    senha da cifra; sem ela o backup não abre
+# Opcionais (currículos do Supabase Storage; sem eles o passo é pulado com aviso):
+#   BACKUP_STORAGE_ENDPOINT, BACKUP_STORAGE_KEY_ID, BACKUP_STORAGE_SECRET,
+#   BACKUP_STORAGE_BUCKET, BACKUP_STORAGE_REGION
 on:
   schedule:
     - cron: "17 6 * * 0" # domingo, 06:17 UTC (03:17 em Brasília)
@@ -30,6 +33,7 @@ jobs:
     environment: backup
     env:
       ARQUIVO_NOME: cltech.dump.gpg
+      STORAGE_ARQUIVO_NOME: curriculos.tar.gpg
     steps:
       - name: Dump cifrado
         id: dump
@@ -119,10 +123,69 @@ jobs:
           echo "Backup íntegro: $tabelas tabela(s), $dados bloco(s) de dados."
           echo "Backup íntegro: $tabelas tabelas, $dados blocos de dados. Artifact cifrado, retido por 30 dias." >> "$GITHUB_STEP_SUMMARY"
 
+      # Não derruba o backup do banco: o upload abaixo roda de qualquer jeito e o último passo
+      # falha o job se este passo falhou (assim o aviso por e-mail do GitHub chega).
+      - name: Currículos (Storage) cifrados
+        id: storage
+        continue-on-error: true
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_STORAGE_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_STORAGE_SECRET }}
+          AWS_DEFAULT_REGION: ${{ secrets.BACKUP_STORAGE_REGION }}
+          ENDPOINT: ${{ secrets.BACKUP_STORAGE_ENDPOINT }}
+          BUCKET: ${{ secrets.BACKUP_STORAGE_BUCKET }}
+        run: |
+          set -euo pipefail
+          falta=""
+          [ -n "$AWS_ACCESS_KEY_ID" ] || falta="$falta BACKUP_STORAGE_KEY_ID"
+          [ -n "$AWS_SECRET_ACCESS_KEY" ] || falta="$falta BACKUP_STORAGE_SECRET"
+          [ -n "$AWS_DEFAULT_REGION" ] || falta="$falta BACKUP_STORAGE_REGION"
+          [ -n "$ENDPOINT" ] || falta="$falta BACKUP_STORAGE_ENDPOINT"
+          [ -n "$BUCKET" ] || falta="$falta BACKUP_STORAGE_BUCKET"
+          if [ -n "$falta" ]; then
+            echo "::warning::Backup dos currículos PULADO: secret(s) ausente(s):$falta. O backup do banco segue normal, mas os arquivos de currículo NÃO estão sendo copiados (docs/incidente.md, seção 4.8)."
+            echo "Currículos: PULADO (secrets do Storage ausentes:$falta)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Cópia local temporária no runner (descartada no fim do job); só o .tar.gpg vira artifact.
+          DIR="$RUNNER_TEMP/storage"
+          trap 'rm -rf "$DIR"; [ "${ok:-}" = 1 ] || rm -f "$RUNNER_TEMP/$STORAGE_ARQUIVO_NOME"' EXIT
+          mkdir -p "$DIR"
+          # O Supabase Storage S3 exige path-style (bucket no caminho, não no host).
+          aws configure set default.s3.addressing_style path
+          aws s3 sync "s3://$BUCKET" "$DIR" --endpoint-url "$ENDPOINT" --only-show-errors
+          arquivos=$(find "$DIR" -type f | wc -l)
+          # Os currículos já ficam cifrados (AES-256) no bucket; o gpg protege o conjunto e o nome dos arquivos.
+          tar -C "$DIR" -cf - . \
+            | gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 3 \
+                --symmetric --cipher-algo AES256 --s2k-digest-algo SHA512 --compress-algo none \
+                --output "$RUNNER_TEMP/$STORAGE_ARQUIVO_NOME" 3< <(printf '%s' "$BACKUP_PASSPHRASE")
+          # Confere que abre e que a contagem bate (bucket vazio é suspeito: avisa).
+          lidos=$(gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 3 --decrypt \
+              "$RUNNER_TEMP/$STORAGE_ARQUIVO_NOME" 3< <(printf '%s' "$BACKUP_PASSPHRASE") \
+            | tar -tf - | grep -vc '/$' || true)
+          if [ "$lidos" -ne "$arquivos" ]; then
+            echo "::error::O tar cifrado tem $lidos arquivo(s), o bucket tinha $arquivos."
+            exit 1
+          fi
+          ok=1
+          [ "$arquivos" -gt 0 ] || echo "::warning::O bucket está vazio. Confira o BACKUP_STORAGE_BUCKET."
+          echo "Currículos: $arquivos arquivo(s) copiados e cifrados ($(du -h "$RUNNER_TEMP/$STORAGE_ARQUIVO_NOME" | cut -f1))." | tee -a "$GITHUB_STEP_SUMMARY"
+
       - uses: actions/upload-artifact@v4
         with:
           name: backup-banco-${{ github.run_id }}
-          path: ${{ runner.temp }}/${{ env.ARQUIVO_NOME }}
+          path: |
+            ${{ runner.temp }}/${{ env.ARQUIVO_NOME }}
+            ${{ runner.temp }}/${{ env.STORAGE_ARQUIVO_NOME }}
           retention-days: 30
           compression-level: 0
           if-no-files-found: error
+
+      - name: Falha o job se os currículos falharam
+        if: steps.storage.outcome == 'failure'
+        run: |
+          echo "::error::O backup do banco foi salvo, mas a cópia dos currículos falhou. Veja o passo 'Currículos (Storage) cifrados'."
+          exit 1

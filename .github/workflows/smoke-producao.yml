@@ -5,8 +5,14 @@ name: Smoke de produção
 # status com context "Vercel". Quando esse status fica "success" num commit que está na main,
 # é o deploy de produção. O evento `status` só dispara com este arquivo na branch padrão (main).
 # workflow_dispatch roda à mão (Actions → Smoke de produção → Run workflow).
+# schedule roda a cada 6 horas e pega o que quebra sem deploy (Supabase pausado,
+# domínio caído); só dispara com este arquivo na main. Rota fora do esperado deixa o job
+# vermelho e o GitHub avisa por e-mail. Em repositório público, o GitHub desliga agendamentos
+# depois de 60 dias sem atividade (docs/incidente.md).
 on:
   status:
+  schedule:
+    - cron: "23 */6 * * *"
   workflow_dispatch:
 
 permissions: {}
@@ -14,7 +20,7 @@ permissions: {}
 jobs:
   smoke:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      github.event_name != 'status' ||
       (github.event.context == 'Vercel' &&
         github.event.state == 'success' &&
         contains(github.event.branches.*.name, 'main'))

@@ -28,7 +28,8 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
         Exclusivamente para os processos seletivos da 3aq Tecnologia: calcular a compatibilidade com as vagas, corrigir
         os desafios técnicos e permitir que a equipe de recrutamento avalie sua candidatura. A base legal é a execução de
         procedimentos preliminares a um contrato, a seu pedido (LGPD, art. 7º, V). Nenhum dado é enviado a serviço de
-        inteligência artificial de terceiros: a triagem roda dentro da própria plataforma.
+        inteligência artificial de terceiros: a triagem roda dentro da própria plataforma. O código que você envia nos
+        desafios técnicos é executado por um serviço externo, o Judge0 (ce.judge0.com), só para corrigir o desafio.
       </p>
     ),
   },
@@ -56,7 +57,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <p>
         Enquanto sua conta existir. Ao excluí-la, todos os dados acima são apagados de forma definitiva, inclusive os
-        arquivos de currículo.
+        arquivos de currículo. Cópias de segurança cifradas podem guardar o dado por até 30 dias antes de serem apagadas.
       </p>
     ),
   },
