@@ -3,9 +3,10 @@
 Publica a aplicação em `https://<projeto>.vercel.app`, usando o mesmo banco e o mesmo storage
 do Supabase que já funcionam localmente. Tempo estimado: 15 minutos. Custo: zero (plano Hobby).
 
-O que **não** sobe para a Vercel: a execução de código do teste técnico, que precisa da VM com
-Judge0 (decisão D2). Sem ela, o candidato consegue abrir o desafio e submeter; a correção fica
-"pendente" até a VM existir. `SANDBOX_URL="local"` é ignorado em produção.
+O que **não** roda na Vercel: a execução de código do teste técnico. Ela vai para o Judge0
+público (`https://ce.judge0.com`, serviço externo; o aviso de privacidade informa isso).
+Sem `SANDBOX_URL`, o candidato consegue abrir o desafio e submeter; a correção fica "pendente"
+até ela existir. `SANDBOX_URL="local"` é ignorado em produção.
 
 O repositório já traz o que dá para deixar pronto:
 
@@ -82,7 +83,7 @@ Se o arquivo não existir (outra máquina), monte-o a partir da tabela:
 | `NEXTAUTH_URL` | a URL pública do projeto |
 | `LINKEDIN_ID` / `LINKEDIN_SECRET` | opcional |
 | `CRON_SECRET` | opcional (ver item 7) |
-| `SANDBOX_URL` / `SANDBOX_TOKEN` | vazios até a VM existir |
+| `SANDBOX_URL` / `SANDBOX_TOKEN` | `https://ce.judge0.com` e token vazio (Judge0 público); sem `SANDBOX_URL` a correção fica pendente |
 
 Não vão para a Vercel: `AI_SERVICE_URL` e `GEMINI_API_KEY` (sem uso; a triagem roda no
 próprio Next.js, decisão D11) e `SANDBOX_ALLOW_LOCAL`.
@@ -128,7 +129,7 @@ Na URL pública:
 |---|---|---|
 | Corpo de requisição de 4,5 MB | Currículo entre 4,5 e 5 MB é recusado pela Vercel antes de chegar ao sistema | Aceitável na demonstração; registrar se o professor testar com arquivo grande |
 | Cron só 1 vez por dia (plano gratuito) | A rota `/api/internal/code-tests/expire` exporta `GET` (que chama o `POST`) e está agendada em `vercel.json`, uma vez por dia | O prazo também expira sempre que o candidato ou o recrutador abrem o desafio, então o atraso de até um dia não afeta ninguém |
-| Sem sandbox | Teste de código não é corrigido | VM do Judge0 |
+| Judge0 público (`ce.judge0.com`) fora do ar ou sem `SANDBOX_URL` | Teste de código não é corrigido (fica "pendente") | Esperar o serviço voltar ou apontar `SANDBOX_URL` para um Judge0 próprio |
 | Supabase gratuito pausa após inatividade | Toda rota com banco falha | Restaurar o projeto no painel do Supabase antes de apresentar |
 
 ## 8. Problemas comuns

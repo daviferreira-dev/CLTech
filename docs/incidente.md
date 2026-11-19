@@ -86,8 +86,15 @@ dias como artifact de cada execução do workflow. O repositório é público: o
 baixado por qualquer conta do GitHub, por isso ele só sai cifrado. Quem não tem a senha de cifra
 não abre.
 
-O que **não** está no backup:
-- os arquivos de currículo (ficam no Storage do Supabase, não nas tabelas);
+**Dados excluídos continuam no backup por até 30 dias (LGPD).** Quando um candidato exclui a
+conta, o banco e o Storage apagam na hora, mas os artifacts já gerados guardam a cópia (cifrada)
+até vencerem, 30 dias depois da execução. O aviso de privacidade fala em exclusão definitiva:
+para um pedido formal de eliminação, apague também os artifacts anteriores à exclusão (comando na
+seção 4.6) e, se restaurar um backup, reaplique as exclusões feitas depois dele.
+
+O que **não** está no backup do banco:
+- os arquivos de currículo (ficam no Storage do Supabase, não nas tabelas); vão no
+  `curriculos.tar.gpg`, do mesmo artifact, se os secrets do Storage estiverem cadastrados (3.3, 4.8);
 - a `ENCRYPTION_KEY`: telefones, currículos extraídos e códigos continuam cifrados dentro do
   backup. Sem a mesma chave do `.env` eles não abrem. Guarde a chave no gerenciador de senhas
   junto com a senha de cifra.
@@ -142,7 +149,26 @@ docker rm -f cltech-restore
 
 E apague a pasta `$HOME/cltech-backup` se não precisar mais dela.
 
-### 3.3 Restaurar em produção (só com decisão explícita)
+### 3.3 Restaurar os currículos
+
+O artifact também traz `curriculos.tar.gpg` (se o 4.8 foi feito). Ele é um tar de todo o bucket
+`cltech-curriculos`, com os mesmos nomes de chave. Depois do 3.1:
+
+```bash
+mkdir "$HOME/cltech-curriculos" && gpg --decrypt "$HOME/cltech-backup/backup-banco-<run-id>/curriculos.tar.gpg" | tar -xf - -C "$HOME/cltech-curriculos"
+```
+
+Para devolver ao Storage (só se os arquivos sumiram; use uma chave S3 **sua**, a de leitura do
+backup não grava, e confira o bucket antes: `sync` sem `--delete` não apaga nada):
+
+```bash
+AWS_ACCESS_KEY_ID=<chave> AWS_SECRET_ACCESS_KEY=<segredo> AWS_DEFAULT_REGION=<regiao> aws s3 sync "$HOME/cltech-curriculos" s3://cltech-curriculos --endpoint-url <endpoint>
+```
+
+Os arquivos têm dado pessoal: apague `$HOME/cltech-curriculos` ao terminar, e nunca coloque
+dentro do repositório. Cada arquivo continua cifrado com a `ENCRYPTION_KEY`.
+
+### 3.4 Restaurar em produção (só com decisão explícita)
 
 **Precisa da senha do dono do banco (`postgres`), que hoje ninguém tem.** Ela não dá para
 conseguir com calma no meio da crise: redefinir a senha derruba o site até o `DATABASE_URL` da
@@ -280,7 +306,7 @@ Se vazar a senha do papel: `alter role backup_leitura password '<nova>';` no SQL
 
 ### 4.7 Opcional: preparar a senha do dono para uma restauração em produção
 
-Só é preciso para a seção 3.3. Faça num horário calmo, nunca no meio de um incidente, porque o
+Só é preciso para a seção 3.4. Faça num horário calmo, nunca no meio de um incidente, porque o
 site cai entre o passo 2 e o passo 4:
 
 1. Gere a senha com `openssl rand -hex 32` e guarde no gerenciador de senhas.
@@ -290,6 +316,30 @@ site cai entre o passo 2 e o passo 4:
 4. Deployments → ⋯ → **Redeploy** do último deploy de produção, e rode o smoke.
 
 Essa senha não vai para o `BACKUP_DATABASE_URL`: ela apaga o banco inteiro.
+
+### 4.8 Backup dos currículos (secrets do Storage)
+
+Opcional, mas sem isso os arquivos de currículo não têm backup nenhum (o passo é pulado com
+aviso amarelo, o backup do banco segue). **Limite do Supabase:** o Storage S3 só emite chaves
+com acesso total ao projeto (ignoram RLS, leem e **gravam** em todos os buckets); não existe chave
+só leitura. A defesa é o Environment `backup` (4.4, só `main`) e rotacionar a chave se vazar.
+
+1. Supabase → **Project Settings** → **Storage** → **S3 Connection**. Anote o **Endpoint**
+   (`https://<ref>.storage.supabase.co/storage/v1/s3`) e a **Region** (ex.: `sa-east-1`).
+2. **New access key** → descrição `backup-cltech` → **Create** → copie o *Access key ID* e o
+   *Secret access key* (o segredo só aparece uma vez).
+3. Cadastre no Environment (o `gh` pede o valor sem mostrar):
+
+```bash
+gh secret set BACKUP_STORAGE_ENDPOINT --env backup
+gh secret set BACKUP_STORAGE_KEY_ID --env backup
+gh secret set BACKUP_STORAGE_SECRET --env backup
+gh secret set BACKUP_STORAGE_BUCKET --env backup
+gh secret set BACKUP_STORAGE_REGION --env backup
+```
+
+   O bucket é `cltech-curriculos`. Rode o workflow (4.6): o resumo deve dizer "Currículos: N
+   arquivo(s) copiados". Se vazar a chave, apague-a no mesmo painel e crie outra.
 
 ### Opção B (não recomendada): a senha do dono no backup
 
