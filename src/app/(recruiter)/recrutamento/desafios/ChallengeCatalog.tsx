@@ -119,7 +119,7 @@ export function ChallengeCatalog({ initial, canCreate }: { initial: ChallengePub
               </p>
               <details className="group">
                 <summary className="inline-flex min-h-6 cursor-pointer list-none items-center gap-1 rounded-sm text-body font-medium text-link hover:underline">
-                  <Icon name="chevronDown" className="transition-transform group-open:rotate-180" />
+                  <Icon name="chevronDown" className="transition-transform duration-fast group-open:rotate-180" />
                   <span className="group-open:hidden">Ver enunciado</span>
                   <span className="hidden group-open:inline">Ocultar enunciado</span>
                 </summary>

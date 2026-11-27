@@ -153,7 +153,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                   <Link
                     href={`/vagas/${job.id}`}
                     className={cn(
-                      "group flex h-full flex-col gap-4 rounded-card border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-1 hover:border-action/40 hover:shadow-popover",
+                      "group flex h-full flex-col gap-4 rounded-card border border-line bg-surface p-6 transition-[transform,border-color,box-shadow] duration-fast hover:-translate-y-1 hover:border-action/40 hover:shadow-popover",
                       focusRing,
                     )}
                   >

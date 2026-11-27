@@ -47,7 +47,7 @@ test("deslogado nunca vê percentual de compatibilidade (FR-035)", async ({ page
 test("candidato sem currículo vê orientação em vez de um número (FR-036)", async ({ page }) => {
   await signUp(page, uniqueEmail());
   await page.goto("/vagas");
-  await expect(page.getByText("Complete seu perfil para ver sua compatibilidade.").first()).toBeVisible();
+  await expect(page.getByText("Envie o currículo para ver sua compatibilidade.").first()).toBeVisible();
   await expect(page.getByText(/% de compatibilidade/)).toHaveCount(0);
 });
 

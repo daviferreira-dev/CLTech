@@ -102,7 +102,7 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<EmailMoment, { name: string; subjec
     body: "Recebemos sua candidatura para a vaga {{vaga}} na {{empresa}}. Nossa equipe vai analisar e avisamos por aqui sobre os próximos passos.",
   },
   STAGE_ADVANCED_RESUME_ANALYSIS: {
-    name: "Avançou — Análise de Currículo",
+    name: "Avançou — Análise de currículo",
     subject: "Você avançou para {{etapa}} — {{vaga}}",
     body: "Você passou para a próxima etapa do processo seletivo da vaga {{vaga}}.",
   },
@@ -123,12 +123,12 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<EmailMoment, { name: string; subjec
     body: "Você passou para a próxima etapa do processo seletivo da vaga {{vaga}}.",
   },
   STAGE_ADVANCED_TECH_INTERVIEW: {
-    name: "Avançou — Entrevista Técnica",
+    name: "Avançou — Entrevista técnica",
     subject: "Você avançou para {{etapa}} — {{vaga}}",
     body: "Você passou para a próxima etapa do processo seletivo da vaga {{vaga}}.",
   },
   STAGE_ADVANCED_FINAL_OFFER: {
-    name: "Avançou — Proposta Final",
+    name: "Avançou — Proposta final",
     subject: "Você avançou para {{etapa}} — {{vaga}}",
     body: "Você passou para a próxima etapa do processo seletivo da vaga {{vaga}}.",
   },
@@ -140,7 +140,7 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<EmailMoment, { name: string; subjec
   },
   APPROVED: {
     name: "Aprovado / contratado",
-    subject: "Você foi aprovado(a) na vaga {{vaga}}! 🎉",
+    subject: "Você foi aprovado(a) na vaga {{vaga}}",
     body: "Você foi aprovado(a) no processo seletivo da vaga {{vaga}}. Foi uma jornada e tanto — obrigado por cada etapa.",
   },
   JOB_CLOSED: {

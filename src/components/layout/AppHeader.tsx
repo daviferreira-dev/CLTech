@@ -127,7 +127,7 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
               {userMenuOpen && (
                 <div
                   id="menu-usuario"
-                  className="absolute right-0 mt-2 w-56 rounded-card border border-line bg-raised p-2 shadow-popover"
+                  className="t-menu-in absolute right-0 mt-2 w-56 rounded-card border border-line bg-raised p-2 shadow-popover"
                 >
                   <div className="border-b border-line px-2 pb-2 sm:hidden">
                     <p className="truncate text-body font-medium text-fg">{user.name}</p>
@@ -176,7 +176,7 @@ export function AppHeader({ user, nav }: { user: HeaderUser | null; nav: NavItem
       </div>
 
       {menuOpen && (
-        <nav id="menu-principal-mobile" aria-label="Navegação principal (menu)" className="border-t border-line px-4 py-3 md:hidden">
+        <nav id="menu-principal-mobile" aria-label="Navegação principal (menu)" className="t-menu-in border-t border-line px-4 py-3 md:hidden">
           <ul className="space-y-1">{navLinks("column")}</ul>
           {!user && (
             <div className="mt-3 flex gap-2 border-t border-line pt-3 sm:hidden">

@@ -19,8 +19,13 @@ e o levantamento de funcionalidades de 07/11.
 3. **Migrations**: cada um cria só a sua e nunca edita a de outra pessoa. Antes de abrir o PR,
    atualizar a branch com o `main`; se o `schema.prisma` mudou nesse meio-tempo, apagar a
    própria migration (ainda não aplicada em lugar nenhum além do seu banco local) e gerar de novo.
-4. **Toda migration nova tem de ser aplicada à mão em produção antes do deploy** (como em 07/11).
-   Quem faz o merge avisa no grupo.
+4. **Migrations em produção rodam sozinhas**: o build de produção da Vercel roda `scripts/migrate-production.mjs`,
+   então quem faz o merge não aplica nada à mão.
+   - Migration que falha para o build e o deploy anterior continua no ar; por isso toda migration
+     precisa rodar limpa num banco local de teste antes do merge.
+   - Toda tabela nova liga o RLS na própria migration: `ALTER TABLE "Nome" ENABLE ROW LEVEL SECURITY;`
+     (como em `20261107085410_avaliacao_rh`).
+   - O preview usa o mesmo banco de produção e não roda o script, então não dá para testar migration nova no preview.
 5. **Arquivos compartilhados** — mexer só no trecho combinado:
 
    | Arquivo | 009 (Davi) | 010 (Cassiano) | 011 (Guilherme) |

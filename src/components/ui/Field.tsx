@@ -8,7 +8,7 @@ export const controlBase = cn(
   "w-full min-w-0 rounded-field border border-fg-subtle/40 bg-surface px-3 text-body text-fg",
   "placeholder:text-fg-subtle transition-colors hover:border-fg-subtle",
   "disabled:cursor-not-allowed disabled:bg-page disabled:text-fg-muted disabled:opacity-70",
-  "aria-[invalid=true]:border-danger",
+  "aria-[invalid=true]:border-danger aria-[invalid=true]:animate-shake",
   focusRing,
   "focus-visible:ring-offset-0",
 );
@@ -86,7 +86,7 @@ export function Field({
         </p>
       )}
       {error && (
-        <p id={errorId} role="alert" className="text-label text-danger">
+        <p id={errorId} role="alert" className="animate-fade-rise text-label text-danger">
           {error}
         </p>
       )}

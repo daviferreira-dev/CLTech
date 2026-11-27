@@ -131,9 +131,9 @@ test.describe("recrutador", () => {
     await page.getByLabel("Requisitos mínimos").fill("Go.");
     await page.getByRole("button", { name: "Salvar rascunho" }).click();
     await expect(page).toHaveURL(/\/recrutamento\/vagas\/[^/]+$/);
-    await chooseOption(page.getByLabel("Tipo de etapa"), "Análise de Currículo");
+    await chooseOption(page.getByLabel("Tipo de etapa"), "Análise de currículo");
     await page.getByRole("button", { name: "Adicionar etapa" }).click();
-    await expect(page.getByRole("listitem").filter({ hasText: "Análise de Currículo" })).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: "Análise de currículo" })).toBeVisible();
   }
 
   test("ALREADY_PUBLISHED recarrega o estado em vez de publicar de novo", async ({ page }) => {
@@ -149,7 +149,7 @@ test.describe("recrutador", () => {
     await loginAsRecruiter(page);
     await createDraftWithStage(page);
     await page.route("**/api/recruiter/jobs/*/stages", (route) => route.fulfill(fulfillError(409, "JOB_LOCKED")));
-    await chooseOption(page.getByLabel("Tipo de etapa"), "Entrevista Técnica");
+    await chooseOption(page.getByLabel("Tipo de etapa"), "Entrevista técnica");
     await page.getByRole("button", { name: "Adicionar etapa" }).click();
     await expect(page.getByText("Pipeline travado")).toBeVisible();
     await expect(page.getByText(/continuam editáveis/)).toBeVisible();
@@ -158,9 +158,9 @@ test.describe("recrutador", () => {
   test("INCOMPLETE_JOB aponta a etapa de teste de código sem desafio", async ({ page }) => {
     await loginAsRecruiter(page);
     await createDraftWithStage(page);
-    await chooseOption(page.getByLabel("Tipo de etapa"), "Teste de Código");
+    await chooseOption(page.getByLabel("Tipo de etapa"), "Teste de código");
     await page.getByRole("button", { name: "Adicionar etapa" }).click();
-    await expect(page.getByRole("listitem").filter({ hasText: "Teste de Código" })).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: "Teste de código" })).toBeVisible();
     await page.getByRole("button", { name: "Publicar Vaga" }).click();
     await page.getByRole("button", { name: "Confirmar publicação" }).click();
     await expect(page.getByText("Faltam dados para publicar")).toBeVisible();
