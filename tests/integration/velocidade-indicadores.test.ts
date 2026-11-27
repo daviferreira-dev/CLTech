@@ -124,6 +124,24 @@ describe("getTimeToOffer (FR-1001)", () => {
     expect(result.avgDays).toBe(6);
     expect(result.baselineDays).toBeNull();
   });
+
+  it("respeita o período da visão geral pela data de publicação (US1.5)", async () => {
+    const recruiter = await createRecruiter();
+    // Antiga: publicada há 60 dias, proposta 20 dias depois. Recente: há 10 dias, proposta em 4.
+    const old = await createJob(recruiter.id, ["FINAL_OFFER"], { publishedAt: daysAgo(60) });
+    await createApplication(old.job.id, "Antiga", [{ stageId: old.stages[0]!.id, enteredAt: daysAgo(40) }]);
+    const recent = await createJob(recruiter.id, ["FINAL_OFFER"], { publishedAt: daysAgo(10) });
+    await createApplication(recent.job.id, "Recente", [{ stageId: recent.stages[0]!.id, enteredAt: daysAgo(6) }]);
+
+    expect(await getTimeToOffer()).toMatchObject({ avgDays: 12, jobsCounted: 2 });
+    expect(await getTimeToOffer({ from: daysAgo(30) })).toMatchObject({ avgDays: 4, jobsCounted: 1 });
+    expect(await getTimeToOffer({ to: daysAgo(30) })).toMatchObject({ avgDays: 20, jobsCounted: 1 });
+    expect(await getTimeToOffer({ from: daysAgo(30), to: daysAgo(20) })).toMatchObject({ avgDays: null, jobsCounted: 0 });
+    // Limites inclusivos, como no filtro da visão geral.
+    expect(await getTimeToOffer({ from: daysAgo(10), to: daysAgo(10) })).toMatchObject({ avgDays: 4, jobsCounted: 1 });
+    // Período e vaga juntos.
+    expect(await getTimeToOffer({ jobId: old.job.id, from: daysAgo(30) })).toMatchObject({ jobsCounted: 0 });
+  });
 });
 
 describe("listStalledCandidates (FR-1002)", () => {
@@ -227,5 +245,16 @@ describe("getDashboard (FR-1004)", () => {
     const onlyB = await getDashboard(b.job.id);
     expect(onlyB.timeToOffer).toMatchObject({ avgDays: null, jobsCounted: 0 });
     expect(onlyB.stalledCandidates.map((s) => s.candidateName)).toEqual(["Parado na B"]);
+  });
+
+  it("o período recorta só o card da meta; vagas e parados continuam inteiros (US1.5)", async () => {
+    const recruiter = await createRecruiter();
+    const a = await createJob(recruiter.id, ["FINAL_OFFER"], { publishedAt: daysAgo(60) });
+    await createApplication(a.job.id, "Parado na proposta", [{ stageId: a.stages[0]!.id, enteredAt: daysAgo(50) }]);
+
+    const result = await getDashboard(undefined, { from: daysAgo(30) });
+    expect(result.timeToOffer).toMatchObject({ avgDays: null, jobsCounted: 0 });
+    expect(result.jobs.map((j) => j.id)).toEqual([a.job.id]);
+    expect(result.stalledCandidates.map((s) => s.candidateName)).toEqual(["Parado na proposta"]);
   });
 });

@@ -1,5 +1,8 @@
 // Spec 010 (FR-1001..1003): regras puras do tempo do anúncio à proposta e dos candidatos parados.
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { parseDateParam } from "@/lib/dateParam";
 import {
   STALLED_DAYS,
   daysToOffer,
@@ -109,5 +112,25 @@ describe("candidato parado (FR-1002 / FR-1003 / D4)", () => {
     expect(
       waitingOnFor({ stageType: "CODE_TEST", submitted: false, draftStartedAt: new Date(t0.getTime() - 2 * 3_600_000), timeLimitMinutes: 60, now: t0 }),
     ).toBe("RECRUITER");
+  });
+});
+
+describe("parseDateParam (US1.5: `de`/`ate` do painel e da visão geral)", () => {
+  it("lê a data do input e ignora vazio ou inválido", () => {
+    expect(parseDateParam("2026-11-01")?.toISOString()).toBe("2026-11-01T00:00:00.000Z");
+    expect(parseDateParam(null)).toBeUndefined();
+    expect(parseDateParam("")).toBeUndefined();
+    expect(parseDateParam("ontem")).toBeUndefined();
+  });
+});
+
+describe("variáveis da spec 010 documentadas (FR-1007)", () => {
+  const root = path.resolve(__dirname, "../..");
+  const envExample = readFileSync(path.join(root, ".env.example"), "utf8");
+  const deployDoc = readFileSync(path.join(root, "docs/deploy-vercel.md"), "utf8");
+
+  it.each(["HIRING_BASELINE_DAYS", "HIRING_BASELINE_LABEL", "STALLED_CANDIDATE_DAYS"])("%s no .env.example e no deploy-vercel.md", (name) => {
+    expect(envExample).toMatch(new RegExp(`^${name}=`, "m"));
+    expect(deployDoc).toContain(`\`${name}\``);
   });
 });

@@ -19,6 +19,7 @@ import {
   EmptyState,
   ErrorState,
   Field,
+  Input,
   Notice,
   Select,
   textLinkClasses,
@@ -104,17 +105,24 @@ export function Dashboard() {
   const searchParams = useSearchParams();
   // O recorte por vaga vive na URL (spec 004 FR-102): sobrevive a voltar e recarregar.
   const selectedJobId = searchParams.get("vaga") ?? "";
+  // Spec 010 US1.5: mesmo período ("Publicada de/até", `de`/`ate`) da visão geral, só para a meta.
+  const from = searchParams.get("de") ?? "";
+  const to = searchParams.get("ate") ?? "";
 
   const [data, setData] = useState<DashboardResult | null>(null);
   const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     setFailed(false);
-    const url = selectedJobId ? `/api/recruiter/dashboard?jobId=${encodeURIComponent(selectedJobId)}` : "/api/recruiter/dashboard";
-    const result = await apiFetch<DashboardResult>(url);
+    const params = new URLSearchParams();
+    if (selectedJobId) params.set("jobId", selectedJobId);
+    if (from) params.set("de", from);
+    if (to) params.set("ate", to);
+    const qs = params.toString();
+    const result = await apiFetch<DashboardResult>(qs ? `/api/recruiter/dashboard?${qs}` : "/api/recruiter/dashboard");
     if (result.ok && Array.isArray(result.data?.jobs)) setData(result.data);
     else setFailed(true);
-  }, [selectedJobId]);
+  }, [selectedJobId, from, to]);
 
   useEffect(() => {
     load();
@@ -132,8 +140,12 @@ export function Dashboard() {
     });
   }, [selectedJobId, allJobs.length]);
 
-  function selectJob(jobId: string) {
-    router.replace(jobId ? `${pathname}?vaga=${encodeURIComponent(jobId)}` : pathname, { scroll: false });
+  function setFilter(key: "vaga" | "de" | "ate", value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) params.set(key, value);
+    else params.delete(key);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
   const header = (
@@ -192,7 +204,7 @@ export function Dashboard() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <Field id="painel-vaga" label="Filtrar por vaga" className="sm:w-80">
-          <Select value={selectedJobId} onChange={(e) => selectJob(e.target.value)}>
+          <Select value={selectedJobId} onChange={(e) => setFilter("vaga", e.target.value)}>
             <option value="">Todas as vagas</option>
             {(allJobs.length > 0 ? allJobs : data.jobs).map((job) => (
               <option key={job.id} value={job.id}>
@@ -201,6 +213,15 @@ export function Dashboard() {
             ))}
           </Select>
         </Field>
+        <fieldset className="grid grid-cols-2 gap-3 sm:w-80">
+          <legend className="sr-only">Período de publicação, só para a meta de tempo até a proposta</legend>
+          <Field id="painel-de" label="Publicada de">
+            <Input type="date" value={from} max={to || undefined} onChange={(e) => setFilter("de", e.target.value)} />
+          </Field>
+          <Field id="painel-ate" label="até">
+            <Input type="date" value={to} min={from || undefined} onChange={(e) => setFilter("ate", e.target.value)} />
+          </Field>
+        </fieldset>
       </div>
 
       {/* O dado mais acionável do painel lidera: onde os candidatos estão parados. */}
@@ -229,7 +250,7 @@ export function Dashboard() {
           <MetricCard
             label="Do anúncio à proposta"
             value={timeToOffer.avgDays === null ? "Sem dados" : `${formatDays(timeToOffer.avgDays)} dias`}
-            hint={timeToOfferHint(timeToOffer)}
+            hint={`${timeToOfferHint(timeToOffer)}${from || to ? " Só vagas publicadas no período escolhido." : ""}`}
           />
         </div>
       </section>

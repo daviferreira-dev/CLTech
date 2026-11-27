@@ -27,7 +27,8 @@ export interface DashboardResult {
   stalledCandidates: StalledCandidate[];
 }
 
-export async function getDashboard(jobId?: string): Promise<DashboardResult> {
+/** `period` só recorta o card "Do anúncio à proposta" (spec 010 US1.5); o resto do painel ignora. */
+export async function getDashboard(jobId?: string, period: { from?: Date; to?: Date } = {}): Promise<DashboardResult> {
   const jobs = await prisma.job.findMany({
     where: jobId ? { id: jobId } : {},
     orderBy: { createdAt: "desc" },
@@ -59,7 +60,7 @@ export async function getDashboard(jobId?: string): Promise<DashboardResult> {
 
   const [funnel, timeToOffer, stalledCandidates] = await Promise.all([
     computeFunnel(jobId ? [jobId] : jobs.map((job) => job.id)),
-    getTimeToOffer({ jobId }),
+    getTimeToOffer({ jobId, ...period }),
     listStalledCandidates({ jobId }),
   ]);
 

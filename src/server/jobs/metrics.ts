@@ -3,9 +3,13 @@
 import { prisma } from "@/lib/prisma";
 import { daysToOffer, summarizeTimeToOffer, type TimeToOffer } from "@/lib/velocity";
 
-export async function getTimeToOffer(filters: { jobId?: string } = {}): Promise<TimeToOffer> {
+// US1.5: o período é o mesmo da visão geral ("Publicada de/até"); a vaga conta pela publicação.
+export async function getTimeToOffer(filters: { jobId?: string; from?: Date; to?: Date } = {}): Promise<TimeToOffer> {
   const jobs = await prisma.job.findMany({
-    where: { publishedAt: { not: null }, ...(filters.jobId ? { id: filters.jobId } : {}) },
+    where: {
+      publishedAt: { not: null, gte: filters.from, lte: filters.to },
+      ...(filters.jobId ? { id: filters.jobId } : {}),
+    },
     select: { id: true, publishedAt: true, stages: { where: { type: "FINAL_OFFER" }, select: { id: true } } },
   });
   if (jobs.length === 0) return summarizeTimeToOffer([], process.env);

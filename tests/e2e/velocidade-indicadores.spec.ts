@@ -33,6 +33,27 @@ test("painel mostra o tempo do anúncio à proposta e os candidatos parados (spe
   await expect(stalled).toBeVisible();
 });
 
+test("o card da meta segue o período de publicação, como a visão geral (spec 010 US1.5)", async ({ page }) => {
+  await loginAsRecruiter(page);
+  const indicators = page.getByRole("region", { name: "Indicadores" });
+  const card = indicators.getByText("Do anúncio à proposta").locator("..");
+
+  // Período no futuro: nenhuma vaga publicada nele, então o card diz isso (nunca 0 dias).
+  await page.getByLabel("Publicada de").fill("2999-01-01");
+  await expect(page).toHaveURL(/[?&]de=2999-01-01/);
+  await expect(card.getByText("Sem dados", { exact: true })).toBeVisible();
+  await expect(card.getByText(/Ainda sem vaga que chegou à proposta\. Só vagas publicadas no período escolhido\./)).toBeVisible();
+  // O resto do painel não é recortado pelo período.
+  await expect(page.getByRole("region", { name: "Candidatos parados" })).toBeVisible();
+
+  // O período sobrevive a recarregar; limpar volta ao card sem recorte.
+  await page.reload();
+  await expect(page.getByLabel("Publicada de")).toHaveValue("2999-01-01");
+  await page.getByLabel("Publicada de").fill("");
+  await expect(page).not.toHaveURL(/[?&]de=/);
+  await expect(card.getByText("Só vagas publicadas no período escolhido.", { exact: false })).toHaveCount(0);
+});
+
 test("visão geral abre o tempo por etapa de uma vaga (spec 010 US4)", async ({ page }) => {
   await loginAsRecruiter(page);
   await page.goto("/recrutamento/vagas/visao-geral");
