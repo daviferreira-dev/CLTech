@@ -2,5 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["gru1"],
-  "crons": [{ "path": "/api/internal/code-tests/expire", "schedule": "0 6 * * *" }]
+  "crons": [
+    { "path": "/api/internal/code-tests/expire", "schedule": "0 6 * * *" },
+    { "path": "/api/internal/recruiter-digest", "schedule": "0 11 * * *" }
+  ]
 }
