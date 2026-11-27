@@ -1,6 +1,9 @@
 // RF07 / FR-043..046 — painel consolidado. Métricas por agregação SQL/leitura única,
 // nunca texto gerado livremente (D4 da Sprint 1) e sem N+1 (R15).
 import { prisma } from "@/lib/prisma";
+import { stalledDaysFrom, type TimeToOffer } from "@/lib/velocity";
+import { getTimeToOffer } from "@/server/jobs/metrics";
+import { listStalledCandidates, type StalledCandidate } from "@/server/jobs/stalled";
 
 export interface DashboardJob {
   id: string;
@@ -18,9 +21,14 @@ export interface DashboardFunnel {
 export interface DashboardResult {
   jobs: DashboardJob[];
   funnel: DashboardFunnel;
+  /** Spec 010: meta da 3aq (anúncio → proposta) e quem está parado numa etapa. */
+  timeToOffer: TimeToOffer;
+  stalledDays: number;
+  stalledCandidates: StalledCandidate[];
 }
 
-export async function getDashboard(jobId?: string): Promise<DashboardResult> {
+/** `period` só recorta o card "Do anúncio à proposta" (spec 010 US1.5); o resto do painel ignora. */
+export async function getDashboard(jobId?: string, period: { from?: Date; to?: Date } = {}): Promise<DashboardResult> {
   const jobs = await prisma.job.findMany({
     where: jobId ? { id: jobId } : {},
     orderBy: { createdAt: "desc" },
@@ -50,9 +58,13 @@ export async function getDashboard(jobId?: string): Promise<DashboardResult> {
     };
   });
 
-  const funnel = await computeFunnel(jobId ? [jobId] : jobs.map((job) => job.id));
+  const [funnel, timeToOffer, stalledCandidates] = await Promise.all([
+    computeFunnel(jobId ? [jobId] : jobs.map((job) => job.id)),
+    getTimeToOffer({ jobId, ...period }),
+    listStalledCandidates({ jobId }),
+  ]);
 
-  return { jobs: dashboardJobs, funnel };
+  return { jobs: dashboardJobs, funnel, timeToOffer, stalledDays: stalledDaysFrom(process.env), stalledCandidates };
 }
 
 async function computeFunnel(jobIds: string[]): Promise<DashboardFunnel> {

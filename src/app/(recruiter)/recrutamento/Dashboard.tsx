@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { STAGE_LABEL } from "@/lib/processStages";
 import { apiFetch } from "@/lib/api-client";
 import { JOB_STATUS_BADGE, JOB_STATUS_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/cn";
+import { formatDays, timeToOfferVerdict, type TimeToOffer, type WaitingOn } from "@/lib/velocity";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Badge,
@@ -18,6 +19,7 @@ import {
   EmptyState,
   ErrorState,
   Field,
+  Input,
   Notice,
   Select,
   textLinkClasses,
@@ -38,6 +40,53 @@ interface DashboardResult {
     advanceRatePerStage: Array<{ stageType: string; rate: number }>;
     bottleneckStageType: string | null;
   };
+  timeToOffer: TimeToOffer;
+  stalledDays: number;
+  stalledCandidates: StalledCandidate[];
+}
+
+interface StalledCandidate {
+  applicationId: string;
+  candidateName: string;
+  jobId: string;
+  jobTitle: string;
+  stageType: string;
+  days: number;
+  waitingOn: WaitingOn;
+}
+
+function dayCount(days: number): string {
+  return `${days} ${days === 1 ? "dia" : "dias"}`;
+}
+
+/** Spec 010 US1: meta da 3aq. Sem vaga na conta, diz isso — nunca "0 dias". */
+function timeToOfferHint(t: TimeToOffer): string {
+  if (t.avgDays === null) return "Ainda sem vaga que chegou à proposta.";
+  const counted = `${t.jobsCounted} ${t.jobsCounted === 1 ? "vaga" : "vagas"} na conta.`;
+  return `${counted} ${timeToOfferVerdict(t)}`;
+}
+
+function StalledList({ items, label }: { items: StalledCandidate[]; label: string }) {
+  return (
+    <ul className="divide-y divide-line" aria-label={label}>
+      {items.map((item) => (
+        <li key={item.applicationId}>
+          <Link
+            href={`/recrutamento/vagas/${item.jobId}/candidaturas/${item.applicationId}`}
+            className={cn("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-field px-2 py-2 hover:bg-page", focusRing)}
+          >
+            <span className="min-w-0 break-words">
+              <span className="block text-body font-medium text-fg">{item.candidateName}</span>
+              <span className="block text-label font-normal text-fg-muted">
+                {item.jobTitle} · {STAGE_LABEL[item.stageType] ?? item.stageType}
+              </span>
+            </span>
+            <span className="shrink-0 text-body font-semibold tabular-nums text-fg">há {dayCount(item.days)}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function MetricCard({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
@@ -51,22 +100,28 @@ function MetricCard({ label, value, hint }: { label: string; value: React.ReactN
 }
 
 export function Dashboard() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   // O recorte por vaga vive na URL (spec 004 FR-102): sobrevive a voltar e recarregar.
   const selectedJobId = searchParams.get("vaga") ?? "";
+  // Spec 010 US1.5: mesmo período ("Publicada de/até", `de`/`ate`) da visão geral, só para a meta.
+  const from = searchParams.get("de") ?? "";
+  const to = searchParams.get("ate") ?? "";
 
   const [data, setData] = useState<DashboardResult | null>(null);
   const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     setFailed(false);
-    const url = selectedJobId ? `/api/recruiter/dashboard?jobId=${encodeURIComponent(selectedJobId)}` : "/api/recruiter/dashboard";
-    const result = await apiFetch<DashboardResult>(url);
+    const params = new URLSearchParams();
+    if (selectedJobId) params.set("jobId", selectedJobId);
+    if (from) params.set("de", from);
+    if (to) params.set("ate", to);
+    const qs = params.toString();
+    const result = await apiFetch<DashboardResult>(qs ? `/api/recruiter/dashboard?${qs}` : "/api/recruiter/dashboard");
     if (result.ok && Array.isArray(result.data?.jobs)) setData(result.data);
     else setFailed(true);
-  }, [selectedJobId]);
+  }, [selectedJobId, from, to]);
 
   useEffect(() => {
     load();
@@ -84,8 +139,15 @@ export function Dashboard() {
     });
   }, [selectedJobId, allJobs.length]);
 
-  function selectJob(jobId: string) {
-    router.replace(jobId ? `${pathname}?vaga=${encodeURIComponent(jobId)}` : pathname, { scroll: false });
+  // Parte da URL atual, não do searchParams desta renderização: dois campos mudados em seguida
+  // (de e até) não podem se sobrescrever. replaceState nativo, como na visão geral: o Next 15
+  // sincroniza com useSearchParams sem refazer a página no servidor.
+  function setFilter(key: "vaga" | "de" | "ate", value: string) {
+    const params = new URLSearchParams(window.location.search);
+    if (value) params.set(key, value);
+    else params.delete(key);
+    const qs = params.toString();
+    window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
   }
 
   const header = (
@@ -132,6 +194,9 @@ export function Dashboard() {
   const bottleneck = data.funnel.bottleneckStageType;
   const bottleneckHours = data.funnel.avgTimePerStageHours.find((item) => item.stageType === bottleneck)?.hours;
   const totalOf = (job: (typeof data.jobs)[number]) => job.candidatesByStage.reduce((sum, item) => sum + item.count, 0);
+  const timeToOffer = data.timeToOffer;
+  const waitingOnRecruiter = data.stalledCandidates.filter((item) => item.waitingOn === "RECRUITER");
+  const waitingOnCandidate = data.stalledCandidates.filter((item) => item.waitingOn === "CANDIDATE");
   // Vaga com gente na frente; rascunho por último (e mais discreto no cartão).
   const jobs = [...data.jobs].sort((a, b) => Number(a.status === "DRAFT") - Number(b.status === "DRAFT") || totalOf(b) - totalOf(a));
 
@@ -140,8 +205,8 @@ export function Dashboard() {
       {header}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <Field id="painel-vaga" label="Recortar por vaga" className="sm:w-80">
-          <Select value={selectedJobId} onChange={(e) => selectJob(e.target.value)}>
+        <Field id="painel-vaga" label="Filtrar por vaga" className="sm:w-80">
+          <Select value={selectedJobId} onChange={(e) => setFilter("vaga", e.target.value)}>
             <option value="">Todas as vagas</option>
             {(allJobs.length > 0 ? allJobs : data.jobs).map((job) => (
               <option key={job.id} value={job.id}>
@@ -150,6 +215,15 @@ export function Dashboard() {
             ))}
           </Select>
         </Field>
+        <fieldset className="grid grid-cols-2 gap-3 sm:w-80">
+          <legend className="sr-only">Período de publicação, só para a meta de tempo até a proposta</legend>
+          <Field id="painel-de" label="Publicada de">
+            <Input type="date" value={from} max={to || undefined} onChange={(e) => setFilter("de", e.target.value)} />
+          </Field>
+          <Field id="painel-ate" label="até">
+            <Input type="date" value={to} min={from || undefined} onChange={(e) => setFilter("ate", e.target.value)} />
+          </Field>
+        </fieldset>
       </div>
 
       {/* O dado mais acionável do painel lidera: onde os candidatos estão parados. */}
@@ -171,10 +245,40 @@ export function Dashboard() {
         </Notice>
       )}
 
-      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:gap-4">
+      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <MetricCard label="Vagas publicadas" value={published} hint={`de ${data.jobs.length} no recorte`} />
         <MetricCard label="Candidaturas em andamento" value={inProgress} />
+        <div className="col-span-2 lg:col-span-1">
+          <MetricCard
+            label="Do anúncio à proposta"
+            value={timeToOffer.avgDays === null ? "Sem dados" : `${formatDays(timeToOffer.avgDays)} dias`}
+            hint={`${timeToOfferHint(timeToOffer)}${from || to ? " Só vagas publicadas no período escolhido." : ""}`}
+          />
+        </div>
       </section>
+
+      <Card as="section" aria-labelledby="candidatos-parados">
+        <CardHeader titleId="candidatos-parados" title="Candidatos parados" />
+        <CardBody className="space-y-4">
+          {waitingOnRecruiter.length === 0 ? (
+            <p className="text-body text-fg-muted">Ninguém esperando o RH há mais de {dayCount(data.stalledDays)} na mesma etapa.</p>
+          ) : (
+            <>
+              <p className="text-body text-fg-muted">
+                Há mais de {dayCount(data.stalledDays)} na mesma etapa, esperando uma decisão do RH. Os mais antigos primeiro.
+              </p>
+              <StalledList items={waitingOnRecruiter} label="Candidatos esperando o RH" />
+            </>
+          )}
+          {waitingOnCandidate.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-body font-medium text-fg">Aguardando o candidato</h3>
+              <p className="text-label font-normal text-fg-muted">Teste de código liberado e ainda dentro do prazo: não depende do RH.</p>
+              <StalledList items={waitingOnCandidate} label="Candidatos aguardando o próprio envio" />
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       <section aria-labelledby="vagas-painel" className="space-y-4">
         <h2 id="vagas-painel" className="sr-only">
