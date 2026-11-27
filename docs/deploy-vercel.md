@@ -82,8 +82,14 @@ Se o arquivo não existir (outra máquina), monte-o a partir da tabela:
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | iguais ao `.env` (e-mails ao candidato, RN005). Vazios desligam o envio sem quebrar nada |
 | `NEXTAUTH_URL` | a URL pública do projeto |
 | `LINKEDIN_ID` / `LINKEDIN_SECRET` | opcional |
-| `CRON_SECRET` | opcional (ver item 7) |
+| `CRON_SECRET` | opcional (ver item 7). Sem ele, os dois crons (prazos vencidos e resumo diário ao recrutador) ficam desligados |
 | `SANDBOX_URL` / `SANDBOX_TOKEN` | `https://ce.judge0.com` e token vazio (Judge0 público); sem `SANDBOX_URL` a correção fica pendente |
+| `HIRING_BASELINE_DAYS` | opcional, spec 010: `45` (referência de mercado, conta em `docs/entregas/linha-de-base.md`). Vazio: o card "Do anúncio à proposta" mostra só o tempo atual, sem percentual |
+| `HIRING_BASELINE_LABEL` | opcional: `Referência de mercado · Ford/Datafolha 2026 (ponto médio)`. Vazio: "Referência de mercado" |
+| `STALLED_CANDIDATE_DAYS` | opcional: dias na mesma etapa para o candidato contar como parado (painel, visão geral e resumo diário). Vazio: `7` |
+
+Cadastre `HIRING_BASELINE_DAYS` e `HIRING_BASELINE_LABEL` antes de apresentar a meta: sem elas o
+card não compara com a referência.
 
 Não vão para a Vercel: `AI_SERVICE_URL` e `GEMINI_API_KEY` (sem uso; a triagem roda no
 próprio Next.js, decisão D11) e `SANDBOX_ALLOW_LOCAL`.
@@ -128,7 +134,7 @@ Na URL pública:
 | Limite | Efeito | O que fazer |
 |---|---|---|
 | Corpo de requisição de 4,5 MB | Currículo entre 4,5 e 5 MB é recusado pela Vercel antes de chegar ao sistema | Aceitável na demonstração; registrar se o professor testar com arquivo grande |
-| Cron só 1 vez por dia (plano gratuito) | A rota `/api/internal/code-tests/expire` exporta `GET` (que chama o `POST`) e está agendada em `vercel.json`, uma vez por dia | O prazo também expira sempre que o candidato ou o recrutador abrem o desafio, então o atraso de até um dia não afeta ninguém |
+| Cron só 1 vez por dia, com até 59 min de atraso (plano gratuito; o limite é de 100 crons por projeto) | As rotas `/api/internal/code-tests/expire` e `/api/internal/recruiter-digest` exportam `GET` (que chama o `POST`) e estão agendadas em `vercel.json`, uma vez por dia cada; o resumo sai por volta das 8h de Brasília | O prazo também expira sempre que o candidato ou o recrutador abrem o desafio, então o atraso de até um dia não afeta ninguém. Os parados também aparecem no painel a qualquer hora |
 | Judge0 público (`ce.judge0.com`) fora do ar ou sem `SANDBOX_URL` | Teste de código não é corrigido (fica "pendente") | Esperar o serviço voltar ou apontar `SANDBOX_URL` para um Judge0 próprio |
 | Supabase gratuito pausa após inatividade | Toda rota com banco falha | Restaurar o projeto no painel do Supabase antes de apresentar |
 
