@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { STAGE_LABEL } from "@/lib/processStages";
 import { apiFetch } from "@/lib/api-client";
 import { JOB_STATUS_BADGE, JOB_STATUS_LABEL } from "@/lib/labels";
@@ -100,7 +100,6 @@ function MetricCard({ label, value, hint }: { label: string; value: React.ReactN
 }
 
 export function Dashboard() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   // O recorte por vaga vive na URL (spec 004 FR-102): sobrevive a voltar e recarregar.
@@ -140,12 +139,15 @@ export function Dashboard() {
     });
   }, [selectedJobId, allJobs.length]);
 
+  // Parte da URL atual, não do searchParams desta renderização: dois campos mudados em seguida
+  // (de e até) não podem se sobrescrever. replaceState nativo, como na visão geral: o Next 15
+  // sincroniza com useSearchParams sem refazer a página no servidor.
   function setFilter(key: "vaga" | "de" | "ate", value: string) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     if (value) params.set(key, value);
     else params.delete(key);
     const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
   }
 
   const header = (

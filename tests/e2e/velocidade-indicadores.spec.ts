@@ -46,6 +46,15 @@ test("o card da meta segue o período de publicação, como a visão geral (spec
   // O resto do painel não é recortado pelo período.
   await expect(page.getByRole("region", { name: "Candidatos parados" })).toBeVisible();
 
+  // Mudar dois campos seguidos não perde o primeiro (a URL é a fonte da verdade).
+  await page.getByLabel("Publicada de").fill("2998-01-01");
+  await page.getByLabel("até", { exact: true }).fill("2999-12-31");
+  await expect(page).toHaveURL(/[?&]de=2998-01-01/);
+  await expect(page).toHaveURL(/[?&]ate=2999-12-31/);
+  await page.getByLabel("até", { exact: true }).fill("");
+  await page.getByLabel("Publicada de").fill("2999-01-01");
+  await expect(page).not.toHaveURL(/[?&]ate=/);
+
   // O período sobrevive a recarregar; limpar volta ao card sem recorte.
   await page.reload();
   await expect(page.getByLabel("Publicada de")).toHaveValue("2999-01-01");
